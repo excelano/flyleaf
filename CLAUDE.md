@@ -124,7 +124,8 @@ against what it replaced is too big.
 
     Cargo.toml              the workspace: versions, the floor, the one toml_edit
     flyleaf-core/           the document model and the edit operations
-    flyleaf/                src/lib.rs and src/tree.rs are the widget;
+    flyleaf/                src/lib.rs, src/tree.rs and src/source.rs are
+                            the widget, the tree and the source pane;
                             src/main.rs is the application, behind the
                             default `app` feature; tests/golden/ is the record
     .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, and

@@ -9,6 +9,8 @@
 
 pub use flyleaf_core;
 
+mod source;
 mod tree;
 
+pub use source::source;
 pub use tree::{forget_typing, open_all, render, Policy};

@@ -17,7 +17,9 @@
 
 use std::fmt;
 
-use toml_edit::{DocumentMut, TomlError};
+use std::ops::Range;
+
+use toml_edit::{DocumentMut, Item, Table, TomlError, Value};
 
 /// The line ending a file was written with.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -239,6 +241,23 @@ impl Document {
         true
     }
 
+    /// The lines of the rendered text that the item at a path occupies,
+    /// counted from zero, the end exclusive: a row from its key to the end
+    /// of its value, a table or an array-of-tables element its header line.
+    /// `None` for a path that names nothing.
+    ///
+    /// The tree keeps no positions once it can be edited, so this parses the
+    /// rendered text again, which does. That is a full parse per call, and a
+    /// caller asks only when the selection or the document has changed.
+    #[must_use]
+    pub fn lines_of(&self, path: &[String]) -> Option<Range<usize>> {
+        let text = self.doc.to_string();
+        let parsed = toml_edit::Document::parse(text.as_str()).ok()?;
+        let span = span_in_table(parsed.as_table(), path)?;
+        let line_at = |offset: usize| text[..offset.min(text.len())].matches('\n').count();
+        Some(line_at(span.start)..line_at(span.end.saturating_sub(1)) + 1)
+    }
+
     /// The tree as `current` says, which parses because it was rendered
     /// from a tree; a step is never a row's own, so the next change starts
     /// one.
@@ -248,6 +267,70 @@ impl Document {
             .parse::<DocumentMut>()
             .expect("a rendered document parses");
         self.group = None;
+    }
+}
+
+/// The span of the item at a path under a table: the key and the item
+/// together where the path ends here, or whatever is further down.
+fn span_in_table(t: &Table, path: &[String]) -> Option<Range<usize>> {
+    let (head, rest) = path.split_first()?;
+    let (key, item) = t.get_key_value(head)?;
+    if rest.is_empty() {
+        return join(key.span(), item.span());
+    }
+    match item {
+        Item::Table(inner) => span_in_table(inner, rest),
+        Item::ArrayOfTables(a) => {
+            let (index, rest) = rest.split_first()?;
+            let element = a.get(indexed(index)?)?;
+            if rest.is_empty() {
+                element.span()
+            } else {
+                span_in_table(element, rest)
+            }
+        }
+        Item::Value(v) => span_in_value(v, rest),
+        Item::None => None,
+    }
+}
+
+/// The same under a value, which is an inline table or an array if the path
+/// goes on.
+fn span_in_value(v: &Value, path: &[String]) -> Option<Range<usize>> {
+    let (head, rest) = path.split_first()?;
+    match v {
+        Value::InlineTable(t) => {
+            let (key, inner) = t.get_key_value(head)?;
+            if rest.is_empty() {
+                join(key.span(), inner.span())
+            } else {
+                span_in_value(inner.as_value()?, rest)
+            }
+        }
+        Value::Array(a) => {
+            let element = a.get(indexed(head)?)?;
+            if rest.is_empty() {
+                element.span()
+            } else {
+                span_in_value(element, rest)
+            }
+        }
+        _ => None,
+    }
+}
+
+/// The index an element's path segment names, written `[3]` as the tree
+/// labels it.
+fn indexed(segment: &str) -> Option<usize> {
+    segment.strip_prefix('[')?.strip_suffix(']')?.parse().ok()
+}
+
+/// One span from the start of the first to the end of the last.
+fn join(a: Option<Range<usize>>, b: Option<Range<usize>>) -> Option<Range<usize>> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.start.min(b.start)..a.end.max(b.end)),
+        (Some(a), None) | (None, Some(a)) => Some(a),
+        (None, None) => None,
     }
 }
 
@@ -399,6 +482,45 @@ mod tests {
         assert!(doc.undo());
         assert!(doc.edited(), "before what was saved");
         assert_eq!(doc.render(), text);
+    }
+
+    /// Every shape of path lands on the lines it names: a root row, a row in
+    /// a table, a table's header, an array element, an array-of-tables
+    /// element's header, a key inside an inline table, and a value that runs
+    /// over several lines, whose range is all of them. A path naming nothing
+    /// is `None` rather than a wrong line.
+    #[test]
+    fn every_kind_of_path_lands_on_its_lines() {
+        let text = "\
+first = 1
+[types]
+count = 44
+list = [
+  1,
+  2,
+]
+inline = { a = 1, b = 2 }
+[[runs]]
+id = 1
+[[runs]]
+id = 2
+";
+        let doc = Document::parse(text).expect("valid TOML");
+        let lines = |parts: &[&str]| {
+            let path: Vec<String> = parts.iter().map(|p| (*p).to_owned()).collect();
+            doc.lines_of(&path)
+        };
+        assert_eq!(lines(&["first"]), Some(0..1));
+        assert_eq!(lines(&["types"]), Some(1..2));
+        assert_eq!(lines(&["types", "count"]), Some(2..3));
+        assert_eq!(lines(&["types", "list"]), Some(3..7));
+        assert_eq!(lines(&["types", "list", "[1]"]), Some(5..6));
+        assert_eq!(lines(&["types", "inline", "b"]), Some(7..8));
+        assert_eq!(lines(&["runs", "[1]"]), Some(10..11));
+        assert_eq!(lines(&["runs", "[1]", "id"]), Some(11..12));
+        assert_eq!(lines(&["absent"]), None);
+        assert_eq!(lines(&["types", "list", "[9]"]), None);
+        assert_eq!(lines(&[]), None);
     }
 
     /// Bytes that are not UTF-8 and text that is not TOML are two different

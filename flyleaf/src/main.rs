@@ -15,6 +15,7 @@
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use flyleaf_core::Document;
@@ -73,6 +74,27 @@ struct App {
     /// The row being worked in, as the tree reported it last frame; drawn
     /// above the tree, which is why it is a frame behind.
     selected: Option<Vec<String>>,
+    /// Whether the source pane is shown. On by default: what a save would
+    /// write is half of what this editor is for.
+    show_source: bool,
+    /// The lines of the source the selected row occupies, found again only
+    /// when the selection or the document changes, since finding them is a
+    /// parse.
+    highlight: Option<Range<usize>>,
+    /// The selection the highlight was found for.
+    highlighted: Option<Vec<String>>,
+}
+
+impl App {
+    fn new(shown: Shown) -> Self {
+        Self {
+            shown,
+            selected: None,
+            show_source: true,
+            highlight: None,
+            highlighted: None,
+        }
+    }
 }
 
 impl eframe::App for App {
@@ -126,6 +148,7 @@ impl App {
                     if ui.small_button("Collapse all").clicked() {
                         flyleaf::open_all(ui.ctx(), false);
                     }
+                    ui.toggle_value(&mut self.show_source, "Source");
                     if let Some(selected) = &self.selected {
                         ui.label(egui::RichText::new(selected.join(".")).monospace().weak());
                     }
@@ -137,21 +160,37 @@ impl App {
                         );
                     }
                 });
+                let mut changed = false;
                 if undo || undo_pressed {
                     flyleaf::forget_typing(ui.ctx());
-                    doc.undo();
+                    changed = doc.undo();
                 } else if redo || redo_pressed {
                     flyleaf::forget_typing(ui.ctx());
-                    doc.redo();
+                    changed = doc.redo();
                 }
                 ui.add_space(8.0);
+
+                // The pane first, so that the tree gets what is left.
+                if self.show_source {
+                    egui::Panel::right("source")
+                        .resizable(true)
+                        .default_size(ui.available_width() * 0.45)
+                        .show(ui, |ui| {
+                            flyleaf::source(ui, &doc.render(), self.highlight.as_ref());
+                        });
+                }
                 self.selected = egui::ScrollArea::both()
                     .auto_shrink([false, false])
                     .show(ui, |ui| flyleaf::render(ui, doc.tree_mut(), &()))
                     .inner;
                 // Whatever this frame changed is a step, joined to the last
                 // one where the same row is still the one being worked in.
-                doc.record(self.selected.as_deref());
+                changed |= doc.record(self.selected.as_deref());
+
+                if changed || self.selected != self.highlighted {
+                    self.highlight = self.selected.as_deref().and_then(|path| doc.lines_of(path));
+                    self.highlighted.clone_from(&self.selected);
+                }
             }
         });
     }
@@ -168,12 +207,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Tommy Flyleaf",
         options,
-        Box::new(|_cc| {
-            Ok(Box::new(App {
-                shown,
-                selected: None,
-            }))
-        }),
+        Box::new(|_cc| Ok(Box::new(App::new(shown)))),
     )
 }
 
@@ -202,10 +236,7 @@ mod tests {
     /// window, with the chord consumed before a field could take it.
     #[test]
     fn the_undo_and_redo_chords_reach_the_document() {
-        let mut app = super::App {
-            shown: shown(Some(fixture("every-type.toml"))),
-            selected: None,
-        };
+        let mut app = super::App::new(shown(Some(fixture("every-type.toml"))));
         let Shown::Document { doc, .. } = &mut app.shown else {
             panic!("the fixture opens");
         };
@@ -283,10 +314,7 @@ mod tests {
             shown(Some(PathBuf::from("/nowhere/at/all.toml"))),
             shown(Some(fixture("every-type.toml"))),
         ] {
-            let mut app = super::App {
-                shown,
-                selected: None,
-            };
+            let mut app = super::App::new(shown);
             egui::__run_test_ui(|ui| app.render(ui));
         }
     }
