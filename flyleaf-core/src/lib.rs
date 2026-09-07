@@ -13,6 +13,10 @@
 
 pub use toml_edit;
 
+mod document;
+
+pub use document::{Document, Error, Newline};
+
 use toml_edit::{Datetime, InlineTable, Item, Key, Table, Value};
 
 /// What a new key starts as.
