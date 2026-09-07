@@ -1,12 +1,12 @@
 //! Tommy Flyleaf, the application: a window around the widget.
 //!
-//! `flyleaf path/to/file.toml` opens that file and shows it as a tree. Edits
-//! stay in memory and the window says so: saving arrives with open and
-//! save-as, which is Phase 2 item 6 of `PROMPT.md`, and this shell exists so
-//! that the widget can be run on its own before then. One optional argument,
-//! no flags and no subcommands; on Windows this is a GUI-subsystem executable
-//! and prints nothing, which is why an error is shown in the window rather
-//! than written anywhere.
+//! `flyleaf path/to/file.toml` opens that file and shows it as a tree, with
+//! undo and redo. Edits stay in memory and the window says so: saving
+//! arrives with open and save-as, which is Phase 2 item 6 of `PROMPT.md`,
+//! and this shell exists so that the widget can be run on its own before
+//! then. One optional argument, no flags and no subcommands; on Windows this
+//! is a GUI-subsystem executable and prints nothing, which is why an error
+//! is shown in the window rather than written anywhere.
 //
 // Author: David M. Anderson
 // Built with AI assistance (Claude, Anthropic)
@@ -17,14 +17,15 @@
 
 use std::path::{Path, PathBuf};
 
-use flyleaf_core::toml_edit::DocumentMut;
+use flyleaf_core::Document;
 
 /// What the window shows.
 enum Shown {
     /// No argument was given.
     Nothing,
-    /// The file, parsed.
-    Document { path: PathBuf, doc: DocumentMut },
+    /// The file, parsed. Boxed: a document carries its history, and the
+    /// other two variants are a path and a string.
+    Document { path: PathBuf, doc: Box<Document> },
     /// The file could not be read or was not TOML, and this is what was said.
     Failed { path: PathBuf, why: String },
 }
@@ -33,9 +34,9 @@ enum Shown {
 ///
 /// `toml_edit`'s error carries the line and a caret under the column, which is
 /// what somebody wants to see beside a file that would not open.
-fn open(path: &Path) -> Result<DocumentMut, String> {
-    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    text.parse::<DocumentMut>().map_err(|e| e.to_string())
+fn open(path: &Path) -> Result<Document, String> {
+    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    Document::from_bytes(&bytes).map_err(|e| e.to_string())
 }
 
 /// What the first argument opens, or what the window shows without one.
@@ -43,7 +44,10 @@ fn shown(arg: Option<PathBuf>) -> Shown {
     match arg {
         None => Shown::Nothing,
         Some(path) => match open(&path) {
-            Ok(doc) => Shown::Document { path, doc },
+            Ok(doc) => Shown::Document {
+                path,
+                doc: Box::new(doc),
+            },
             Err(why) => Shown::Failed { path, why },
         },
     }
@@ -93,8 +97,29 @@ impl App {
                 ui.label(egui::RichText::new(why.as_str()).color(ui.visuals().error_fg_color));
             }
             Shown::Document { path, doc } => {
+                // Taken before the tree draws, so that a field with focus
+                // does not answer Ctrl+Z with its own undo of its own text:
+                // the document's undo is the editor's, and the field's copy
+                // of what was typed goes with it. Redo is asked first, since
+                // its chord contains undo's.
+                let redo = ui.input_mut(|i| {
+                    i.consume_key(
+                        egui::Modifiers::COMMAND | egui::Modifiers::SHIFT,
+                        egui::Key::Z,
+                    ) || i.consume_key(egui::Modifiers::COMMAND, egui::Key::Y)
+                });
+                let undo = ui.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::Z));
+
+                let mut undo_pressed = false;
+                let mut redo_pressed = false;
                 ui.horizontal(|ui| {
                     ui.label(path.display().to_string());
+                    undo_pressed = ui
+                        .add_enabled(doc.can_undo(), egui::Button::new("Undo").small())
+                        .clicked();
+                    redo_pressed = ui
+                        .add_enabled(doc.can_redo(), egui::Button::new("Redo").small())
+                        .clicked();
                     if ui.small_button("Expand all").clicked() {
                         flyleaf::open_all(ui.ctx(), true);
                     }
@@ -104,17 +129,29 @@ impl App {
                     if let Some(selected) = &self.selected {
                         ui.label(egui::RichText::new(selected.join(".")).monospace().weak());
                     }
-                    ui.label(
-                        egui::RichText::new("edits stay in memory; saving is not built yet")
-                            .italics()
-                            .weak(),
-                    );
+                    if doc.edited() {
+                        ui.label(
+                            egui::RichText::new("edited; saving is not built yet")
+                                .italics()
+                                .weak(),
+                        );
+                    }
                 });
+                if undo || undo_pressed {
+                    flyleaf::forget_typing(ui.ctx());
+                    doc.undo();
+                } else if redo || redo_pressed {
+                    flyleaf::forget_typing(ui.ctx());
+                    doc.redo();
+                }
                 ui.add_space(8.0);
                 self.selected = egui::ScrollArea::both()
                     .auto_shrink([false, false])
-                    .show(ui, |ui| flyleaf::render(ui, doc, &()))
+                    .show(ui, |ui| flyleaf::render(ui, doc.tree_mut(), &()))
                     .inner;
+                // Whatever this frame changed is a step, joined to the last
+                // one where the same row is still the one being worked in.
+                doc.record(self.selected.as_deref());
             }
         });
     }
@@ -158,7 +195,48 @@ mod tests {
     fn a_file_opens_as_itself() {
         let path = fixture("every-type.toml");
         let doc = open(&path).expect("the fixture opens");
-        assert_eq!(doc.to_string(), std::fs::read_to_string(&path).unwrap());
+        assert_eq!(doc.render(), std::fs::read_to_string(&path).unwrap());
+    }
+
+    /// Ctrl+Z undoes the last step and Ctrl+Shift+Z redoes it, through the
+    /// window, with the chord consumed before a field could take it.
+    #[test]
+    fn the_undo_and_redo_chords_reach_the_document() {
+        let mut app = super::App {
+            shown: shown(Some(fixture("every-type.toml"))),
+            selected: None,
+        };
+        let Shown::Document { doc, .. } = &mut app.shown else {
+            panic!("the fixture opens");
+        };
+        doc.tree_mut()["types"]["count"] = flyleaf_core::toml_edit::value(45);
+        doc.record(None);
+
+        let ctx = egui::Context::default();
+        let chord = |modifiers: egui::Modifiers| egui::RawInput {
+            events: vec![egui::Event::Key {
+                key: egui::Key::Z,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers,
+            }],
+            ..Default::default()
+        };
+        let count = |app: &super::App| match &app.shown {
+            Shown::Document { doc, .. } => doc.tree()["types"]["count"].as_integer(),
+            _ => None,
+        };
+
+        ctx.run_ui(chord(egui::Modifiers::COMMAND), |ui| app.render(ui))
+            .drop_without_applying_deltas();
+        assert_eq!(count(&app), Some(44), "undone");
+        ctx.run_ui(
+            chord(egui::Modifiers::COMMAND | egui::Modifiers::SHIFT),
+            |ui| app.render(ui),
+        )
+        .drop_without_applying_deltas();
+        assert_eq!(count(&app), Some(45), "redone");
     }
 
     /// A missing file and a file that is not TOML are both refusals with a

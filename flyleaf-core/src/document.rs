@@ -1,11 +1,19 @@
-//! A document as a file: the parsed tree, and the three things about its
-//! bytes that `toml_edit` reads past and does not write back.
+//! A document as a file: the parsed tree, the three things about its bytes
+//! that `toml_edit` reads past and does not write back, and its history.
 //!
 //! Measured on 2026-09-07 against every valid TOML 1.1.0 case in toml-test:
 //! a leading byte order mark is dropped, CRLF line endings come back as LF,
 //! and a file without a final newline gains one. Each is a fact about the
 //! file rather than about the document, so this records them at parse and
 //! puts them back at render, and `tests/roundtrip.rs` holds it to that.
+//!
+//! The history is the document's rendered text, one copy per step. A step
+//! is what changed between two calls to [`Document::record`], and calls
+//! that name the same row coalesce, so typing into a field is one step and
+//! not one per keystroke. Undo parses the previous text back, which loses
+//! nothing, the text being the whole of the document. A copy of the file per
+//! step is the cost, about 100 KB for a `Cargo.lock`, which is cheap beside
+//! what the window holds for the same document.
 
 use std::fmt;
 
@@ -56,6 +64,16 @@ pub struct Document {
     /// [`Document::edited`]. Compared against rather than the source bytes,
     /// because the three facts above make those differ for an unedited file.
     baseline: String,
+    /// The document as it rendered at the last [`Document::record`], which
+    /// is what the next change is measured against.
+    current: String,
+    /// The text before each step, newest last.
+    undo: Vec<String>,
+    /// The text undone, newest last, emptied by any new change.
+    redo: Vec<String>,
+    /// The row the last step was made in, which is what a further change
+    /// to the same row coalesces with.
+    group: Option<Vec<String>>,
 }
 
 impl Document {
@@ -96,7 +114,11 @@ impl Document {
             bom,
             newline,
             final_newline,
+            current: baseline.clone(),
             baseline,
+            undo: Vec::new(),
+            redo: Vec::new(),
+            group: None,
         })
     }
 
@@ -152,6 +174,80 @@ impl Document {
     /// Record that what the document now holds is what is on disk.
     pub fn mark_saved(&mut self) {
         self.baseline = self.doc.to_string();
+    }
+
+    /// Record whatever changed since the last call as a step, and say
+    /// whether anything did.
+    ///
+    /// `group` names the row the change was made in, where there is one.
+    /// A change in the same row as the step before joins that step rather
+    /// than starting another, so a word typed into a field undoes as a word;
+    /// a change with no row, or in another row, is a step of its own. Any
+    /// change empties the redo stack, since what was undone no longer
+    /// follows from what is there.
+    pub fn record(&mut self, group: Option<&[String]>) -> bool {
+        let now = self.doc.to_string();
+        if now == self.current {
+            return false;
+        }
+        let same_row = group.is_some() && self.group.as_deref() == group;
+        if !same_row {
+            let before = std::mem::take(&mut self.current);
+            self.undo.push(before);
+            self.group = group.map(<[String]>::to_vec);
+        }
+        self.current = now;
+        self.redo.clear();
+        true
+    }
+
+    /// Whether there is a step to undo.
+    #[must_use]
+    pub fn can_undo(&self) -> bool {
+        !self.undo.is_empty()
+    }
+
+    /// Whether there is a step to redo.
+    #[must_use]
+    pub fn can_redo(&self) -> bool {
+        !self.redo.is_empty()
+    }
+
+    /// Put the document back as it was before the last step.
+    ///
+    /// Anything changed since the last [`Document::record`] is recorded
+    /// first, so that it can be redone rather than lost.
+    pub fn undo(&mut self) -> bool {
+        self.record(None);
+        let Some(before) = self.undo.pop() else {
+            return false;
+        };
+        let now = std::mem::replace(&mut self.current, before);
+        self.redo.push(now);
+        self.restore();
+        true
+    }
+
+    /// Put back the last step undone.
+    pub fn redo(&mut self) -> bool {
+        let Some(after) = self.redo.pop() else {
+            return false;
+        };
+        let now = std::mem::replace(&mut self.current, after);
+        self.undo.push(now);
+        self.restore();
+        true
+    }
+
+    /// The tree as `current` says, which parses because it was rendered
+    /// from a tree; a step is never a row's own, so the next change starts
+    /// one.
+    fn restore(&mut self) {
+        self.doc = self
+            .current
+            .parse::<DocumentMut>()
+            .expect("a rendered document parses");
+        self.group = None;
     }
 }
 
@@ -228,6 +324,81 @@ mod tests {
             Document::parse("\u{feff}\u{feff}a = 1\n"),
             Err(Error::Toml(_))
         ));
+    }
+
+    /// Typing into one row is one step, another row is another, and undo
+    /// and redo walk them in order. Without coalescing every keystroke would
+    /// be a step and undo would take a word back one letter at a time.
+    #[test]
+    fn changes_in_one_row_are_one_step() {
+        let mut doc = Document::parse("a = \"\"\nb = 0\n").expect("valid TOML");
+        let a = vec!["a".to_owned()];
+        let b = vec!["b".to_owned()];
+        for text in ["x", "xy", "xyz"] {
+            doc.tree_mut()["a"] = toml_edit::value(text);
+            assert!(doc.record(Some(&a)));
+        }
+        doc.tree_mut()["b"] = toml_edit::value(1);
+        assert!(doc.record(Some(&b)));
+        assert!(!doc.record(Some(&b)), "nothing changed");
+        assert_eq!(doc.render(), "a = \"xyz\"\nb = 1\n");
+
+        assert!(doc.undo());
+        assert_eq!(doc.render(), "a = \"xyz\"\nb = 0\n");
+        assert!(doc.undo());
+        assert_eq!(
+            doc.render(),
+            "a = \"\"\nb = 0\n",
+            "the word came back whole"
+        );
+        assert!(!doc.undo(), "nothing left to undo");
+
+        assert!(doc.redo());
+        assert_eq!(doc.render(), "a = \"xyz\"\nb = 0\n");
+        assert!(doc.redo());
+        assert_eq!(doc.render(), "a = \"xyz\"\nb = 1\n");
+        assert!(!doc.redo());
+    }
+
+    /// A change after an undo is a new branch: what was undone cannot be
+    /// redone over it. And a change nobody recorded before pressing undo is
+    /// recorded then, so it is undone rather than lost.
+    #[test]
+    fn a_change_after_an_undo_ends_the_redo_and_an_unrecorded_one_is_kept() {
+        let mut doc = Document::parse("a = 1\n").expect("valid TOML");
+        doc.tree_mut()["a"] = toml_edit::value(2);
+        doc.record(None);
+        assert!(doc.undo());
+        assert!(doc.can_redo());
+        doc.tree_mut()["a"] = toml_edit::value(3);
+        doc.record(None);
+        assert!(!doc.can_redo(), "a new change ended the branch");
+
+        doc.tree_mut()["a"] = toml_edit::value(4);
+        assert!(doc.undo(), "the unrecorded change is a step");
+        assert_eq!(doc.render(), "a = 3\n");
+        assert!(doc.redo());
+        assert_eq!(doc.render(), "a = 4\n");
+    }
+
+    /// Undo puts back the text, comments and layout included, and leaves
+    /// the file facts and the saved baseline alone: an undo past the save is
+    /// edited, an undo back to it is not.
+    #[test]
+    fn undo_restores_the_text_and_respects_the_baseline() {
+        let text = "\u{feff}# above\r\na = 1   # beside\r\n";
+        let mut doc = Document::parse(text).expect("valid TOML");
+        doc.tree_mut()["a"] = toml_edit::value(2);
+        doc.record(None);
+        doc.mark_saved();
+        doc.tree_mut()["a"] = toml_edit::value(3);
+        doc.record(None);
+        assert!(doc.edited());
+        assert!(doc.undo());
+        assert!(!doc.edited(), "back at what was saved");
+        assert!(doc.undo());
+        assert!(doc.edited(), "before what was saved");
+        assert_eq!(doc.render(), text);
     }
 
     /// Bytes that are not UTF-8 and text that is not TOML are two different

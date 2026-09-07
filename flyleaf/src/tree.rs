@@ -106,6 +106,45 @@ fn selection_id() -> egui::Id {
     egui::Id::new("flyleaf::selection")
 }
 
+fn typing_id() -> egui::Id {
+    egui::Id::new("flyleaf::typing")
+}
+
+/// Every field's text in progress, by the field's id: a key being renamed,
+/// a datetime half typed, a name for a key to add. One map rather than an
+/// entry per field so that all of it can be forgotten at once.
+#[derive(Clone, Default)]
+struct Typing(std::collections::HashMap<egui::Id, String>);
+
+fn typed(ui: &Ui, id: egui::Id) -> Option<String> {
+    ui.data(|d| d.get_temp::<Typing>(typing_id()))
+        .and_then(|t| t.0.get(&id).cloned())
+}
+
+fn set_typed(ui: &Ui, id: egui::Id, text: String) {
+    ui.data_mut(|d| {
+        d.get_temp_mut_or_default::<Typing>(typing_id())
+            .0
+            .insert(id, text);
+    });
+}
+
+/// Forget every field's text in progress, and take the focus from whichever
+/// field has it.
+///
+/// For the caller that has just put the document back to an earlier state:
+/// a key field commits what was typed into it when it loses focus, so
+/// without this an undo while renaming would be followed by the rename
+/// being made again from the field's own copy of the name.
+pub fn forget_typing(ctx: &egui::Context) {
+    ctx.data_mut(|d| d.remove_temp::<Typing>(typing_id()));
+    ctx.memory_mut(|m| {
+        if let Some(id) = m.focused() {
+            m.surrender_focus(id);
+        }
+    });
+}
+
 /// Open or close every section the next time the tree is drawn.
 ///
 /// A section remembers its own state in egui's memory, so this is a request
@@ -758,8 +797,7 @@ struct Field {
 fn buffered_text(ui: &mut Ui, id: egui::Id, current: &str, editable: bool) -> Field {
     let focused = ui.memory(|m| m.has_focus(id));
     let mut text = if focused {
-        ui.data_mut(|d| d.get_temp::<String>(id))
-            .unwrap_or_else(|| current.to_owned())
+        typed(ui, id).unwrap_or_else(|| current.to_owned())
     } else {
         current.to_owned()
     };
@@ -770,7 +808,7 @@ fn buffered_text(ui: &mut Ui, id: egui::Id, current: &str, editable: bool) -> Fi
     let response = ui.add_enabled(editable, field);
     let changed = response.changed();
     if changed {
-        ui.data_mut(|d| d.insert_temp(id, text.clone()));
+        set_typed(ui, id, text.clone());
     }
 
     Field {
@@ -990,7 +1028,7 @@ fn key_name(
 
     // Said while it is being typed rather than after, because a name already
     // taken is refused and the field would otherwise just spring back.
-    let typed: Option<String> = ui.data_mut(|d| d.get_temp(id));
+    let typed = typed(ui, id);
     let focused = ui.memory(|m| m.has_focus(id));
     if focused {
         if let Some(t) = &typed {
@@ -1016,8 +1054,7 @@ fn key_name(
 fn key_field(ui: &mut Ui, id: egui::Id, current: &str) -> Option<String> {
     let focused = ui.memory(|m| m.has_focus(id));
     let mut text = if focused {
-        ui.data_mut(|d| d.get_temp::<String>(id))
-            .unwrap_or_else(|| current.to_owned())
+        typed(ui, id).unwrap_or_else(|| current.to_owned())
     } else {
         current.to_owned()
     };
@@ -1027,7 +1064,7 @@ fn key_field(ui: &mut Ui, id: egui::Id, current: &str) -> Option<String> {
         .desired_width(KEY_WIDTH - 28.0);
     let response = ui.add(field);
     if response.changed() {
-        ui.data_mut(|d| d.insert_temp(id, text.clone()));
+        set_typed(ui, id, text.clone());
     }
     (response.lost_focus() && text != current).then_some(text)
 }
@@ -1054,7 +1091,7 @@ fn add_row(
     change: &mut Option<Change>,
 ) {
     let id = ui.make_persistent_id((path.join("."), "add"));
-    let mut name: String = ui.data_mut(|d| d.get_temp(id)).unwrap_or_default();
+    let mut name: String = typed(ui, id).unwrap_or_default();
     let mut kind: Kind = ui
         .data_mut(|d| d.get_temp(id.with("kind")))
         .filter(|k| kinds.contains(k))
@@ -1068,7 +1105,7 @@ fn add_row(
                 .hint_text("add a key")
                 .desired_width(KEY_WIDTH - 28.0);
             if ui.add(field).changed() {
-                ui.data_mut(|d| d.insert_temp(id, name.clone()));
+                set_typed(ui, id, name.clone());
             }
         });
 
@@ -1088,7 +1125,7 @@ fn add_row(
             .clicked()
         {
             *change = Some(Change::Add(name.clone(), kind));
-            ui.data_mut(|d| d.insert_temp(id, String::new()));
+            set_typed(ui, id, String::new());
         }
         if taken {
             ui.label(egui::RichText::new("name taken").italics().weak());

@@ -11,4 +11,4 @@ pub use flyleaf_core;
 
 mod tree;
 
-pub use tree::{open_all, render, Policy};
+pub use tree::{forget_typing, open_all, render, Policy};
