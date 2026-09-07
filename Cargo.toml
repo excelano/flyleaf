@@ -3,7 +3,7 @@ resolver = "3"
 members = ["flyleaf-core", "flyleaf"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["David M. Anderson"]
 license = "MIT"
@@ -20,7 +20,7 @@ rust-version = "1.95"
 # path-only dependency and a version requirement cannot inherit
 # `workspace.package.version`, so the number is written twice by necessity.
 [workspace.dependencies]
-flyleaf-core = { path = "flyleaf-core", version = "0.1.0" }
+flyleaf-core = { path = "flyleaf-core", version = "0.2.0" }
 
 # One `toml_edit` across the fleet. `slpc` depends on this same major and
 # re-exports it, and slipcase-desktop holds a `DocumentMut` from `slpc` and
