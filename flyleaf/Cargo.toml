@@ -11,12 +11,24 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+# The application binary and what only it needs. On by default, so that
+# `cargo install flyleaf` is the application; a consumer of the widget alone
+# turns it off with `default-features = false` and carries no window framework
+# it did not ask for.
+[features]
+default = ["app"]
+app = ["dep:eframe"]
+
+[[bin]]
+name = "flyleaf"
+path = "src/main.rs"
+required-features = ["app"]
+
 [dependencies]
 flyleaf-core.workspace = true
 # The widget wants egui and not eframe: it draws into a `Ui` somebody else
 # owns a window for. slipcase-desktop reaches egui through eframe 0.36, which
-# re-exports this same crate at this same version, so the types unify. The
-# application binary is what needs eframe, and it arrives behind an `app`
-# feature so that a consumer of the widget does not carry a window framework
-# it already has.
+# re-exports this same crate at this same version, so the types unify.
 egui = "0.36"
+# The window, for the binary alone. Defaults carry accesskit, which stays on.
+eframe = { version = "0.36", optional = true }

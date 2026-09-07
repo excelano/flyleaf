@@ -37,6 +37,8 @@ what was measured. Do not smooth an amendment away.
     cargo clippy --all-targets -- -D warnings    # must be silent
     cargo fmt --check
     cargo +1.95 build --all-targets               # the floor, measured
+    cargo check -p flyleaf --no-default-features  # the widget alone
+    cargo run -- path/to/file.toml                # the application
 
 The workflow in `.github/workflows/ci.yml` runs all of these on every push,
 and reads the floor out of `Cargo.toml` rather than carrying its own copy.
@@ -54,9 +56,15 @@ with David.
 builds C is not. `cargo tree -i cc` is not the check, because `cc` sits in
 egui's tree as an ordinary Rust crate and always will. The outcome is what the
 rule means: `ci.yml` refuses any `.o` or `.a` under the build directory, and
-when the binary lands, `ldd` on it must name libc, libgcc_s and libm and
-nothing else. `~/notes/pure_rust_preference.md` holds the fleet's stance and
-its costs.
+`ldd` on the binary must name libc, libgcc_s and libm and nothing else.
+`.cargo/config.toml` links the C runtime into the Windows binary for the
+reason it records. `~/notes/pure_rust_preference.md` holds the fleet's stance
+and its costs.
+
+**The GUI is a single binary with no subcommands.** On Windows it is a
+GUI-subsystem executable and prints nothing, so an error is shown in the
+window. Anything scriptable is `flyleaf-cli`'s, if that is ever built, and
+never this binary's.
 
 **One `toml_edit`.** `flyleaf-core`, `slpc` and slipcase-desktop must resolve
 to a single `toml_edit` version, or `DocumentMut` becomes two types and
@@ -116,7 +124,9 @@ against what it replaced is too big.
 
     Cargo.toml              the workspace: versions, the floor, the one toml_edit
     flyleaf-core/           the document model and the edit operations
-    flyleaf/                the widget, and later the application binary
+    flyleaf/                src/lib.rs and src/tree.rs are the widget;
+                            src/main.rs is the application, behind the
+                            default `app` feature; tests/golden/ is the record
     .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, and
                             the rule against compiling C
     PROMPT.md               the plan, alive

@@ -1,0 +1,16 @@
+# The Visual C++ runtime is not part of Windows, and linking it dynamically is
+# how Slipcase 0.1.1 failed Microsoft Store certification on 2026-08-29: the
+# package installed on the tester's clean machine and would not start, for
+# want of VCRUNTIME140.dll. Every machine that builds has Visual Studio, so
+# every machine that could have caught it had already hidden it.
+#
+# `+crt-static` links the VC runtime and the UCRT into the binary. That
+# repository measured it: the VCRUNTIME140.dll and api-ms-win-crt-* imports
+# gone, every remaining import a DLL that ships with Windows, and 223,232
+# bytes added. What it costs: a CRT security fix needs this application
+# rebuilt rather than picked up from a serviced DLL. The same choice, made
+# here before the first Windows build rather than after the first refusal.
+#
+# This key names the triple, so Linux and macOS builds are untouched.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

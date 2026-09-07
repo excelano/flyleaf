@@ -38,14 +38,26 @@ jobs:
       # `CLAUDE.md` forbids compiling C, and `cargo tree -i cc` is not the
       # check, for the reason slipcase-desktop's workflow records: `cc` sits in
       # egui's tree as an ordinary Rust crate and always will. The outcome is
-      # what the rule means, so the outcome is what is checked. The `ldd` half
-      # arrives with the binary.
+      # what the rule means, so the outcome is what is checked: no object file
+      # under the build directory, and the binary linking libc, libgcc and libm
+      # and nothing else, everything a window needs being opened at run time.
       - name: Nothing compiled C
         run: |
           target=$(cargo metadata --format-version 1 --no-deps |
               sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')
           objects=$(find "${target}" -path '*/build/*' \( -name '*.o' -o -name '*.a' \) -print)
           [ -z "$objects" ] || { echo "a build script produced object files:"; echo "$objects"; exit 1; }
+
+          echo "linked at load time:"
+          ldd "${target}/debug/flyleaf" | sed 's/^/  /'
+          strange=$(ldd "${target}/debug/flyleaf" |
+              awk '{print $1}' | grep -vE '^(linux-vdso|libgcc_s|libm|libc|/lib64/ld-linux)' || true)
+          [ -z "$strange" ] || { echo "unexpected shared libraries:"; echo "$strange"; exit 1; }
+
+      # The widget on its own, which is what slipcase-desktop takes: no window
+      # framework comes with it unless asked for.
+      - name: The widget builds without the application
+        run: cargo check -p flyleaf --no-default-features
 
   # `rust-version` in Cargo.toml is a claim, and this is what makes it a
   # measurement. The number is read out of the manifest rather than written
