@@ -30,13 +30,15 @@ pub enum Newline {
     CrLf,
 }
 
-/// Why bytes did not become a document.
+/// Why a file did not become a document, or a document a file.
 #[derive(Debug)]
 pub enum Error {
     /// The bytes are not UTF-8, which TOML requires them to be.
     NotUtf8(std::str::Utf8Error),
     /// The text is not TOML, with the parser's own account of where.
     Toml(TomlError),
+    /// The file could not be read or written.
+    Io(std::io::Error),
 }
 
 impl fmt::Display for Error {
@@ -44,7 +46,14 @@ impl fmt::Display for Error {
         match self {
             Self::NotUtf8(e) => write!(f, "not UTF-8: {e}"),
             Self::Toml(e) => e.fmt(f),
+            Self::Io(e) => e.fmt(f),
         }
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Self::Io(e)
     }
 }
 
@@ -122,6 +131,45 @@ impl Document {
             redo: Vec::new(),
             group: None,
         })
+    }
+
+    /// Read and parse a file.
+    ///
+    /// # Errors
+    ///
+    /// When the file cannot be read, is not UTF-8, or is not TOML.
+    #[cfg(feature = "fs")]
+    pub fn from_path(path: &std::path::Path) -> Result<Self, Error> {
+        Self::from_bytes(&std::fs::read(path)?)
+    }
+
+    /// Write what [`Document::render`] gives to a file, and mark the
+    /// document saved.
+    ///
+    /// Written beside the file and renamed over it, so that a failure at any
+    /// point leaves the original as it was and never a file half written.
+    /// The rename is what makes it one step, and it needs the two on one
+    /// file system, which a sibling is. A platform whose sandbox refuses a
+    /// sibling, which macOS's does for a file a dialog granted, needs its
+    /// own arm here; `PROMPT.md` carries that under Phase 3.
+    ///
+    /// # Errors
+    ///
+    /// When the sibling cannot be created, written, or renamed over the
+    /// file. The document is not marked saved then.
+    #[cfg(feature = "fs")]
+    pub fn save_to(&mut self, path: &std::path::Path) -> Result<(), Error> {
+        use std::io::Write as _;
+        let beside = path.parent().filter(|p| !p.as_os_str().is_empty());
+        let mut staged = match beside {
+            Some(dir) => tempfile::NamedTempFile::new_in(dir)?,
+            None => tempfile::NamedTempFile::new_in(".")?,
+        };
+        staged.write_all(self.render().as_bytes())?;
+        staged.as_file().sync_all()?;
+        staged.persist(path).map_err(|e| e.error)?;
+        self.mark_saved();
+        Ok(())
     }
 
     /// The tree, to read.
@@ -521,6 +569,43 @@ id = 2
         assert_eq!(lines(&["absent"]), None);
         assert_eq!(lines(&["types", "list", "[9]"]), None);
         assert_eq!(lines(&[]), None);
+    }
+
+    /// A document saved and read back is the same bytes, byte order mark and
+    /// line endings included, and saving is what clears the edited mark. A
+    /// save that cannot happen leaves the file as it was and the mark set.
+    #[cfg(feature = "fs")]
+    #[test]
+    fn a_save_writes_the_render_and_a_failed_one_writes_nothing() {
+        let dir = std::env::temp_dir().join(format!("flyleaf-core-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("doc.toml");
+        std::fs::write(&path, "\u{feff}a = 1\r\n").unwrap();
+
+        let mut doc = Document::from_path(&path).expect("reads");
+        doc.tree_mut()["a"] = toml_edit::value(2);
+        assert!(doc.edited());
+        doc.save_to(&path).expect("saves");
+        assert!(!doc.edited());
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            "\u{feff}a = 2\r\n".as_bytes()
+        );
+        assert_eq!(
+            std::fs::read_dir(&dir).unwrap().count(),
+            1,
+            "the staged file is gone"
+        );
+
+        doc.tree_mut()["a"] = toml_edit::value(3);
+        let nowhere = dir.join("missing").join("doc.toml");
+        assert!(matches!(doc.save_to(&nowhere), Err(Error::Io(_))));
+        assert!(doc.edited(), "not marked saved");
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            "\u{feff}a = 2\r\n".as_bytes()
+        );
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     /// Bytes that are not UTF-8 and text that is not TOML are two different

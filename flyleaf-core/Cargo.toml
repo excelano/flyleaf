@@ -11,5 +11,15 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+# Reading and writing files. On by default; off for a target with no file
+# system, which is what the web build will be.
+[features]
+default = ["fs"]
+fs = ["dep:tempfile"]
+
 [dependencies]
 toml_edit.workspace = true
+# A save is written beside the file and renamed over it, so a crash mid-write
+# leaves the original whole. Pure Rust: its tree is declarations, not a C
+# library to compile.
+tempfile = { version = "3.27", optional = true }

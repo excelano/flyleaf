@@ -6,4 +6,4 @@ The editor widget is shared with [Slipcase Desktop](https://github.com/excelano/
 
     cargo run -- path/to/file.toml
 
-opens a file and shows it as a tree. Edits stay in memory for now; saving arrives with open and save-as.
+opens a file and shows it as a tree beside what a save would write. Ctrl+O, Ctrl+S and Ctrl+Shift+S open, save and save as; Ctrl+Z and Ctrl+Shift+Z undo and redo. A save keeps every comment, the key order, the whitespace and the quoting of everything that was not edited.

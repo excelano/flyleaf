@@ -17,7 +17,7 @@ rust-version.workspace = true
 # it did not ask for.
 [features]
 default = ["app"]
-app = ["dep:eframe"]
+app = ["dep:eframe", "dep:rfd"]
 
 [[bin]]
 name = "flyleaf"
@@ -32,3 +32,7 @@ flyleaf-core.workspace = true
 egui = "0.36"
 # The window, for the binary alone. Defaults carry accesskit, which stays on.
 eframe = { version = "0.36", optional = true }
+# File dialogs, for the binary alone. Defaults are `xdg-portal` and `wayland`,
+# both pure Rust; the `gtk3` feature links C through gtk-sys and stays off,
+# which is what taking the defaults does.
+rfd = { version = "0.17", optional = true }
