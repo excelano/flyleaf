@@ -34,7 +34,7 @@ Current plan for shape (adjustable):
 3. Point slipcase-desktop at it. A git dependency pinned by revision, not a path, so slipcase-desktop's three platform workflows keep building. Its UI must be functionally identical afterwards.
 4. Publish `flyleaf-core` and `flyleaf` 0.1 to crates.io and flip slipcase-desktop to the registry version. This was Phase 2's last step; it moved here because crates.io refuses a git or path dependency without a version, so slipcase-desktop cannot release again until flyleaf is published, and Phase 2 is too long to hold that.
 
-Phase 1 is done when slipcase-desktop builds against the published crate and behaves exactly as before.
+Phase 1 is done when slipcase-desktop builds against the published crate and behaves exactly as before. **Done 2026-09-07**, in one day, all eight slices, with the goldens holding through every one.
 
 Built in eight slices, each leaving slipcase-desktop building and behaving as before, each with its own check. "Behaving as before" is a claim the existing suite cannot make on its own: its tests check behaviours, the corpus runner checks only whether a tree appears, and the rest is `CHECKLIST.md`. Slice 0 turns the claim into something that fails.
 
@@ -45,7 +45,7 @@ Built in eight slices, each leaving slipcase-desktop building and behaving as be
 4. **Policy hook, in place.** Done 2026-09-07, hand check passed on Linux. Inside slipcase-desktop's `tree.rs`, before it moves, `render` takes a policy answering whether a path is protected and how a protected string is displayed; slipcase-desktop's implementation wraps the `slpc` constants and `display_name`, and the two protection tests move to its side. Reshaping here rather than during the move keeps slice 5 a move that can be diffed against the deleted file. Check: tests green, and `CHECKLIST.md`'s metadata items by hand, at least protected keys and the bidi payload name.
 5. **Tree moves to flyleaf.** Done 2026-09-07. `tree.rs` and its tests become the widget; slipcase-desktop deletes its copy and calls `flyleaf::render` with its policy. Check: tests green in both repos, the corpus runner, `CHECKLIST.md`'s metadata items by hand on Linux; Windows and macOS come through slipcase-desktop's own workflows, the widget having no platform arms.
 6. **The shell binary.** Done 2026-09-07. `flyleaf path.toml` opens the file and shows the tree; edits stay in memory and saving is Phase 2 item 6. Check: it runs, and nothing in slipcase-desktop changes.
-7. **Publish 0.1 and flip slipcase-desktop.** `flyleaf-core`, then `flyleaf`, then slipcase-desktop on `flyleaf = "0.1"`. Check: `cargo install flyleaf` works and slipcase-desktop's `cargo publish --dry-run` passes, which it cannot between slices 3 and 7.
+7. **Publish 0.1 and flip slipcase-desktop.** Done 2026-09-07: `flyleaf-core` and `flyleaf` 0.1.0 on crates.io, tag `v0.1.0`, slipcase-desktop on the registry version with its publish dry run passing. `flyleaf-core`, then `flyleaf`, then slipcase-desktop on `flyleaf = "0.1"`. Check: `cargo install flyleaf` works and slipcase-desktop's `cargo publish --dry-run` passes, which it cannot between slices 3 and 7.
 
 ### Phase 2 — Generalize
 
