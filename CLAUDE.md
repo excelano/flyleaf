@@ -100,6 +100,12 @@ permanent public record for no reader's benefit; slipcase-desktop has stripped
 it from pushed history twice. Read what you are about to commit rather than
 trusting what the harness composed.
 
+**Never run `cargo fmt` in slipcase-desktop.** That repository is not
+rustfmt-clean and has no fmt check; running it there during slice 3 rewrote
+eight files the slice never touched and swamped a six-file change. This
+repository is fmt-clean and CI holds it there; the other one is edited by
+hand, in its own style.
+
 **Prefer small, reviewable steps.** David verifies each slice of the
 extraction against slipcase-desktop by hand; a slice that cannot be diffed
 against what it replaced is too big.
