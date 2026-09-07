@@ -14,8 +14,9 @@ checked against them and taken off `KNOWN_TO_DIFFER` in the same commit.
 
 ## 1. A dotted-key or header prefix segment is rendered from its first definition
 
-**Status: to file against `toml-rs/toml`.** Not found in the tracker as of
-2026-09-07; #163 is the nearest and is about order rather than representation.
+**Status: filed 2026-09-07 as [toml-rs/toml#1214](https://github.com/toml-rs/toml/issues/1214).** Not found in the
+tracker before filing; #163 is the nearest and is about order rather than
+representation.
 
 Every segment of a dotted key or table header except the last is rendered
 from the key stored in the parent table, which is the one the first definition
@@ -49,9 +50,6 @@ representation and a caller can tell them apart.
 Corpus cases: `valid/key/dotted-01.toml`, `valid/key/dotted-02.toml`,
 `valid/spec-1.1.0/common-7.toml`, `valid/table/empty-name.toml`,
 `valid/table/with-literal-string.toml`, `valid/table/with-single-quotes.toml`.
-
-Draft title: *Prefix segments of dotted keys and headers are rendered from
-the key's first definition, not from each occurrence*.
 
 ---
 
