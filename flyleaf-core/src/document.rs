@@ -153,20 +153,57 @@ impl Document {
     /// sibling, which macOS's does for a file a dialog granted, needs its
     /// own arm here; `PROMPT.md` carries that under Phase 3.
     ///
+    /// A rename needs only the directory to be writable, so two things an
+    /// in-place write would do for free are done here on purpose: a file
+    /// marked read-only is refused rather than replaced, and the file keeps
+    /// the permissions it had rather than the staged file's. Both were
+    /// found by hand on 2026-09-07, when a read-only fixture saved without
+    /// a word and came back mode 0600.
+    ///
     /// # Errors
     ///
-    /// When the sibling cannot be created, written, or renamed over the
-    /// file. The document is not marked saved then.
+    /// When the file is read-only, or the sibling cannot be created,
+    /// written, or renamed over the file. The document is not marked saved
+    /// then.
     #[cfg(feature = "fs")]
     pub fn save_to(&mut self, path: &std::path::Path) -> Result<(), Error> {
         use std::io::Write as _;
-        let beside = path.parent().filter(|p| !p.as_os_str().is_empty());
-        let mut staged = match beside {
-            Some(dir) => tempfile::NamedTempFile::new_in(dir)?,
-            None => tempfile::NamedTempFile::new_in(".")?,
+        let dir = path
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or_else(|| std::path::Path::new("."));
+        let original = match std::fs::metadata(path) {
+            Ok(m) => Some(m),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+            Err(e) => return Err(e.into()),
         };
+        if original
+            .as_ref()
+            .is_some_and(|m| m.permissions().readonly())
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "the file is read-only",
+            )
+            .into());
+        }
+
+        let mut builder = tempfile::Builder::new();
+        // A temporary file is made private, which is right for one and
+        // wrong for a document somebody will keep: a new file gets what
+        // the umask gives any new file, and an existing one gets its own
+        // permissions back below.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            builder.permissions(std::fs::Permissions::from_mode(0o666));
+        }
+        let mut staged = builder.tempfile_in(dir)?;
         staged.write_all(self.render().as_bytes())?;
         staged.as_file().sync_all()?;
+        if let Some(original) = original {
+            staged.as_file().set_permissions(original.permissions())?;
+        }
         staged.persist(path).map_err(|e| e.error)?;
         self.mark_saved();
         Ok(())
@@ -605,6 +642,38 @@ id = 2
             std::fs::read(&path).unwrap(),
             "\u{feff}a = 2\r\n".as_bytes()
         );
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// A saved file keeps the permissions it had, and a read-only file is
+    /// refused rather than replaced. A rename needs only the directory to be
+    /// writable, so without these a read-only fixture saved without a word
+    /// and came back mode 0600, which is how they were found.
+    #[cfg(all(feature = "fs", unix))]
+    #[test]
+    fn a_save_keeps_the_mode_and_refuses_a_read_only_file() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let dir = std::env::temp_dir().join(format!("flyleaf-core-mode-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("doc.toml");
+        std::fs::write(&path, "a = 1\n").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o640)).unwrap();
+
+        let mut doc = Document::from_path(&path).expect("reads");
+        doc.tree_mut()["a"] = toml_edit::value(2);
+        doc.save_to(&path).expect("saves");
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o640, "the mode the file had");
+
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o440)).unwrap();
+        doc.tree_mut()["a"] = toml_edit::value(3);
+        match doc.save_to(&path) {
+            Err(Error::Io(e)) => assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied),
+            other => panic!("{other:?}"),
+        }
+        assert!(doc.edited(), "not marked saved");
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "a = 2\n");
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o640)).unwrap();
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
