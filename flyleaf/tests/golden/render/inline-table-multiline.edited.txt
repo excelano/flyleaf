@@ -127,3 +127,5 @@
 1x text 203.0,397.0 23.0x9.0 "text"
 1x rect 306.0,392.5 31.5x18.0
 1x text 310.0,396.0 23.0x10.0 "Add"
+1x rect 0.0,422.0 160.1x15.0
+1x text 4.0,424.0 151.0x10.0 "add a comment at the end"

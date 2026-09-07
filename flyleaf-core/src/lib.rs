@@ -14,10 +14,15 @@
 pub use toml_edit;
 
 mod array;
+mod comment;
 mod document;
 mod kind;
 
 pub use array::{convert_element, push_element, remove_element, set_element};
+pub use comment::{
+    comment_beside, comments_before, set_comment_beside, set_comments_before,
+    set_trailing_comments, trailing_comments,
+};
 pub use document::{Document, Error, Newline};
 pub use kind::{convert, Kind};
 

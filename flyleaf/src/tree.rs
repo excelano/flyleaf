@@ -22,13 +22,14 @@ use std::borrow::Cow;
 
 use egui::{self, Ui};
 use flyleaf_core::toml_edit::{
-    Array, Datetime, DocumentMut, InlineTable, Item, RawString, Table, Value,
+    Array, Datetime, Decor, DocumentMut, InlineTable, Item, Table, Value,
 };
 
 use flyleaf_core::{
-    add_inline_key, add_key, convert, convert_element, convert_inline_key, convert_key,
-    push_element, remove_element, remove_inline_key, remove_key, rename_inline_key, rename_key,
-    set_value, Kind,
+    add_inline_key, add_key, comment_beside, comments_before, convert, convert_element,
+    convert_inline_key, convert_key, push_element, remove_element, remove_inline_key, remove_key,
+    rename_inline_key, rename_key, set_comment_beside, set_comments_before, set_trailing_comments,
+    set_value, trailing_comments, Kind,
 };
 
 /// What the button that removes a key is marked with.
@@ -129,6 +130,17 @@ fn set_typed(ui: &Ui, id: egui::Id, text: String) {
     });
 }
 
+/// What was typed into a field, taken out once the field has been left and
+/// its text committed or dropped, so that nothing lingers to be committed
+/// twice.
+fn take_typed(ui: &Ui, id: egui::Id) -> Option<String> {
+    ui.data_mut(|d| {
+        d.get_temp_mut_or_default::<Typing>(typing_id())
+            .0
+            .remove(&id)
+    })
+}
+
 /// Forget every field's text in progress, and take the focus from whichever
 /// field has it.
 ///
@@ -174,16 +186,12 @@ fn value_entries(v: &Value) -> usize {
     }
 }
 
-/// Render a document, and let its scalars be edited.
+/// Render a document, and let its scalars, structure and comments be edited.
 ///
 /// Returns the path of the row that has keyboard focus, which is the row
 /// somebody is working in: the key field or the value field of a row, or the
 /// name field of a section. `None` when nothing in the tree has focus.
 pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) -> Option<Vec<String>> {
-    // Comments after the last item attach to no key, so no row can carry them.
-    // Dropping them would tell a reader their file holds less than it does.
-    let trailing = comment_lines(Some(doc.trailing()));
-
     let tree = Tree {
         policy,
         open_by_default: entries(doc.as_table()) <= OPEN_ALL_UP_TO,
@@ -196,12 +204,25 @@ pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) -> Option
     let mut path: Vec<String> = Vec::new();
     table(ui, doc.as_table_mut(), &mut path, &tree);
 
+    // Comments after the last item attach to no key, so no row can carry
+    // them. Dropping them would tell a reader their file holds less than it
+    // does, so they have a place of their own, and a way to be added.
+    let trailing = trailing_comments(doc);
+    ui.add_space(8.0);
     if !trailing.is_empty() {
-        ui.add_space(8.0);
+        // Set off from the last row, since they belong to nothing above.
+        // Only where there are some: a separator is as wide as the window,
+        // and `an_integer_stays_beside_its_key` measures the tree's width.
         ui.separator();
-        for line in trailing {
-            ui.label(comment_text(&line));
-        }
+    }
+    comments_field(ui, &path, "trailing", &trailing, |lines| {
+        set_trailing_comments(doc, lines);
+    });
+    if ui.small_button("add a comment at the end").clicked() {
+        let mut lines = trailing;
+        lines.push(String::new());
+        set_trailing_comments(doc, &lines);
+        focus(ui, slot_id(&path, "trailing", lines.len() - 1));
     }
 
     ui.data_mut(|d| d.get_temp::<Vec<String>>(selection_id()))
@@ -219,11 +240,10 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
         kinds: &Kind::ALL,
     };
 
-    for (key, item) in t.iter_mut() {
+    for (mut key, item) in t.iter_mut() {
         let name = key.get().to_owned();
-        let above = comment_lines(key.leaf_decor().prefix());
         path.push(name.clone());
-        entry(ui, &name, item, &above, path, &mut rows, tree);
+        entry(ui, &name, item, key.leaf_decor_mut(), path, &mut rows, tree);
         path.pop();
     }
 
@@ -234,12 +254,13 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
     }
 }
 
-/// One entry: a section for anything holding entries, a row for anything else.
+/// One entry: a section for anything holding entries, a row for anything
+/// else. `above` is the key's own decor, where a comment above a key lives.
 fn entry(
     ui: &mut Ui,
     name: &str,
     item: &mut Item,
-    above: &[String],
+    above: &mut Decor,
     path: &mut Vec<String>,
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
@@ -249,37 +270,43 @@ fn entry(
         Item::None => {}
         Item::Value(v) => value(ui, name, v, above, path, siblings, tree),
         Item::Table(t) => {
-            // A `[header]` carries its own comments rather than the key's.
-            comment_rows(ui, above);
-            comment_rows(ui, &comment_lines(t.decor().prefix()));
+            // A `[header]` carries its own comments rather than the key's,
+            // and a comment added to it goes there.
+            comments_above(ui, path, "above key", above);
+            comments_above(ui, path, "above", t.decor_mut());
+            // A table can always be written inline, and that is the only
+            // other thing it can be.
+            let becomes = |k: Kind| k == Kind::InlineTable;
+            let menu = Menu {
+                label: "table",
+                current: Some(Kind::Table),
+                becomes: &becomes,
+            };
             section(ui, name, tree, |ui| {
                 // Inside the section rather than beside its header: a
                 // `CollapsingHeader` draws its body as well as its title, and a
                 // body laid out sideways is what putting one in a row gives.
-                // A table can always be written inline, and that is the only
-                // other thing it can be.
-                let becomes = |k: Kind| k == Kind::InlineTable;
-                controls(
-                    ui,
-                    name,
-                    path,
-                    siblings,
-                    tree,
-                    Some((Kind::Table, &becomes)),
-                );
+                controls(ui, name, path, siblings, tree, &menu, t.decor_mut());
                 table(ui, t, path, tree);
             });
         }
         Item::ArrayOfTables(a) => {
-            // Neither a section nor a leaf: a section
-            // whose children are numbered sections, one per table.
-            comment_rows(ui, above);
+            // Neither a section nor a leaf: a section whose children are
+            // numbered sections, one per table. It is neither one table nor a
+            // value, and becomes nothing.
+            comments_above(ui, path, "above", above);
+            let becomes = |_: Kind| false;
+            let menu = Menu {
+                label: "array of tables",
+                current: None,
+                becomes: &becomes,
+            };
             section(ui, name, tree, |ui| {
-                controls(ui, name, path, siblings, tree, None);
+                controls(ui, name, path, siblings, tree, &menu, above);
                 for (n, t) in a.iter_mut().enumerate() {
                     let label = format!("[{n}]");
                     path.push(label.clone());
-                    comment_rows(ui, &comment_lines(t.decor().prefix()));
+                    comments_above(ui, path, "above", t.decor_mut());
                     section(ui, &label, tree, |ui| {
                         table(ui, t, path, tree);
                     });
@@ -290,12 +317,13 @@ fn entry(
     }
 }
 
-/// One value: an inline table is a section, everything else is a row.
+/// One value: an inline table or an array is a section, everything else is a
+/// row.
 fn value(
     ui: &mut Ui,
     name: &str,
     v: &mut Value,
-    above: &[String],
+    above: &mut Decor,
     path: &mut Vec<String>,
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
@@ -307,9 +335,7 @@ fn value(
     // 320-point field and truncated to nothing in a window the source pane
     // had half of. Found by hand; the headless frame is wide enough to hide
     // it.
-    comment_rows(ui, above);
-    let beside = comment_lines(v.decor().suffix());
-    let comment = joined(&beside);
+    comments_above(ui, path, "above", above);
 
     // What a section could become is decided before its body borrows it.
     // An inline table can be written as a table where the container holds
@@ -322,43 +348,43 @@ fn value(
     let kinds = siblings.kinds;
 
     match v {
-        Value::InlineTable(t) => {
-            let becomes = |k: Kind| k == Kind::Table && holds_tables;
-            comment_rows(ui, &beside);
-            section(ui, name, tree, |ui| {
-                controls(
-                    ui,
-                    name,
-                    path,
-                    siblings,
-                    tree,
-                    Some((Kind::InlineTable, &becomes)),
-                );
-                inline_table(ui, t, path, tree);
-            });
-        }
-        Value::Array(a) => {
-            let becomes = |k: Kind| {
-                single
-                    .as_ref()
-                    .is_some_and(|e| kinds.contains(&k) && convert(e, k).is_some())
+        Value::InlineTable(_) | Value::Array(_) => {
+            // A comment after a section's closing bracket has no row to sit
+            // beside, so it is a line above the section, like the others.
+            beside_as_line(ui, path, v);
+            let (label, current, becomes): (&str, Option<Kind>, Becomes) =
+                if matches!(v, Value::InlineTable(_)) {
+                    (
+                        "inline table",
+                        Some(Kind::InlineTable),
+                        Box::new(move |k: Kind| k == Kind::Table && holds_tables),
+                    )
+                } else {
+                    (
+                        "array",
+                        Some(Kind::Array),
+                        Box::new(move |k: Kind| {
+                            single
+                                .as_ref()
+                                .is_some_and(|e| kinds.contains(&k) && convert(e, k).is_some())
+                        }),
+                    )
+                };
+            let menu = Menu {
+                label,
+                current,
+                becomes: &*becomes,
             };
-            comment_rows(ui, &beside);
             section(ui, name, tree, |ui| {
-                controls(
-                    ui,
-                    name,
-                    path,
-                    siblings,
-                    tree,
-                    Some((Kind::Array, &becomes)),
-                );
-                array(ui, a, path, tree);
+                controls(ui, name, path, siblings, tree, &menu, above);
+                match v {
+                    Value::InlineTable(t) => inline_table(ui, t, path, tree),
+                    Value::Array(a) => array(ui, a, path, tree),
+                    _ => {}
+                }
             });
         }
-        _ => row(ui, name, comment.as_deref(), path, siblings, tree, |ui| {
-            scalar(ui, v, path, tree, kinds)
-        }),
+        _ => row(ui, name, v, above, path, siblings, tree),
     }
 }
 
@@ -411,11 +437,10 @@ fn element(
     tree: &Tree<'_>,
     change: &mut Option<ArrayChange>,
 ) {
-    // In a multi-line array a comment sits before its element, and is a
-    // line of its own here; on one line it sits after, and stays beside.
-    comment_rows(ui, &comment_lines(v.decor().prefix()));
-    let beside = comment_lines(v.decor().suffix());
-    let comment = joined(&beside);
+    // In a multi-line array a comment sits before its element, in the
+    // element's own prefix, and is a line of its own here; on one line it
+    // sits after, and stays beside.
+    comments_above(ui, path, "above", v.decor_mut());
 
     let single = match v {
         Value::Array(a) if a.len() == 1 => a.get(0).cloned(),
@@ -434,31 +459,43 @@ fn element(
     };
 
     let asked = match v {
-        Value::InlineTable(t) => section(ui, label, tree, |ui| {
-            let asked = line_of(
-                ui,
-                path,
-                Line::bare(),
-                name,
-                |ui| Reported::kind(kind_button(ui, Kind::InlineTable, &Kind::VALUES, |_| false)),
-                remove,
-            );
-            inline_table(ui, t, path, tree);
-            asked
-        })
-        .flatten(),
-        Value::Array(inner) => {
-            let becomes = |k: Kind| single.as_ref().is_some_and(|e| convert(e, k).is_some());
+        Value::InlineTable(_) | Value::Array(_) => {
+            beside_as_line(ui, path, v);
+            let (label, current, becomes): (&str, Option<Kind>, Becomes) =
+                if matches!(v, Value::InlineTable(_)) {
+                    ("inline table", Some(Kind::InlineTable), Box::new(|_| false))
+                } else {
+                    (
+                        "array",
+                        Some(Kind::Array),
+                        Box::new(move |k: Kind| {
+                            single.as_ref().is_some_and(|e| convert(e, k).is_some())
+                        }),
+                    )
+                };
+            let menu = Menu {
+                label,
+                current,
+                becomes: &*becomes,
+            };
+            let slots = Slots {
+                above: true,
+                beside: false,
+            };
             section(ui, label, tree, |ui| {
                 let asked = line_of(
                     ui,
                     path,
-                    Line::bare(),
+                    true,
                     name,
-                    |ui| Reported::kind(kind_button(ui, Kind::Array, &Kind::VALUES, becomes)),
+                    |ui| Reported::asked(row_menu(ui, &menu, &Kind::VALUES, slots)),
                     remove,
                 );
-                array(ui, inner, path, tree);
+                match v {
+                    Value::InlineTable(t) => inline_table(ui, t, path, tree),
+                    Value::Array(a) => array(ui, a, path, tree),
+                    _ => {}
+                }
                 asked
             })
             .flatten()
@@ -466,19 +503,21 @@ fn element(
         _ => line_of(
             ui,
             path,
-            Line {
-                comment: comment.as_deref(),
-                removable: true,
-            },
+            true,
             name,
-            |ui| scalar(ui, v, path, tree, &Kind::VALUES),
+            |ui| scalar(ui, v, path, tree, &Kind::VALUES, true),
             remove,
         ),
     };
     if removed {
         *change = Some(ArrayChange::Remove(index));
-    } else if let Some(kind) = asked {
-        *change = Some(ArrayChange::Convert(index, kind));
+        return;
+    }
+    match asked {
+        Some(Asked::Become(kind)) => *change = Some(ArrayChange::Convert(index, kind)),
+        Some(Asked::CommentAbove) => add_comment_above(ui, path, v.decor_mut()),
+        Some(Asked::CommentBeside) => add_comment_beside(ui, path, v),
+        None => {}
     }
 }
 
@@ -522,11 +561,10 @@ fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, tree: 
         kinds: &Kind::VALUES,
     };
 
-    for (key, v) in t.iter_mut() {
+    for (mut key, v) in t.iter_mut() {
         let name = key.get().to_owned();
-        let above = comment_lines(key.leaf_decor().prefix());
         path.push(name.clone());
-        value(ui, &name, v, &above, path, &mut rows, tree);
+        value(ui, &name, v, key.leaf_decor_mut(), path, &mut rows, tree);
         path.pop();
     }
 
@@ -625,49 +663,85 @@ fn apply_inline(t: &mut InlineTable, change: Change) {
     }
 }
 
-/// What a row's value widget reports back: whether it has focus, and the
-/// kind somebody asked it to become.
+/// What a row's menu was asked for.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Asked {
+    /// Become another kind.
+    Become(Kind),
+    /// Gain a comment line above.
+    CommentAbove,
+    /// Gain a comment beside the value.
+    CommentBeside,
+}
+
+/// What a row's value widget reports back: whether it has focus, and what
+/// its menu was asked for.
 struct Reported {
     focused: bool,
-    convert: Option<Kind>,
+    asked: Option<Asked>,
 }
 
 impl Reported {
-    fn kind(convert: Option<Kind>) -> Self {
+    fn asked(asked: Option<Asked>) -> Self {
         Self {
             focused: false,
-            convert,
+            asked,
         }
     }
 }
 
-/// What a value is, as a small button, and what it could become, as the
+/// Whether a thing could become a kind.
+type Becomes = Box<dyn Fn(Kind) -> bool>;
+
+/// What a row's menu says about the thing it is on: the word for what it
+/// is, its kind where it has one, and which other kinds it could become.
+struct Menu<'a> {
+    label: &'static str,
+    current: Option<Kind>,
+    becomes: &'a dyn Fn(Kind) -> bool,
+}
+
+/// Which comment slots a row's menu can offer to fill.
+#[derive(Clone, Copy)]
+struct Slots {
+    above: bool,
+    beside: bool,
+}
+
+/// What a value is, as a small button, and what can be done to it, as the
 /// button's menu: every other kind the container holds, enabled where the
-/// value reads as it. A kind that would be a guess is shown and cannot be
-/// chosen, which is how somebody learns that `true` does not become `1`
-/// without being told.
-fn kind_button(
-    ui: &mut Ui,
-    current: Kind,
-    options: &[Kind],
-    becomes: impl Fn(Kind) -> bool,
-) -> Option<Kind> {
+/// value reads as it, and a comment to add where there is room for one. A
+/// kind that would be a guess is shown and cannot be chosen, which is how
+/// somebody learns that `true` does not become `1` without being told.
+fn row_menu(ui: &mut Ui, menu: &Menu<'_>, options: &[Kind], slots: Slots) -> Option<Asked> {
     let mut chosen = None;
-    ui.menu_button(egui::RichText::new(current.label()).weak().small(), |ui| {
-        for kind in options.iter().copied().filter(|k| *k != current) {
+    ui.menu_button(egui::RichText::new(menu.label).weak().small(), |ui| {
+        for kind in options.iter().copied().filter(|k| Some(*k) != menu.current) {
             if ui
-                .add_enabled(becomes(kind), egui::Button::new(kind.label()))
+                .add_enabled((menu.becomes)(kind), egui::Button::new(kind.label()))
                 .clicked()
             {
-                chosen = Some(kind);
+                chosen = Some(Asked::Become(kind));
                 ui.close();
             }
+        }
+        if slots.above || slots.beside {
+            ui.separator();
+        }
+        if slots.above && ui.button("Add comment above").clicked() {
+            chosen = Some(Asked::CommentAbove);
+            ui.close();
+        }
+        if slots.beside && ui.button("Add comment beside").clicked() {
+            chosen = Some(Asked::CommentBeside);
+            ui.close();
         }
     });
     chosen
 }
 
-/// The widget a value gets, chosen by its TOML type and nothing else.
+/// The widget a value gets, chosen by its TOML type and nothing else, then
+/// its menu, then the comment beside it where there is one.
 ///
 /// Reads the current value to seed the widget and returns a replacement rather
 /// than writing through the borrow it is holding. [`set_value`] puts back the
@@ -679,6 +753,7 @@ fn scalar(
     path: &[String],
     tree: &Tree<'_>,
     kinds: &[Kind],
+    removable: bool,
 ) -> Reported {
     let editable = !tree.policy.protected(path);
     let id = ui.make_persistent_id(path.join("."));
@@ -755,12 +830,47 @@ fn scalar(
         set_value(v, new);
     }
 
-    let convert = if editable {
-        kind_button(ui, Kind::of_value(v), kinds, |k| convert(v, k).is_some())
+    let beside = comment_beside(v.decor());
+    let asked = if editable {
+        let becomes = |k: Kind| convert(v, k).is_some();
+        let menu = Menu {
+            label: Kind::of_value(v).label(),
+            current: Some(Kind::of_value(v)),
+            becomes: &becomes,
+        };
+        let slots = Slots {
+            above: true,
+            beside: beside.is_none(),
+        };
+        row_menu(ui, &menu, kinds, slots)
     } else {
         None
     };
-    Reported { focused, convert }
+
+    // The comment is capped so it cannot eat the room the remove control
+    // needs, and truncates instead.
+    //
+    // Uncapped, a comment long enough to fill the row pushed that control
+    // clean out of the window, and the only way to reach it was to widen
+    // the window. Found on Apple silicon by zooming, which shrinks the
+    // space a row has in points; then reproduced at 1x on an ordinary
+    // display with a one-line comment, which is what showed it was nothing
+    // to do with zoom or with the machine.
+    //
+    // Anchoring the control to the right edge instead — a right-to-left
+    // layout — fixes the clipping and was tried first. It spreads every row
+    // to the full window width, which `an_integer_stays_beside_its_key`
+    // forbids for its own reason, and that test caught it.
+    if let Some(current) = beside {
+        let room = (ui.available_width() - remove_room(ui, removable)).max(0.0);
+        let committed = comment_field(ui, slot_id(path, "beside", 0), &current, room);
+        focused |= ui.memory(|m| m.has_focus(slot_id(path, "beside", 0)));
+        if let Some(text) = committed {
+            let text = text.trim();
+            set_comment_beside(v.decor_mut(), (!text.is_empty()).then_some(text));
+        }
+    }
+    Reported { focused, asked }
 }
 
 /// Read a date or time, putting back the leading zero TOML wants on an hour.
@@ -848,63 +958,49 @@ fn section<R>(
 fn row(
     ui: &mut Ui,
     name: &str,
-    comment: Option<&str>,
+    v: &mut Value,
+    above: &mut Decor,
     path: &[String],
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
-    value: impl FnOnce(&mut Ui) -> Reported,
 ) {
     let protected = tree.policy.protected(path);
-    let line = Line {
-        comment,
-        removable: !protected,
-    };
+    let kinds = siblings.kinds;
     let mut deleted = false;
     let asked = line_of(
         ui,
         path,
-        line,
+        !protected,
         |ui| key_name(ui, name, path, siblings, tree),
-        value,
+        |ui| scalar(ui, v, path, tree, kinds, !protected),
         |ui| deleted = delete_button(ui, protected),
     );
     if deleted {
         *siblings.change = Some(Change::Delete(name.to_owned()));
-    } else if let Some(kind) = asked {
-        *siblings.change = Some(Change::Convert(name.to_owned(), kind));
+        return;
     }
-}
-
-/// What a line is drawn with besides its parts.
-#[derive(Clone, Copy)]
-struct Line<'a> {
-    comment: Option<&'a str>,
-    /// Whether the line has a control that removes it, which is what a
-    /// comment beside it must leave room for.
-    removable: bool,
-}
-
-impl Line<'_> {
-    fn bare() -> Self {
-        Self {
-            comment: None,
-            removable: true,
+    match asked {
+        Some(Asked::Become(kind)) => {
+            *siblings.change = Some(Change::Convert(name.to_owned(), kind));
         }
+        Some(Asked::CommentAbove) => add_comment_above(ui, path, above),
+        Some(Asked::CommentBeside) => add_comment_beside(ui, path, v),
+        None => {}
     }
 }
 
 /// One line of the tree, whatever it names: the part that names it, the part
-/// that holds its value, the comment beside it, and the way to remove it.
-/// Highlighted and selected when either part has focus. Returns the kind the
-/// value part asked to become, if any.
+/// that holds its value, and the way to remove it. Highlighted and selected
+/// when either part has focus. Returns what the value part's menu was asked
+/// for, if anything.
 fn line_of(
     ui: &mut Ui,
     path: &[String],
-    line: Line<'_>,
+    removable: bool,
     name: impl FnOnce(&mut Ui) -> bool,
     value: impl FnOnce(&mut Ui) -> Reported,
     remove: impl FnOnce(&mut Ui),
-) -> Option<Kind> {
+) -> Option<Asked> {
     // A place for the highlight, taken before the row is drawn so that it is
     // painted under the row rather than over it.
     let background = ui.painter().add(egui::Shape::Noop);
@@ -917,29 +1013,10 @@ fn line_of(
         });
         let reported = value(ui);
         focused |= reported.focused;
-        asked = reported.convert;
-        // The comment is capped so it cannot eat the room the remove control
-        // needs, and truncates instead.
-        //
-        // Uncapped, a comment long enough to fill the row pushed that control
-        // clean out of the window, and the only way to reach it was to widen
-        // the window. Found on Apple silicon by zooming, which shrinks the
-        // space a row has in points; then reproduced at 1x on an ordinary
-        // display with a one-line comment, which is what showed it was nothing
-        // to do with zoom or with the machine.
-        //
-        // Anchoring the control to the right edge instead — a right-to-left
-        // layout — fixes the clipping and was tried first. It spreads every row
-        // to the full window width, which `an_integer_stays_beside_its_key`
-        // forbids for its own reason, and that test caught it.
-        if let Some(c) = line.comment {
-            let room = (ui.available_width() - remove_room(ui, line.removable)).max(0.0);
-            ui.scope(|ui| {
-                ui.set_max_width(room);
-                ui.add(egui::Label::new(comment_text(c)).truncate());
-            });
+        asked = reported.asked;
+        if removable {
+            remove(ui);
         }
-        remove(ui);
     });
     if focused {
         select(ui, path, background, drawn.response.rect);
@@ -978,37 +1055,44 @@ fn remove_room(ui: &Ui, removable: bool) -> f32 {
 }
 
 /// A section's own name, what it is and could become, and the way to remove
-/// it, drawn inside the section. `kind` is `None` for an array of tables,
-/// which is neither one table nor a value and becomes nothing.
+/// it, drawn inside the section. `above` is where a comment added to it
+/// goes: a table's own decor for a `[header]`, the key's for anything else.
 fn controls(
     ui: &mut Ui,
     name: &str,
     path: &[String],
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
-    kind: Option<(Kind, &dyn Fn(Kind) -> bool)>,
+    menu: &Menu<'_>,
+    above: &mut Decor,
 ) {
     if tree.policy.protected(path) {
         return;
     }
     let kinds = siblings.kinds;
+    let slots = Slots {
+        above: true,
+        beside: false,
+    };
     let mut deleted = false;
     let asked = line_of(
         ui,
         path,
-        Line::bare(),
+        true,
         |ui| key_name(ui, name, path, siblings, tree),
-        |ui| {
-            Reported::kind(
-                kind.and_then(|(current, becomes)| kind_button(ui, current, kinds, becomes)),
-            )
-        },
+        |ui| Reported::asked(row_menu(ui, menu, kinds, slots)),
         |ui| deleted = delete_button(ui, false),
     );
     if deleted {
         *siblings.change = Some(Change::Delete(name.to_owned()));
-    } else if let Some(kind) = asked {
-        *siblings.change = Some(Change::Convert(name.to_owned(), kind));
+        return;
+    }
+    match asked {
+        Some(Asked::Become(kind)) => {
+            *siblings.change = Some(Change::Convert(name.to_owned(), kind));
+        }
+        Some(Asked::CommentAbove) => add_comment_above(ui, path, above),
+        Some(Asked::CommentBeside) | None => {}
     }
 }
 
@@ -1054,6 +1138,14 @@ fn key_name(
 /// Not as it is typed: renaming `first` to `primary` one keystroke at a time
 /// would rename it to `f` on the way, and then to `fi`, each one a key of its
 /// own.
+///
+/// What is committed is what was typed, not what the field shows: focus can
+/// be gone before the field draws, since egui takes it away on Escape at
+/// the start of the frame and a widget drawn earlier can claim it on a
+/// click, and the field then shows the document's text again. Measured on
+/// 2026-09-07, when a comment edited and left with Escape never reached the
+/// document; a key's name had the same defect and nobody had left one that
+/// way.
 fn key_field(ui: &mut Ui, id: egui::Id, current: &str) -> Option<String> {
     let focused = ui.memory(|m| m.has_focus(id));
     let mut text = if focused {
@@ -1069,7 +1161,21 @@ fn key_field(ui: &mut Ui, id: egui::Id, current: &str) -> Option<String> {
     if response.changed() {
         set_typed(ui, id, text.clone());
     }
-    (response.lost_focus() && text != current).then_some(text)
+    committed_on_leaving(ui, id, &response, current)
+}
+
+/// What a field that has just been left should commit: what was typed into
+/// it, where that differs from what the document holds.
+fn committed_on_leaving(
+    ui: &Ui,
+    id: egui::Id,
+    response: &egui::Response,
+    current: &str,
+) -> Option<String> {
+    if !response.lost_focus() {
+        return None;
+    }
+    take_typed(ui, id).filter(|typed| typed != current)
 }
 
 /// The way to remove a key, where removing it is allowed; says whether it
@@ -1136,51 +1242,120 @@ fn add_row(
     });
 }
 
-/// Comment lines above a row or a section, one line each, as they are in
-/// the file.
-fn comment_rows(ui: &mut Ui, lines: &[String]) {
-    for line in lines {
-        ui.label(comment_text(line));
+/// The id of a comment field: the row's path, which slot, and which line.
+/// Made from the path rather than the `Ui` it is drawn in, so that the caller
+/// adding a line can ask for its focus before it exists.
+fn slot_id(path: &[String], slot: &str, index: usize) -> egui::Id {
+    egui::Id::new((path.join("."), "comment", slot.to_owned(), index))
+}
+
+/// Ask for the focus a field will have once it is drawn.
+fn focus(ui: &Ui, id: egui::Id) {
+    ui.memory_mut(|m| m.request_focus(id));
+}
+
+/// The comment lines above a row or a section, one field each, as they are
+/// in the file. A line committed empty is removed.
+fn comments_above(ui: &mut Ui, path: &[String], slot: &str, decor: &mut Decor) {
+    let lines = comments_before(decor);
+    comments_field(ui, path, slot, &lines, |lines| {
+        set_comments_before(decor, lines);
+    });
+}
+
+/// Comment lines as fields, one each, wherever they live: the writer is
+/// called with the lines as they should now be, once any of them has been
+/// left with a change.
+fn comments_field(
+    ui: &mut Ui,
+    path: &[String],
+    slot: &str,
+    lines: &[String],
+    write: impl FnOnce(&[String]),
+) {
+    let mut edited = None;
+    for (i, line) in lines.iter().enumerate() {
+        let room = ui.available_width();
+        if let Some(committed) = comment_field(ui, slot_id(path, slot, i), line, room) {
+            let mut lines = lines.to_vec();
+            let committed = committed.trim();
+            if committed.is_empty() {
+                lines.remove(i);
+            } else {
+                committed.clone_into(&mut lines[i]);
+            }
+            edited = Some(lines);
+        }
+    }
+    if let Some(lines) = edited {
+        write(&lines);
     }
 }
 
-/// How a comment reads: quieter than the data it annotates, and still a comment.
-fn comment_text(line: &str) -> egui::RichText {
-    egui::RichText::new(format!("# {line}")).italics().weak()
+/// A comment beside a section, which has no row to sit beside, drawn as a
+/// line above it instead.
+fn beside_as_line(ui: &mut Ui, path: &[String], v: &mut Value) {
+    if let Some(current) = comment_beside(v.decor()) {
+        let room = ui.available_width();
+        if let Some(text) = comment_field(ui, slot_id(path, "beside", 0), &current, room) {
+            let text = text.trim();
+            set_comment_beside(v.decor_mut(), (!text.is_empty()).then_some(text));
+        }
+    }
 }
 
-/// The comment lines in a piece of decor, with their `#` and their surrounding
-/// whitespace removed.
-///
-/// Decor holds blank lines and indentation as well as comments, so this keeps
-/// only the lines that are comments. A parsed document has despanned decor, so
-/// the text is there to read; one built in memory may not, and then there is
-/// nothing to show.
-fn comment_lines(raw: Option<&RawString>) -> Vec<String> {
-    let Some(text) = raw.and_then(RawString::as_str) else {
-        return Vec::new();
-    };
-    text.lines()
-        .filter_map(|l| l.trim().strip_prefix('#').map(|c| c.trim().to_owned()))
-        .collect()
-}
-
-/// Several comment lines as the one line a row has room for.
-fn joined(lines: &[String]) -> Option<String> {
-    if lines.is_empty() {
-        None
+/// One comment as a field: the `#` as a label, the text after it in a field
+/// with no frame, which takes effect when it is left, like a key's name.
+/// Returns the text committed, where one was.
+fn comment_field(ui: &mut Ui, id: egui::Id, current: &str, room: f32) -> Option<String> {
+    let focused = ui.memory(|m| m.has_focus(id));
+    let mut text = if focused {
+        typed(ui, id).unwrap_or_else(|| current.to_owned())
     } else {
-        Some(lines.join(" "))
-    }
+        current.to_owned()
+    };
+    let mut committed = None;
+    ui.horizontal(|ui| {
+        ui.set_max_width(room);
+        ui.label(egui::RichText::new("#").italics().weak());
+        let weak = ui.visuals().weak_text_color();
+        let field = egui::TextEdit::singleline(&mut text)
+            .id(id)
+            .frame(egui::Frame::NONE)
+            .font(egui::TextStyle::Body)
+            .text_color(weak)
+            .desired_width(f32::INFINITY);
+        let response = ui.add(field);
+        if response.changed() {
+            set_typed(ui, id, text.clone());
+        }
+        committed = committed_on_leaving(ui, id, &response, current);
+    });
+    committed
+}
+
+/// Add an empty comment line above, and put the cursor in it.
+fn add_comment_above(ui: &Ui, path: &[String], decor: &mut Decor) {
+    let mut lines = comments_before(decor);
+    lines.push(String::new());
+    set_comments_before(decor, &lines);
+    focus(ui, slot_id(path, "above", lines.len() - 1));
+}
+
+/// Add an empty comment beside a value, and put the cursor in it.
+fn add_comment_beside(ui: &Ui, path: &[String], v: &mut Value) {
+    set_comment_beside(v.decor_mut(), Some(""));
+    focus(ui, slot_id(path, "beside", 0));
 }
 
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
 
-    use super::{comment_lines, displayed, render, Policy};
+    use super::{displayed, render, Policy};
     use flyleaf_core::toml_edit::DocumentMut;
     use flyleaf_core::Kind;
+    use flyleaf_core::{comment_beside, comments_before, trailing_comments};
 
     /// A policy that would rewrite every string it was shown, so that a
     /// string reaching it is the finding.
@@ -1447,10 +1622,7 @@ id = 2
     fn a_comment_above_a_key_is_found_and_blank_lines_are_not() {
         let doc = parsed();
         let key = doc.as_table().key("slipcase_version").expect("the key");
-        assert_eq!(
-            comment_lines(key.leaf_decor().prefix()),
-            ["a document comment"]
-        );
+        assert_eq!(comments_before(key.leaf_decor()), ["a document comment"]);
     }
 
     /// A comment after the value on the same line sits in the value's suffix
@@ -1461,7 +1633,7 @@ id = 2
         let v = doc.as_table()["slipcase_version"]
             .as_value()
             .expect("a value");
-        assert_eq!(comment_lines(v.decor().suffix()), ["the version"]);
+        assert_eq!(comment_beside(v.decor()).as_deref(), Some("the version"));
     }
 
     /// A comment after the last item attaches to no key, so no row can carry
@@ -1469,10 +1641,7 @@ id = 2
     #[test]
     fn a_comment_after_the_last_item_attaches_to_nothing() {
         let doc = parsed();
-        assert_eq!(
-            comment_lines(Some(doc.trailing())),
-            ["a comment attached to nothing"]
-        );
+        assert_eq!(trailing_comments(&doc), ["a comment attached to nothing"]);
     }
 
     /// A comment above a dotted key attaches to the leaf segment rather than
@@ -1484,14 +1653,11 @@ id = 2
         let types = doc.as_table()["types"].as_table().expect("a table");
 
         let outer = types.key("dotted").expect("the segment the dot implies");
-        assert!(comment_lines(outer.leaf_decor().prefix()).is_empty());
+        assert!(comments_before(outer.leaf_decor()).is_empty());
 
         let implied = types["dotted"].as_table().expect("the implied table");
         let leaf = implied.key("key").expect("the leaf segment");
-        assert_eq!(
-            comment_lines(leaf.leaf_decor().prefix()),
-            ["above a dotted key"]
-        );
+        assert_eq!(comments_before(leaf.leaf_decor()), ["above a dotted key"]);
     }
 
     /// One frame at 900 points wide: every text drawn, with where, and what
@@ -1638,6 +1804,49 @@ id = 2
         frame(&ctx, &mut doc, click);
         let (_, selected) = frame(&ctx, &mut doc, Vec::new());
         assert_eq!(selected.as_deref(), Some(&["second".to_owned()][..]));
+    }
+
+    /// A comment edited in its field reaches the document when the field is
+    /// left, and not before: it commits on blur like a key's name, so the
+    /// document changes once and the history holds one step.
+    #[test]
+    fn a_comment_reaches_the_document_when_its_field_is_left() {
+        let ctx = instant();
+        let mut doc: DocumentMut = "# above\na = 1\n".parse().expect("valid TOML");
+        let id = super::slot_id(&["a".to_owned()], "above", 0);
+        ctx.memory_mut(|m| m.request_focus(id));
+        frame(&ctx, &mut doc, vec![egui::Event::Text(", more".to_owned())]);
+        assert_eq!(
+            doc.to_string(),
+            "# above\na = 1\n",
+            "not committed while focused"
+        );
+
+        let escape = egui::Event::Key {
+            key: egui::Key::Escape,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(&ctx, &mut doc, vec![escape]);
+        assert_eq!(doc.to_string(), "# above, more\na = 1\n");
+    }
+
+    /// Asking for a comment above a row adds an empty line there and puts
+    /// the cursor in it, so that the next keystroke lands in the comment.
+    #[test]
+    fn adding_a_comment_above_makes_an_empty_line_with_the_cursor_in_it() {
+        let ctx = instant();
+        let mut doc: DocumentMut = "a = 1\n".parse().expect("valid TOML");
+        let path = vec!["a".to_owned()];
+        ctx.run_ui(egui::RawInput::default(), |ui| {
+            let mut key = doc.as_table_mut().key_mut("a").unwrap();
+            super::add_comment_above(ui, &path, key.leaf_decor_mut());
+        })
+        .drop_without_applying_deltas();
+        assert_eq!(doc.to_string(), "#\na = 1\n");
+        assert!(ctx.memory(|m| m.has_focus(super::slot_id(&path, "above", 0))));
     }
 
     /// An array is a section whose elements are rows named by their index,
