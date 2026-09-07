@@ -28,7 +28,7 @@ use flyleaf::render;
 use flyleaf_core::toml_edit::{Datetime, DocumentMut, InlineTable, Item, Table, Value};
 use flyleaf_core::{
     add_inline_key, add_key, remove_inline_key, remove_key, rename_inline_key, rename_key,
-    set_value, NewKey,
+    set_value, Kind,
 };
 
 /// The width every fixture is rendered in, in points.
@@ -225,7 +225,7 @@ fn edit_structure(t: &mut Table) {
             _ => {}
         }
     }
-    for kind in NewKey::ALL {
+    for kind in Kind::ALL {
         assert!(add_key(t, &added_name(kind), kind), "add {kind:?}");
     }
     if let Some(first) = names.first() {
@@ -246,7 +246,7 @@ fn edit_inline_structure(t: &mut InlineTable) {
             edit_inline_structure(inner);
         }
     }
-    for kind in NewKey::SCALARS {
+    for kind in Kind::VALUES {
         assert!(add_inline_key(t, &added_name(kind), kind), "add {kind:?}");
     }
     if let Some(first) = names.first() {
@@ -260,7 +260,7 @@ fn edit_inline_structure(t: &mut InlineTable) {
     }
 }
 
-fn added_name(kind: NewKey) -> String {
+fn added_name(kind: Kind) -> String {
     format!("added_{}", kind.label().replace(' ', "_"))
 }
 

@@ -13,100 +13,22 @@
 
 pub use toml_edit;
 
+mod array;
 mod document;
+mod kind;
 
+pub use array::{convert_element, push_element, remove_element, set_element};
 pub use document::{Document, Error, Newline};
+pub use kind::{convert, Kind};
 
-use toml_edit::{Datetime, InlineTable, Item, Key, Table, Value};
-
-/// What a new key starts as.
-///
-/// The scalar types, and a table to put them in. An array and an array of
-/// tables are structure inside structure and are not offered yet.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum NewKey {
-    /// An empty string.
-    Text,
-    /// Zero.
-    Integer,
-    /// Zero.
-    Float,
-    /// False.
-    Boolean,
-    /// The epoch, which is a date somebody will replace rather than a guess at
-    /// the one they meant.
-    Datetime,
-    /// An empty table to put keys in.
-    Table,
-}
-
-impl NewKey {
-    /// The kinds an inline table can hold.
-    ///
-    /// It holds values, and a table is not one. A table inside an inline table
-    /// would have to be another inline table, which is structure inside
-    /// structure and is not offered any more than an array is.
-    pub const SCALARS: [Self; 5] = [
-        Self::Text,
-        Self::Integer,
-        Self::Float,
-        Self::Boolean,
-        Self::Datetime,
-    ];
-
-    /// Every kind, in the order a picker offers them.
-    pub const ALL: [Self; 6] = [
-        Self::Text,
-        Self::Integer,
-        Self::Float,
-        Self::Boolean,
-        Self::Datetime,
-        Self::Table,
-    ];
-
-    /// What it is called where somebody chooses it.
-    #[must_use]
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Text => "text",
-            Self::Integer => "integer",
-            Self::Float => "float",
-            Self::Boolean => "boolean",
-            Self::Datetime => "date and time",
-            Self::Table => "table",
-        }
-    }
-
-    /// What it starts as, where only a value will do.
-    fn as_value(self) -> Option<Value> {
-        match self.item() {
-            Item::Value(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    fn item(self) -> Item {
-        match self {
-            Self::Text => Item::Value(Value::from("")),
-            Self::Integer => Item::Value(Value::from(0_i64)),
-            Self::Float => Item::Value(Value::from(0.0_f64)),
-            Self::Boolean => Item::Value(Value::from(false)),
-            Self::Datetime => Item::Value(Value::from(
-                "1970-01-01T00:00:00Z"
-                    .parse::<Datetime>()
-                    .expect("the epoch is a datetime"),
-            )),
-            Self::Table => Item::Table(Table::new()),
-        }
-    }
-}
+use toml_edit::{InlineTable, Item, Key, Table, Value};
 
 /// Add a key to a table.
 ///
 /// Refuses an empty name and one already there: inserting over an existing key
 /// would replace it, and losing a value to a name collision is not what
 /// pressing Add asks for.
-pub fn add_key(t: &mut Table, name: &str, kind: NewKey) -> bool {
+pub fn add_key(t: &mut Table, name: &str, kind: Kind) -> bool {
     if name.is_empty() || t.contains_key(name) {
         return false;
     }
@@ -156,7 +78,7 @@ pub fn rename_key(t: &mut Table, from: &str, to: &str) -> bool {
 ///
 /// The same refusals as [`add_key`], and one more: a kind an inline table
 /// cannot hold.
-pub fn add_inline_key(t: &mut InlineTable, name: &str, kind: NewKey) -> bool {
+pub fn add_inline_key(t: &mut InlineTable, name: &str, kind: Kind) -> bool {
     if name.is_empty() || t.contains_key(name) {
         return false;
     }
@@ -205,6 +127,99 @@ pub fn rename_inline_key(t: &mut InlineTable, from: &str, to: &str) -> bool {
     true
 }
 
+/// Change a key's value to another kind, where it reads as one, keeping its
+/// place and its decor.
+///
+/// A value becomes another value through [`convert`]. A table becomes an
+/// inline table and an inline table becomes a table through `toml_edit`'s
+/// own conversions, which is the one change here that is about layout rather
+/// than type: `[owner]` and `owner = { ... }` hold the same thing, and which
+/// one a file uses is a decision this makes explicit. Refuses what would be a
+/// guess, and an array of tables, which is neither one table nor a value.
+pub fn convert_key(t: &mut Table, name: &str, to: Kind) -> bool {
+    let Some(item) = t.get_mut(name) else {
+        return false;
+    };
+    match (item, to) {
+        (Item::Value(v), to) if to != Kind::Table => match convert(v, to) {
+            Some(new) => {
+                set_value(v, new);
+                true
+            }
+            None => false,
+        },
+        (Item::Value(Value::InlineTable(_)), Kind::Table) | (Item::Table(_), Kind::InlineTable) => {
+            relayout(t, name)
+        }
+        _ => false,
+    }
+}
+
+/// A table as an inline table or back, in the same place with the same key.
+///
+/// The same rebuild [`rename_key`] does, because the entry has to come out
+/// to be converted and `insert` would put it back at the end.
+fn relayout(t: &mut Table, name: &str) -> bool {
+    let names: Vec<String> = t.iter().map(|(k, _)| k.to_owned()).collect();
+    let mut taken: Vec<(Key, Item)> = Vec::with_capacity(names.len());
+    for n in &names {
+        if let Some(entry) = t.remove_entry(n) {
+            taken.push(entry);
+        }
+    }
+    for (key, item) in taken {
+        if key.get() != name {
+            t.insert_formatted(&key, item);
+            continue;
+        }
+        // A fresh key for the new layout: a header's key carries no space
+        // after it and would render `owner= {`, and a key-value line's would
+        // render `[owner ]`. What is kept is the comment above: a table
+        // holds it in its own decor, a key in its prefix, and the layout
+        // change carries it from the one to the other.
+        let (key, item) = match item {
+            Item::Table(table) => {
+                let mut key = Key::new(name);
+                if let Some(above) = table.decor().prefix().cloned() {
+                    key.leaf_decor_mut().set_prefix(above);
+                }
+                (
+                    key,
+                    Item::Value(Value::InlineTable(table.into_inline_table())),
+                )
+            }
+            Item::Value(Value::InlineTable(inline)) => {
+                let mut table = inline.into_table();
+                if let Some(above) = key.leaf_decor().prefix().cloned() {
+                    table.decor_mut().set_prefix(above);
+                }
+                (Key::new(name), Item::Table(table))
+            }
+            other => (key, other),
+        };
+        t.insert_formatted(&key, item);
+    }
+    true
+}
+
+/// Change a key's value in an inline table to another kind, where it reads
+/// as one. A table cannot be inside an inline table, so that is refused.
+pub fn convert_inline_key(t: &mut InlineTable, name: &str, to: Kind) -> bool {
+    if to == Kind::Table {
+        return false;
+    }
+    let Some(v) = t.get_mut(name) else {
+        return false;
+    };
+    match convert(v, to) {
+        Some(new) => {
+            set_value(v, new);
+            true
+        }
+        None => false,
+    }
+}
+
 /// Change a value, keeping the decor it was written with.
 ///
 /// Dropping a new `Item` over an old one discards its decor, which is the
@@ -218,7 +233,7 @@ pub fn set_value(slot: &mut Value, new: Value) {
 
 #[cfg(test)]
 mod structure_tests {
-    use super::{add_key, remove_key, rename_key, NewKey};
+    use super::{add_key, remove_key, rename_key, Kind};
     use toml_edit::DocumentMut;
 
     const DOC: &str = "\
@@ -288,7 +303,7 @@ inner = true
     #[test]
     fn a_key_added_to_a_document_with_tables_stays_at_the_root() {
         let mut d = doc();
-        assert!(add_key(d.as_table_mut(), "author", NewKey::Text));
+        assert!(add_key(d.as_table_mut(), "author", Kind::Text));
         assert_eq!(keys(&d), ["first", "second", "third", "author"]);
 
         let written = d.to_string();
@@ -310,15 +325,15 @@ inner = true
     #[test]
     fn a_key_already_there_is_not_added_over() {
         let mut d = doc();
-        assert!(!add_key(d.as_table_mut(), "first", NewKey::Integer));
-        assert!(!add_key(d.as_table_mut(), "", NewKey::Integer));
+        assert!(!add_key(d.as_table_mut(), "first", Kind::Integer));
+        assert!(!add_key(d.as_table_mut(), "", Kind::Integer));
         assert!(d.to_string().contains("first = \"one\""));
     }
 
     /// Every kind a picker offers produces a document that still parses.
     #[test]
     fn every_kind_of_new_key_is_valid_toml() {
-        for kind in NewKey::ALL {
+        for kind in Kind::ALL {
             let mut d = doc();
             assert!(add_key(d.as_table_mut(), "added", kind), "{kind:?}");
             let written = d.to_string();
@@ -340,7 +355,7 @@ inner = true
 
 #[cfg(test)]
 mod inline_tests {
-    use super::{add_inline_key, remove_inline_key, rename_inline_key, NewKey};
+    use super::{add_inline_key, remove_inline_key, rename_inline_key, Kind};
     use toml_edit::DocumentMut;
 
     fn doc() -> DocumentMut {
@@ -391,15 +406,72 @@ mod inline_tests {
     #[test]
     fn an_inline_table_takes_values_and_not_tables() {
         let mut d = doc();
-        assert!(add_inline_key(owner(&mut d), "since", NewKey::Integer));
-        assert!(!add_inline_key(owner(&mut d), "nested", NewKey::Table));
-        assert!(!add_inline_key(owner(&mut d), "name", NewKey::Text));
+        assert!(add_inline_key(owner(&mut d), "since", Kind::Integer));
+        assert!(!add_inline_key(owner(&mut d), "nested", Kind::Table));
+        assert!(!add_inline_key(owner(&mut d), "name", Kind::Text));
 
-        assert!(!NewKey::SCALARS.contains(&NewKey::Table));
+        assert!(!Kind::VALUES.contains(&Kind::Table));
 
         let written = d.to_string();
         assert!(written.contains("since = 0"), "{written}");
         written.parse::<DocumentMut>().expect("still parses");
+    }
+}
+
+#[cfg(test)]
+mod convert_tests {
+    use super::{convert_inline_key, convert_key, Kind};
+    use toml_edit::DocumentMut;
+
+    /// A table becomes an inline table in its own place, and comes back.
+    /// Which layout a file uses is what the source pane exists to show, and
+    /// this is the one change here that is about layout rather than type.
+    #[test]
+    fn a_table_and_an_inline_table_trade_places() {
+        let mut d: DocumentMut = "first = 1\n\n# who\n[owner]\nname = \"D\"\n\n[last]\nz = 0\n"
+            .parse()
+            .expect("valid TOML");
+        assert!(convert_key(d.as_table_mut(), "owner", Kind::InlineTable));
+        let keys: Vec<&str> = d.as_table().iter().map(|(k, _)| k).collect();
+        assert_eq!(keys, ["first", "owner", "last"]);
+        assert!(d["owner"].is_inline_table(), "{d}");
+        assert_eq!(
+            d.to_string(),
+            "first = 1\n\n# who\nowner = { name = \"D\" }\n\n[last]\nz = 0\n"
+        );
+
+        assert!(convert_key(d.as_table_mut(), "owner", Kind::Table));
+        assert!(d["owner"].is_table(), "{d}");
+        assert_eq!(
+            d.to_string(),
+            "first = 1\n\n# who\n[owner]\nname = \"D\"\n\n[last]\nz = 0\n"
+        );
+    }
+
+    /// A value converts where it reads as the target and is refused where it
+    /// does not, and the refusal leaves it as it was.
+    #[test]
+    fn a_value_converts_or_is_left_alone() {
+        let mut d: DocumentMut = "n = \"44\"   # beside\n".parse().expect("valid TOML");
+        assert!(convert_key(d.as_table_mut(), "n", Kind::Integer));
+        assert_eq!(d.to_string(), "n = 44   # beside\n");
+        assert!(!convert_key(d.as_table_mut(), "n", Kind::Boolean));
+        assert_eq!(d.to_string(), "n = 44   # beside\n");
+        assert!(!convert_key(d.as_table_mut(), "n", Kind::Table));
+        assert!(!convert_key(d.as_table_mut(), "absent", Kind::Text));
+    }
+
+    /// Inside an inline table the same, and a table is refused outright.
+    #[test]
+    fn an_inline_table_converts_its_values_and_holds_no_table() {
+        let mut d: DocumentMut = "t = { n = \"1\", m = { x = 1 } }\n"
+            .parse()
+            .expect("valid TOML");
+        let inline = d["t"].as_inline_table_mut().expect("an inline table");
+        assert!(convert_inline_key(inline, "n", Kind::Integer));
+        assert!(!convert_inline_key(inline, "m", Kind::Table));
+        assert!(!convert_inline_key(inline, "n", Kind::InlineTable));
+        assert_eq!(d.to_string(), "t = { n = 1, m = { x = 1 } }\n");
     }
 }
 

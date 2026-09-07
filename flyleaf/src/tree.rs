@@ -26,8 +26,9 @@ use flyleaf_core::toml_edit::{
 };
 
 use flyleaf_core::{
-    add_inline_key, add_key, remove_inline_key, remove_key, rename_inline_key, rename_key,
-    set_value, NewKey,
+    add_inline_key, add_key, convert, convert_element, convert_inline_key, convert_key,
+    push_element, remove_element, remove_inline_key, remove_key, rename_inline_key, rename_key,
+    set_value, Kind,
 };
 
 /// What the button that removes a key is marked with.
@@ -176,6 +177,7 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
     let mut rows = Siblings {
         names: &siblings,
         change: &mut change,
+        kinds: &Kind::ALL,
     };
 
     for (key, item) in t.iter_mut() {
@@ -186,7 +188,7 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
         path.pop();
     }
 
-    add_row(ui, path, &siblings, &NewKey::ALL, &mut change);
+    add_row(ui, path, &siblings, &Kind::ALL, &mut change);
 
     if let Some(change) = change {
         apply(t, change);
@@ -214,7 +216,17 @@ fn entry(
                 // Inside the section rather than beside its header: a
                 // `CollapsingHeader` draws its body as well as its title, and a
                 // body laid out sideways is what putting one in a row gives.
-                controls(ui, name, path, siblings, tree);
+                // A table can always be written inline, and that is the only
+                // other thing it can be.
+                let becomes = |k: Kind| k == Kind::InlineTable;
+                controls(
+                    ui,
+                    name,
+                    path,
+                    siblings,
+                    tree,
+                    Some((Kind::Table, &becomes)),
+                );
                 table(ui, t, path, tree);
             });
         }
@@ -222,7 +234,7 @@ fn entry(
             // Neither a section nor a leaf: a section
             // whose children are numbered sections, one per table.
             section(ui, name, joined(&above).as_deref(), tree, |ui| {
-                controls(ui, name, path, siblings, tree);
+                controls(ui, name, path, siblings, tree, None);
                 for (n, t) in a.iter_mut().enumerate() {
                     let comments = joined(&comment_lines(t.decor().prefix()));
                     let label = format!("[{n}]");
@@ -252,16 +264,195 @@ fn value(
     comments.extend(comment_lines(v.decor().suffix()));
     let comment = joined(&comments);
 
+    // What a section could become is decided before its body borrows it.
+    // An inline table can be written as a table where the container holds
+    // tables; an array can become its one element's kind where it has one.
+    let single = match v {
+        Value::Array(a) if a.len() == 1 => a.get(0).cloned(),
+        _ => None,
+    };
+    let holds_tables = siblings.kinds.contains(&Kind::Table);
+    let kinds = siblings.kinds;
+
     match v {
         Value::InlineTable(t) => {
+            let becomes = |k: Kind| k == Kind::Table && holds_tables;
             section(ui, name, comment.as_deref(), tree, |ui| {
-                controls(ui, name, path, siblings, tree);
+                controls(
+                    ui,
+                    name,
+                    path,
+                    siblings,
+                    tree,
+                    Some((Kind::InlineTable, &becomes)),
+                );
                 inline_table(ui, t, path, tree);
             });
         }
+        Value::Array(a) => {
+            let becomes = |k: Kind| {
+                single
+                    .as_ref()
+                    .is_some_and(|e| kinds.contains(&k) && convert(e, k).is_some())
+            };
+            section(ui, name, comment.as_deref(), tree, |ui| {
+                controls(
+                    ui,
+                    name,
+                    path,
+                    siblings,
+                    tree,
+                    Some((Kind::Array, &becomes)),
+                );
+                array(ui, a, path, tree);
+            });
+        }
         _ => row(ui, name, comment.as_deref(), path, siblings, tree, |ui| {
-            scalar(ui, v, path, tree)
+            scalar(ui, v, path, tree, kinds)
         }),
+    }
+}
+
+/// An array's elements, one row or section each, and the way to add one.
+///
+/// An element is named by its index, which is not a key and cannot be
+/// renamed; what can be done to it is what can be done to any value.
+fn array(ui: &mut Ui, a: &mut Array, path: &mut Vec<String>, tree: &Tree<'_>) {
+    let mut change = None;
+
+    for (i, v) in a.iter_mut().enumerate() {
+        let label = format!("[{i}]");
+        path.push(label.clone());
+        element(ui, i, &label, v, path, tree, &mut change);
+        path.pop();
+    }
+
+    let id = ui.make_persistent_id((path.join("."), "add"));
+    let mut kind: Kind = ui
+        .data_mut(|d| d.get_temp(id.with("kind")))
+        .unwrap_or(Kind::Text);
+    ui.horizontal(|ui| {
+        ui.add_space(KEY_WIDTH);
+        egui::ComboBox::from_id_salt(id.with("kind picker"))
+            .selected_text(kind.label())
+            .show_ui(ui, |ui| {
+                for one in Kind::VALUES {
+                    if ui.selectable_value(&mut kind, one, one.label()).clicked() {
+                        ui.data_mut(|d| d.insert_temp(id.with("kind"), one));
+                    }
+                }
+            });
+        if ui.button("Add").clicked() {
+            change = Some(ArrayChange::Push(kind));
+        }
+    });
+
+    if let Some(change) = change {
+        apply_array(a, change);
+    }
+}
+
+/// One element of an array.
+fn element(
+    ui: &mut Ui,
+    index: usize,
+    label: &str,
+    v: &mut Value,
+    path: &mut Vec<String>,
+    tree: &Tree<'_>,
+    change: &mut Option<ArrayChange>,
+) {
+    // In a multi-line array a comment sits before its element; on one line,
+    // after it.
+    let mut comments = comment_lines(v.decor().prefix());
+    comments.extend(comment_lines(v.decor().suffix()));
+    let comment = joined(&comments);
+
+    let single = match v {
+        Value::Array(a) if a.len() == 1 => a.get(0).cloned(),
+        _ => None,
+    };
+    let name = |ui: &mut Ui| {
+        ui.label(egui::RichText::new(label).weak());
+        false
+    };
+    let mut removed = false;
+    let remove = |ui: &mut Ui| {
+        removed = ui
+            .small_button(REMOVE)
+            .on_hover_text("Remove this element")
+            .clicked();
+    };
+
+    let asked = match v {
+        Value::InlineTable(t) => section(ui, label, comment.as_deref(), tree, |ui| {
+            let asked = line_of(
+                ui,
+                path,
+                Line::bare(),
+                name,
+                |ui| Reported::kind(kind_button(ui, Kind::InlineTable, &Kind::VALUES, |_| false)),
+                remove,
+            );
+            inline_table(ui, t, path, tree);
+            asked
+        })
+        .flatten(),
+        Value::Array(inner) => {
+            let becomes = |k: Kind| single.as_ref().is_some_and(|e| convert(e, k).is_some());
+            section(ui, label, comment.as_deref(), tree, |ui| {
+                let asked = line_of(
+                    ui,
+                    path,
+                    Line::bare(),
+                    name,
+                    |ui| Reported::kind(kind_button(ui, Kind::Array, &Kind::VALUES, becomes)),
+                    remove,
+                );
+                array(ui, inner, path, tree);
+                asked
+            })
+            .flatten()
+        }
+        _ => line_of(
+            ui,
+            path,
+            Line {
+                comment: comment.as_deref(),
+                removable: true,
+            },
+            name,
+            |ui| scalar(ui, v, path, tree, &Kind::VALUES),
+            remove,
+        ),
+    };
+    if removed {
+        *change = Some(ArrayChange::Remove(index));
+    } else if let Some(kind) = asked {
+        *change = Some(ArrayChange::Convert(index, kind));
+    }
+}
+
+/// A change to an array's elements, gathered while they are drawn and made
+/// once the loop over them has let go of the array.
+#[derive(Clone, Copy)]
+enum ArrayChange {
+    Remove(usize),
+    Push(Kind),
+    Convert(usize, Kind),
+}
+
+fn apply_array(a: &mut Array, change: ArrayChange) {
+    match change {
+        ArrayChange::Remove(i) => {
+            remove_element(a, i);
+        }
+        ArrayChange::Push(kind) => {
+            push_element(a, kind);
+        }
+        ArrayChange::Convert(i, kind) => {
+            convert_element(a, i, kind);
+        }
     }
 }
 
@@ -279,6 +470,7 @@ fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, tree: 
     let mut rows = Siblings {
         names: &siblings,
         change: &mut change,
+        kinds: &Kind::VALUES,
     };
 
     for (key, v) in t.iter_mut() {
@@ -290,7 +482,7 @@ fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, tree: 
     }
 
     // Values only: an inline table holds no tables.
-    add_row(ui, path, &siblings, &NewKey::SCALARS, &mut change);
+    add_row(ui, path, &siblings, &Kind::VALUES, &mut change);
 
     if let Some(change) = change {
         apply_inline(t, change);
@@ -333,6 +525,10 @@ fn displayed<'a>(value: &'a str, editable: bool, policy: &dyn Policy) -> Cow<'a,
 struct Siblings<'a> {
     names: &'a [String],
     change: &'a mut Option<Change>,
+    /// The kinds the container can hold: everything for a table, values for
+    /// an inline table, which is what a row offers when asked what its value
+    /// could become.
+    kinds: &'static [Kind],
 }
 
 /// A change to a table's own entries, gathered while its rows are drawn and
@@ -340,7 +536,8 @@ struct Siblings<'a> {
 enum Change {
     Delete(String),
     Rename(String, String),
-    Add(String, NewKey),
+    Add(String, Kind),
+    Convert(String, Kind),
 }
 
 /// Make the change the rows asked for.
@@ -354,6 +551,9 @@ fn apply(t: &mut Table, change: Change) {
         }
         Change::Add(name, kind) => {
             add_key(t, &name, kind);
+        }
+        Change::Convert(name, kind) => {
+            convert_key(t, &name, kind);
         }
     }
 }
@@ -370,7 +570,52 @@ fn apply_inline(t: &mut InlineTable, change: Change) {
         Change::Add(name, kind) => {
             add_inline_key(t, &name, kind);
         }
+        Change::Convert(name, kind) => {
+            convert_inline_key(t, &name, kind);
+        }
     }
+}
+
+/// What a row's value widget reports back: whether it has focus, and the
+/// kind somebody asked it to become.
+struct Reported {
+    focused: bool,
+    convert: Option<Kind>,
+}
+
+impl Reported {
+    fn kind(convert: Option<Kind>) -> Self {
+        Self {
+            focused: false,
+            convert,
+        }
+    }
+}
+
+/// What a value is, as a small button, and what it could become, as the
+/// button's menu: every other kind the container holds, enabled where the
+/// value reads as it. A kind that would be a guess is shown and cannot be
+/// chosen, which is how somebody learns that `true` does not become `1`
+/// without being told.
+fn kind_button(
+    ui: &mut Ui,
+    current: Kind,
+    options: &[Kind],
+    becomes: impl Fn(Kind) -> bool,
+) -> Option<Kind> {
+    let mut chosen = None;
+    ui.menu_button(egui::RichText::new(current.label()).weak().small(), |ui| {
+        for kind in options.iter().copied().filter(|k| *k != current) {
+            if ui
+                .add_enabled(becomes(kind), egui::Button::new(kind.label()))
+                .clicked()
+            {
+                chosen = Some(kind);
+                ui.close();
+            }
+        }
+    });
+    chosen
 }
 
 /// The widget a value gets, chosen by its TOML type and nothing else.
@@ -379,7 +624,13 @@ fn apply_inline(t: &mut InlineTable, change: Change) {
 /// than writing through the borrow it is holding. [`set_value`] puts back the
 /// decor the old value carried. Says whether the widget has focus, which is
 /// what makes its row the selected one.
-fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], tree: &Tree<'_>) -> bool {
+fn scalar(
+    ui: &mut Ui,
+    v: &mut Value,
+    path: &[String],
+    tree: &Tree<'_>,
+    kinds: &[Kind],
+) -> Reported {
     let editable = !tree.policy.protected(path);
     let id = ui.make_persistent_id(path.join("."));
     let mut focused = false;
@@ -447,19 +698,20 @@ fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], tree: &Tree<'_>) -> bool 
                 }
             }
         }
-        // Arrays and inline tables are structure. Shown, and edited when
-        // structural editing lands.
-        Value::Array(a) => {
-            ui.label(array_text(a));
-            None
-        }
-        Value::InlineTable(_) => None,
+        // Sections, drawn by `value` and never handed here.
+        Value::Array(_) | Value::InlineTable(_) => None,
     };
 
     if let Some(new) = replacement {
         set_value(v, new);
     }
-    focused
+
+    let convert = if editable {
+        kind_button(ui, Kind::of_value(v), kinds, |k| convert(v, k).is_some())
+    } else {
+        None
+    };
+    Reported { focused, convert }
 }
 
 /// Read a date or time, putting back the leading zero TOML wants on an hour.
@@ -528,20 +780,15 @@ fn buffered_text(ui: &mut Ui, id: egui::Id, current: &str, editable: bool) -> Fi
     }
 }
 
-/// An array, as a leaf: its text, until structural editing lands.
-fn array_text(a: &Array) -> String {
-    a.to_string().trim().to_owned()
-}
-
 /// A collapsing section, open until a person closes it, or closed until they
 /// open it where the document is large.
-fn section(
+fn section<R>(
     ui: &mut Ui,
     name: &str,
     comment: Option<&str>,
     tree: &Tree<'_>,
-    body: impl FnOnce(&mut Ui),
-) {
+    body: impl FnOnce(&mut Ui) -> R,
+) -> Option<R> {
     // A header is one piece of text, so a comment beside this key joins it
     // rather than sitting in a column of its own.
     let title = match comment {
@@ -551,11 +798,12 @@ fn section(
     egui::CollapsingHeader::new(title)
         .default_open(tree.open_by_default)
         .open(tree.force_open)
-        .show(ui, body);
+        .show(ui, body)
+        .body_returned
 }
 
-/// One row: the key, the value, whatever the document said beside it, and the
-/// way to remove it.
+/// One row of a table or inline table: the key, the value, whatever the
+/// document said beside it, and the way to remove it.
 fn row(
     ui: &mut Ui,
     name: &str,
@@ -563,18 +811,72 @@ fn row(
     path: &[String],
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
-    value: impl FnOnce(&mut Ui) -> bool,
+    value: impl FnOnce(&mut Ui) -> Reported,
 ) {
+    let protected = tree.policy.protected(path);
+    let line = Line {
+        comment,
+        removable: !protected,
+    };
+    let mut deleted = false;
+    let asked = line_of(
+        ui,
+        path,
+        line,
+        |ui| key_name(ui, name, path, siblings, tree),
+        value,
+        |ui| deleted = delete_button(ui, protected),
+    );
+    if deleted {
+        *siblings.change = Some(Change::Delete(name.to_owned()));
+    } else if let Some(kind) = asked {
+        *siblings.change = Some(Change::Convert(name.to_owned(), kind));
+    }
+}
+
+/// What a line is drawn with besides its parts.
+#[derive(Clone, Copy)]
+struct Line<'a> {
+    comment: Option<&'a str>,
+    /// Whether the line has a control that removes it, which is what a
+    /// comment beside it must leave room for.
+    removable: bool,
+}
+
+impl Line<'_> {
+    fn bare() -> Self {
+        Self {
+            comment: None,
+            removable: true,
+        }
+    }
+}
+
+/// One line of the tree, whatever it names: the part that names it, the part
+/// that holds its value, the comment beside it, and the way to remove it.
+/// Highlighted and selected when either part has focus. Returns the kind the
+/// value part asked to become, if any.
+fn line_of(
+    ui: &mut Ui,
+    path: &[String],
+    line: Line<'_>,
+    name: impl FnOnce(&mut Ui) -> bool,
+    value: impl FnOnce(&mut Ui) -> Reported,
+    remove: impl FnOnce(&mut Ui),
+) -> Option<Kind> {
     // A place for the highlight, taken before the row is drawn so that it is
     // painted under the row rather than over it.
     let background = ui.painter().add(egui::Shape::Noop);
     let mut focused = false;
+    let mut asked = None;
     let drawn = ui.horizontal(|ui| {
         ui.scope(|ui| {
             ui.set_min_width(KEY_WIDTH);
-            focused |= key_name(ui, name, path, siblings, tree);
+            focused |= name(ui);
         });
-        focused |= value(ui);
+        let reported = value(ui);
+        focused |= reported.focused;
+        asked = reported.convert;
         // The comment is capped so it cannot eat the room the remove control
         // needs, and truncates instead.
         //
@@ -589,18 +891,19 @@ fn row(
         // layout — fixes the clipping and was tried first. It spreads every row
         // to the full window width, which `an_integer_stays_beside_its_key`
         // forbids for its own reason, and that test caught it.
-        if let Some(c) = comment {
-            let room = (ui.available_width() - remove_room(ui, path, tree)).max(0.0);
+        if let Some(c) = line.comment {
+            let room = (ui.available_width() - remove_room(ui, line.removable)).max(0.0);
             ui.scope(|ui| {
                 ui.set_max_width(room);
                 ui.add(egui::Label::new(comment_text(c)).truncate());
             });
         }
-        delete_button(ui, name, path, siblings.change, tree);
+        remove(ui);
     });
     if focused {
         select(ui, path, background, drawn.response.rect);
     }
+    asked
 }
 
 /// Mark a row as the one being worked in: a highlight under it, and its path
@@ -625,36 +928,46 @@ fn select(ui: &Ui, path: &[String], background: egui::layers::ShapeIdx, rect: eg
 /// here would be right at one text size and wrong at every other, which is the
 /// case the defect showed up in. Protected keys have no such control and get
 /// the whole row.
-fn remove_room(ui: &Ui, path: &[String], tree: &Tree<'_>) -> f32 {
-    if tree.policy.protected(path) {
+fn remove_room(ui: &Ui, removable: bool) -> f32 {
+    if !removable {
         return 0.0;
     }
     let spacing = ui.spacing();
     spacing.interact_size.y + spacing.button_padding.x * 2.0 + spacing.item_spacing.x
 }
 
-/// A section's own name and the way to remove it, drawn inside the section.
+/// A section's own name, what it is and could become, and the way to remove
+/// it, drawn inside the section. `kind` is `None` for an array of tables,
+/// which is neither one table nor a value and becomes nothing.
 fn controls(
     ui: &mut Ui,
     name: &str,
     path: &[String],
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
+    kind: Option<(Kind, &dyn Fn(Kind) -> bool)>,
 ) {
     if tree.policy.protected(path) {
         return;
     }
-    let background = ui.painter().add(egui::Shape::Noop);
-    let mut focused = false;
-    let drawn = ui.horizontal(|ui| {
-        ui.scope(|ui| {
-            ui.set_min_width(KEY_WIDTH);
-            focused = key_name(ui, name, path, siblings, tree);
-        });
-        delete_button(ui, name, path, siblings.change, tree);
-    });
-    if focused {
-        select(ui, path, background, drawn.response.rect);
+    let kinds = siblings.kinds;
+    let mut deleted = false;
+    let asked = line_of(
+        ui,
+        path,
+        Line::bare(),
+        |ui| key_name(ui, name, path, siblings, tree),
+        |ui| {
+            Reported::kind(
+                kind.and_then(|(current, becomes)| kind_button(ui, current, kinds, becomes)),
+            )
+        },
+        |ui| deleted = delete_button(ui, false),
+    );
+    if deleted {
+        *siblings.change = Some(Change::Delete(name.to_owned()));
+    } else if let Some(kind) = asked {
+        *siblings.change = Some(Change::Convert(name.to_owned(), kind));
     }
 }
 
@@ -719,26 +1032,17 @@ fn key_field(ui: &mut Ui, id: egui::Id, current: &str) -> Option<String> {
     (response.lost_focus() && text != current).then_some(text)
 }
 
-/// The way to remove a key, where removing it is allowed.
-fn delete_button(
-    ui: &mut Ui,
-    name: &str,
-    path: &[String],
-    change: &mut Option<Change>,
-    tree: &Tree<'_>,
-) {
-    if tree.policy.protected(path) {
-        return;
+/// The way to remove a key, where removing it is allowed; says whether it
+/// was pressed.
+fn delete_button(ui: &mut Ui, protected: bool) -> bool {
+    if protected {
+        return false;
     }
     // One press, and nothing reaches the file until Save. Writing is
     // explicit, and this keeps the removing that way too.
-    if ui
-        .small_button(REMOVE)
+    ui.small_button(REMOVE)
         .on_hover_text("Remove this key")
         .clicked()
-    {
-        *change = Some(Change::Delete(name.to_owned()));
-    }
 }
 
 /// The row that adds a key: a name, what it starts as, and Add.
@@ -746,15 +1050,15 @@ fn add_row(
     ui: &mut Ui,
     path: &[String],
     siblings: &[String],
-    kinds: &[NewKey],
+    kinds: &[Kind],
     change: &mut Option<Change>,
 ) {
     let id = ui.make_persistent_id((path.join("."), "add"));
     let mut name: String = ui.data_mut(|d| d.get_temp(id)).unwrap_or_default();
-    let mut kind: NewKey = ui
+    let mut kind: Kind = ui
         .data_mut(|d| d.get_temp(id.with("kind")))
         .filter(|k| kinds.contains(k))
-        .unwrap_or(NewKey::Text);
+        .unwrap_or(Kind::Text);
 
     ui.horizontal(|ui| {
         ui.scope(|ui| {
@@ -826,8 +1130,9 @@ fn joined(lines: &[String]) -> Option<String> {
 mod tests {
     use std::borrow::Cow;
 
-    use super::{array_text, comment_lines, displayed, render, Policy};
+    use super::{comment_lines, displayed, render, Policy};
     use flyleaf_core::toml_edit::DocumentMut;
+    use flyleaf_core::Kind;
 
     /// A policy that would rewrite every string it was shown, so that a
     /// string reaching it is the finding.
@@ -1287,13 +1592,40 @@ id = 2
         assert_eq!(selected.as_deref(), Some(&["second".to_owned()][..]));
     }
 
-    /// An array is a leaf, and its text is the array rather than its decor.
+    /// An array is a section whose elements are rows named by their index,
+    /// each with the widget its kind gets, and a nested inline table or array
+    /// inside it is a section of its own. Until 2026-09-07 an array was a
+    /// leaf showing its text, and this fails if it goes back to that.
     #[test]
-    fn an_array_renders_as_its_own_text() {
-        let doc = parsed();
-        let a = doc.as_table()["types"]["list"]
-            .as_array()
-            .expect("an array");
-        assert_eq!(array_text(a), "[1, 2, 3]");
+    fn an_array_renders_its_elements_as_rows() {
+        let ctx = instant();
+        let mut doc: DocumentMut = "list = [1, \"two\", { a = 3 }, [4]]\n"
+            .parse()
+            .expect("valid TOML");
+        let (texts, _) = frame(&ctx, &mut doc, Vec::new());
+        let texts: Vec<&str> = texts.iter().map(|(t, _)| t.as_str()).collect();
+        for expected in ["list", "[0]", "[1]", "two", "[2]", "a", "[3]"] {
+            assert!(
+                texts.contains(&expected),
+                "{expected} not drawn in {texts:?}"
+            );
+        }
+        assert!(
+            !texts.iter().any(|t| t.starts_with('[') && t.contains(',')),
+            "the array was drawn as its text: {texts:?}"
+        );
+    }
+
+    /// Every row says what kind it holds, in the words a picker uses, which
+    /// is where the four datetime shapes are told apart on screen.
+    #[test]
+    fn every_row_names_its_kind() {
+        let ctx = instant();
+        let mut doc = parsed();
+        let (texts, _) = frame(&ctx, &mut doc, Vec::new());
+        let texts: Vec<&str> = texts.iter().map(|(t, _)| t.as_str()).collect();
+        for kind in Kind::ALL {
+            assert!(texts.contains(&kind.label()), "{} not drawn", kind.label());
+        }
     }
 }
