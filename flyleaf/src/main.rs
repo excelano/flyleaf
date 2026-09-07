@@ -66,6 +66,9 @@ fn title(shown: &Shown) -> String {
 
 struct App {
     shown: Shown,
+    /// The row being worked in, as the tree reported it last frame; drawn
+    /// above the tree, which is why it is a frame behind.
+    selected: Option<Vec<String>>,
 }
 
 impl eframe::App for App {
@@ -92,6 +95,15 @@ impl App {
             Shown::Document { path, doc } => {
                 ui.horizontal(|ui| {
                     ui.label(path.display().to_string());
+                    if ui.small_button("Expand all").clicked() {
+                        flyleaf::open_all(ui.ctx(), true);
+                    }
+                    if ui.small_button("Collapse all").clicked() {
+                        flyleaf::open_all(ui.ctx(), false);
+                    }
+                    if let Some(selected) = &self.selected {
+                        ui.label(egui::RichText::new(selected.join(".")).monospace().weak());
+                    }
                     ui.label(
                         egui::RichText::new("edits stay in memory; saving is not built yet")
                             .italics()
@@ -99,9 +111,10 @@ impl App {
                     );
                 });
                 ui.add_space(8.0);
-                egui::ScrollArea::both()
+                self.selected = egui::ScrollArea::both()
                     .auto_shrink([false, false])
-                    .show(ui, |ui| flyleaf::render(ui, doc, &()));
+                    .show(ui, |ui| flyleaf::render(ui, doc, &()))
+                    .inner;
             }
         });
     }
@@ -118,7 +131,12 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Tommy Flyleaf",
         options,
-        Box::new(|_cc| Ok(Box::new(App { shown }))),
+        Box::new(|_cc| {
+            Ok(Box::new(App {
+                shown,
+                selected: None,
+            }))
+        }),
     )
 }
 
@@ -187,7 +205,10 @@ mod tests {
             shown(Some(PathBuf::from("/nowhere/at/all.toml"))),
             shown(Some(fixture("every-type.toml"))),
         ] {
-            let mut app = super::App { shown };
+            let mut app = super::App {
+                shown,
+                selected: None,
+            };
             egui::__run_test_ui(|ui| app.render(ui));
         }
     }

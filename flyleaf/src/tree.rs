@@ -75,14 +75,86 @@ pub trait Policy {
 /// reads as it is.
 impl Policy for () {}
 
+/// How many entries a document may have and still open every section at
+/// first sight.
+///
+/// Measured on 2026-09-07 with the window up: a `Cargo.lock` of 436 packages,
+/// about 2,500 entries, costs 25 MB resident over the empty window, and one
+/// five times that costs 93 MB, so memory is not what decides this. Reading
+/// is: four hundred open sections are a wall, and a document that size is
+/// navigated by opening what one came for. Below this every section is open,
+/// which is right for a configuration file somebody wants to see whole.
+const OPEN_ALL_UP_TO: usize = 200;
+
+/// What every row is drawn with: the application's policy, and how sections
+/// open. One argument rather than three, for the same reason as [`Siblings`].
+struct Tree<'a> {
+    policy: &'a dyn Policy,
+    /// Whether a section not yet touched starts open.
+    open_by_default: bool,
+    /// An [`open_all`] asked for this frame, applied to every section and
+    /// then forgotten.
+    force_open: Option<bool>,
+}
+
+fn open_all_id() -> egui::Id {
+    egui::Id::new("flyleaf::open_all")
+}
+
+fn selection_id() -> egui::Id {
+    egui::Id::new("flyleaf::selection")
+}
+
+/// Open or close every section the next time the tree is drawn.
+///
+/// A section remembers its own state in egui's memory, so this is a request
+/// made once and consumed by the next [`render`], not a setting.
+pub fn open_all(ctx: &egui::Context, open: bool) {
+    ctx.data_mut(|d| d.insert_temp(open_all_id(), open));
+    ctx.request_repaint();
+}
+
+/// The number of entries a document holds: every value, and every table,
+/// inline table and array-of-tables element that holds them.
+fn entries(t: &Table) -> usize {
+    t.iter()
+        .map(|(_, item)| match item {
+            Item::None => 0,
+            Item::Value(v) => value_entries(v),
+            Item::Table(t) => 1 + entries(t),
+            Item::ArrayOfTables(a) => a.iter().map(|t| 1 + entries(t)).sum(),
+        })
+        .sum()
+}
+
+fn value_entries(v: &Value) -> usize {
+    match v {
+        Value::InlineTable(t) => 1 + t.iter().map(|(_, v)| value_entries(v)).sum::<usize>(),
+        _ => 1,
+    }
+}
+
 /// Render a document, and let its scalars be edited.
-pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) {
+///
+/// Returns the path of the row that has keyboard focus, which is the row
+/// somebody is working in: the key field or the value field of a row, or the
+/// name field of a section. `None` when nothing in the tree has focus.
+pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) -> Option<Vec<String>> {
     // Comments after the last item attach to no key, so no row can carry them.
     // Dropping them would tell a reader their file holds less than it does.
     let trailing = comment_lines(Some(doc.trailing()));
 
+    let tree = Tree {
+        policy,
+        open_by_default: entries(doc.as_table()) <= OPEN_ALL_UP_TO,
+        force_open: ui.data_mut(|d| d.remove_temp::<bool>(open_all_id())),
+    };
+    // Cleared before the rows are drawn and set by whichever row has focus,
+    // so what is returned is this frame's answer and not last frame's.
+    ui.data_mut(|d| d.remove_temp::<Vec<String>>(selection_id()));
+
     let mut path: Vec<String> = Vec::new();
-    table(ui, doc.as_table_mut(), &mut path, policy);
+    table(ui, doc.as_table_mut(), &mut path, &tree);
 
     if !trailing.is_empty() {
         ui.add_space(8.0);
@@ -91,10 +163,12 @@ pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) {
             ui.label(comment_text(&line));
         }
     }
+
+    ui.data_mut(|d| d.get_temp::<Vec<String>>(selection_id()))
 }
 
 /// Every entry of a table, in the order the document wrote them.
-fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, policy: &dyn Policy) {
+fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
     // Taken before the loop borrows the table, so a row can say whether the
     // name being typed into it is one of its own siblings.
     let siblings: Vec<String> = t.iter().map(|(k, _)| k.to_owned()).collect();
@@ -108,7 +182,7 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, policy: &dyn Policy
         let name = key.get().to_owned();
         let above = comment_lines(key.leaf_decor().prefix());
         path.push(name.clone());
-        entry(ui, &name, item, above, path, &mut rows, policy);
+        entry(ui, &name, item, above, path, &mut rows, tree);
         path.pop();
     }
 
@@ -127,34 +201,34 @@ fn entry(
     above: Vec<String>,
     path: &mut Vec<String>,
     siblings: &mut Siblings<'_>,
-    policy: &dyn Policy,
+    tree: &Tree<'_>,
 ) {
     match item {
         // A key that was removed. Nothing was written for it and nothing shows.
         Item::None => {}
-        Item::Value(v) => value(ui, name, v, above, path, siblings, policy),
+        Item::Value(v) => value(ui, name, v, above, path, siblings, tree),
         Item::Table(t) => {
             // A `[header]` carries its own comments rather than the key's.
             let comments = joined(&comment_lines(t.decor().prefix()));
-            section(ui, name, comments.as_deref(), |ui| {
+            section(ui, name, comments.as_deref(), tree, |ui| {
                 // Inside the section rather than beside its header: a
                 // `CollapsingHeader` draws its body as well as its title, and a
                 // body laid out sideways is what putting one in a row gives.
-                controls(ui, name, path, siblings, policy);
-                table(ui, t, path, policy);
+                controls(ui, name, path, siblings, tree);
+                table(ui, t, path, tree);
             });
         }
         Item::ArrayOfTables(a) => {
             // Neither a section nor a leaf: a section
             // whose children are numbered sections, one per table.
-            section(ui, name, joined(&above).as_deref(), |ui| {
-                controls(ui, name, path, siblings, policy);
+            section(ui, name, joined(&above).as_deref(), tree, |ui| {
+                controls(ui, name, path, siblings, tree);
                 for (n, t) in a.iter_mut().enumerate() {
                     let comments = joined(&comment_lines(t.decor().prefix()));
                     let label = format!("[{n}]");
                     path.push(label.clone());
-                    section(ui, &label, comments.as_deref(), |ui| {
-                        table(ui, t, path, policy);
+                    section(ui, &label, comments.as_deref(), tree, |ui| {
+                        table(ui, t, path, tree);
                     });
                     path.pop();
                 }
@@ -171,7 +245,7 @@ fn value(
     above: Vec<String>,
     path: &mut Vec<String>,
     siblings: &mut Siblings<'_>,
-    policy: &dyn Policy,
+    tree: &Tree<'_>,
 ) {
     // A comment after the value on its own line sits in the value's suffix.
     let mut comments = above;
@@ -180,13 +254,13 @@ fn value(
 
     match v {
         Value::InlineTable(t) => {
-            section(ui, name, comment.as_deref(), |ui| {
-                controls(ui, name, path, siblings, policy);
-                inline_table(ui, t, path, policy);
+            section(ui, name, comment.as_deref(), tree, |ui| {
+                controls(ui, name, path, siblings, tree);
+                inline_table(ui, t, path, tree);
             });
         }
-        _ => row(ui, name, comment.as_deref(), path, siblings, policy, |ui| {
-            scalar(ui, v, path, policy);
+        _ => row(ui, name, comment.as_deref(), path, siblings, tree, |ui| {
+            scalar(ui, v, path, tree)
         }),
     }
 }
@@ -199,7 +273,7 @@ fn value(
 /// is how somebody comes to press one twice and wonder what is broken. Being
 /// written on one line is a fact about how it is laid out and not about what
 /// can be done to it.
-fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, policy: &dyn Policy) {
+fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, tree: &Tree<'_>) {
     let siblings: Vec<String> = t.iter().map(|(k, _)| k.to_owned()).collect();
     let mut change = None;
     let mut rows = Siblings {
@@ -211,7 +285,7 @@ fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, policy
         let name = key.get().to_owned();
         let above = comment_lines(key.leaf_decor().prefix());
         path.push(name.clone());
-        value(ui, &name, v, above, path, &mut rows, policy);
+        value(ui, &name, v, above, path, &mut rows, tree);
         path.pop();
     }
 
@@ -303,18 +377,20 @@ fn apply_inline(t: &mut InlineTable, change: Change) {
 ///
 /// Reads the current value to seed the widget and returns a replacement rather
 /// than writing through the borrow it is holding. [`set_value`] puts back the
-/// decor the old value carried.
-fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], policy: &dyn Policy) {
-    let editable = !policy.protected(path);
+/// decor the old value carried. Says whether the widget has focus, which is
+/// what makes its row the selected one.
+fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], tree: &Tree<'_>) -> bool {
+    let editable = !tree.policy.protected(path);
     let id = ui.make_persistent_id(path.join("."));
+    let mut focused = false;
 
     let replacement = match &*v {
         Value::String(s) => {
-            let mut text = displayed(s.value(), editable, policy).into_owned();
+            let mut text = displayed(s.value(), editable, tree.policy).into_owned();
             let field = egui::TextEdit::singleline(&mut text).desired_width(VALUE_WIDTH);
-            ui.add_enabled(editable, field)
-                .changed()
-                .then(|| Value::from(text))
+            let response = ui.add_enabled(editable, field);
+            focused = response.has_focus();
+            response.changed().then(|| Value::from(text))
         }
         Value::Integer(i) => {
             // Where every other value starts. Right-aligned was the first
@@ -322,21 +398,21 @@ fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], policy: &dyn Policy) {
             // the float beside it in the same widget is not, reads as a mistake
             // rather than as alignment.
             let mut n = *i.value();
-            ui.add_enabled(editable, egui::DragValue::new(&mut n))
-                .changed()
-                .then(|| Value::from(n))
+            let response = ui.add_enabled(editable, egui::DragValue::new(&mut n));
+            focused = response.has_focus();
+            response.changed().then(|| Value::from(n))
         }
         Value::Float(f) => {
             let mut x = *f.value();
-            ui.add_enabled(editable, egui::DragValue::new(&mut x).speed(0.1))
-                .changed()
-                .then(|| Value::from(x))
+            let response = ui.add_enabled(editable, egui::DragValue::new(&mut x).speed(0.1));
+            focused = response.has_focus();
+            response.changed().then(|| Value::from(x))
         }
         Value::Boolean(b) => {
             let mut shown = *b.value();
-            ui.add_enabled(editable, egui::Checkbox::new(&mut shown, ""))
-                .changed()
-                .then(|| Value::from(shown))
+            let response = ui.add_enabled(editable, egui::Checkbox::new(&mut shown, ""));
+            focused = response.has_focus();
+            response.changed().then(|| Value::from(shown))
         }
         // All four shapes format themselves, and which one it is is written in
         // the value rather than in a wrapper this would have to unpack. A
@@ -345,6 +421,7 @@ fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], policy: &dyn Policy) {
         Value::Datetime(d) => {
             let current = d.value().to_string();
             let field = buffered_text(ui, id, &current, editable);
+            focused = field.focused;
             // What the field is showing, rather than what was typed into it
             // this frame. A keystroke happens on one frame and the text stays
             // on screen for every frame after, so reading the keystroke made
@@ -382,6 +459,7 @@ fn scalar(ui: &mut Ui, v: &mut Value, path: &[String], policy: &dyn Policy) {
     if let Some(new) = replacement {
         set_value(v, new);
     }
+    focused
 }
 
 /// Read a date or time, putting back the leading zero TOML wants on an hour.
@@ -421,6 +499,8 @@ struct Field {
     text: String,
     /// Whether a keystroke landed this frame.
     changed: bool,
+    /// Whether the field has focus.
+    focused: bool,
 }
 
 fn buffered_text(ui: &mut Ui, id: egui::Id, current: &str, editable: bool) -> Field {
@@ -435,12 +515,17 @@ fn buffered_text(ui: &mut Ui, id: egui::Id, current: &str, editable: bool) -> Fi
     let field = egui::TextEdit::singleline(&mut text)
         .id(id)
         .desired_width(VALUE_WIDTH);
-    let changed = ui.add_enabled(editable, field).changed();
+    let response = ui.add_enabled(editable, field);
+    let changed = response.changed();
     if changed {
         ui.data_mut(|d| d.insert_temp(id, text.clone()));
     }
 
-    Field { text, changed }
+    Field {
+        text,
+        changed,
+        focused: response.has_focus(),
+    }
 }
 
 /// An array, as a leaf: its text, until structural editing lands.
@@ -448,8 +533,15 @@ fn array_text(a: &Array) -> String {
     a.to_string().trim().to_owned()
 }
 
-/// A collapsing section, open until a person closes it.
-fn section(ui: &mut Ui, name: &str, comment: Option<&str>, body: impl FnOnce(&mut Ui)) {
+/// A collapsing section, open until a person closes it, or closed until they
+/// open it where the document is large.
+fn section(
+    ui: &mut Ui,
+    name: &str,
+    comment: Option<&str>,
+    tree: &Tree<'_>,
+    body: impl FnOnce(&mut Ui),
+) {
     // A header is one piece of text, so a comment beside this key joins it
     // rather than sitting in a column of its own.
     let title = match comment {
@@ -457,7 +549,8 @@ fn section(ui: &mut Ui, name: &str, comment: Option<&str>, body: impl FnOnce(&mu
         None => name.to_owned(),
     };
     egui::CollapsingHeader::new(title)
-        .default_open(true)
+        .default_open(tree.open_by_default)
+        .open(tree.force_open)
         .show(ui, body);
 }
 
@@ -469,15 +562,19 @@ fn row(
     comment: Option<&str>,
     path: &[String],
     siblings: &mut Siblings<'_>,
-    policy: &dyn Policy,
-    value: impl FnOnce(&mut Ui),
+    tree: &Tree<'_>,
+    value: impl FnOnce(&mut Ui) -> bool,
 ) {
-    ui.horizontal(|ui| {
+    // A place for the highlight, taken before the row is drawn so that it is
+    // painted under the row rather than over it.
+    let background = ui.painter().add(egui::Shape::Noop);
+    let mut focused = false;
+    let drawn = ui.horizontal(|ui| {
         ui.scope(|ui| {
             ui.set_min_width(KEY_WIDTH);
-            key_name(ui, name, path, siblings, policy);
+            focused |= key_name(ui, name, path, siblings, tree);
         });
-        value(ui);
+        focused |= value(ui);
         // The comment is capped so it cannot eat the room the remove control
         // needs, and truncates instead.
         //
@@ -493,14 +590,31 @@ fn row(
         // to the full window width, which `an_integer_stays_beside_its_key`
         // forbids for its own reason, and that test caught it.
         if let Some(c) = comment {
-            let room = (ui.available_width() - remove_room(ui, path, policy)).max(0.0);
+            let room = (ui.available_width() - remove_room(ui, path, tree)).max(0.0);
             ui.scope(|ui| {
                 ui.set_max_width(room);
                 ui.add(egui::Label::new(comment_text(c)).truncate());
             });
         }
-        delete_button(ui, name, path, siblings.change, policy);
+        delete_button(ui, name, path, siblings.change, tree);
     });
+    if focused {
+        select(ui, path, background, drawn.response.rect);
+    }
+}
+
+/// Mark a row as the one being worked in: a highlight under it, and its path
+/// where [`render`] will return it.
+fn select(ui: &Ui, path: &[String], background: egui::layers::ShapeIdx, rect: egui::Rect) {
+    ui.painter().set(
+        background,
+        egui::Shape::rect_filled(
+            rect,
+            3.0,
+            ui.visuals().selection.bg_fill.gamma_multiply(0.25),
+        ),
+    );
+    ui.data_mut(|d| d.insert_temp(selection_id(), path.to_vec()));
 }
 
 /// The width to keep clear for the control that removes a key, so a comment
@@ -511,8 +625,8 @@ fn row(
 /// here would be right at one text size and wrong at every other, which is the
 /// case the defect showed up in. Protected keys have no such control and get
 /// the whole row.
-fn remove_room(ui: &Ui, path: &[String], policy: &dyn Policy) -> f32 {
-    if policy.protected(path) {
+fn remove_room(ui: &Ui, path: &[String], tree: &Tree<'_>) -> f32 {
+    if tree.policy.protected(path) {
         return 0.0;
     }
     let spacing = ui.spacing();
@@ -525,31 +639,37 @@ fn controls(
     name: &str,
     path: &[String],
     siblings: &mut Siblings<'_>,
-    policy: &dyn Policy,
+    tree: &Tree<'_>,
 ) {
-    if policy.protected(path) {
+    if tree.policy.protected(path) {
         return;
     }
-    ui.horizontal(|ui| {
+    let background = ui.painter().add(egui::Shape::Noop);
+    let mut focused = false;
+    let drawn = ui.horizontal(|ui| {
         ui.scope(|ui| {
             ui.set_min_width(KEY_WIDTH);
-            key_name(ui, name, path, siblings, policy);
+            focused = key_name(ui, name, path, siblings, tree);
         });
-        delete_button(ui, name, path, siblings.change, policy);
+        delete_button(ui, name, path, siblings.change, tree);
     });
+    if focused {
+        select(ui, path, background, drawn.response.rect);
+    }
 }
 
-/// The key, as a name to read or a name to change.
+/// The key, as a name to read or a name to change. Says whether the field
+/// has focus, which is what makes its row the selected one.
 fn key_name(
     ui: &mut Ui,
     name: &str,
     path: &[String],
     siblings: &mut Siblings<'_>,
-    policy: &dyn Policy,
-) {
-    if policy.protected(path) {
+    tree: &Tree<'_>,
+) -> bool {
+    if tree.policy.protected(path) {
         ui.label(egui::RichText::new(name).strong());
-        return;
+        return false;
     }
 
     let id = ui.make_persistent_id((path.join("."), "key"));
@@ -558,7 +678,8 @@ fn key_name(
     // Said while it is being typed rather than after, because a name already
     // taken is refused and the field would otherwise just spring back.
     let typed: Option<String> = ui.data_mut(|d| d.get_temp(id));
-    if ui.memory(|m| m.has_focus(id)) {
+    let focused = ui.memory(|m| m.has_focus(id));
+    if focused {
         if let Some(t) = &typed {
             if t.is_empty() || (t != name && siblings.names.iter().any(|s| s == t)) {
                 ui.label(egui::RichText::new("name taken").italics().weak());
@@ -571,6 +692,7 @@ fn key_name(
             *siblings.change = Some(Change::Rename(name.to_owned(), to));
         }
     }
+    focused
 }
 
 /// A field holding a key's name, which takes effect when it is left.
@@ -603,9 +725,9 @@ fn delete_button(
     name: &str,
     path: &[String],
     change: &mut Option<Change>,
-    policy: &dyn Policy,
+    tree: &Tree<'_>,
 ) {
-    if policy.protected(path) {
+    if tree.policy.protected(path) {
         return;
     }
     // One press, and nothing reaches the file until Save. Writing is
@@ -787,7 +909,9 @@ id = 2
     #[test]
     fn every_toml_type_renders() {
         let mut doc = parsed();
-        egui::__run_test_ui(|ui| render(ui, &mut doc, &()));
+        egui::__run_test_ui(|ui| {
+            render(ui, &mut doc, &());
+        });
     }
 
     /// TOML wants two digits in an hour. A field a person types into should
@@ -1015,6 +1139,152 @@ id = 2
             comment_lines(leaf.leaf_decor().prefix()),
             ["above a dotted key"]
         );
+    }
+
+    /// One frame at 900 points wide: every text drawn, with where, and what
+    /// `render` returned. Events are what the frame receives, so a test can
+    /// click.
+    fn frame(
+        ctx: &egui::Context,
+        doc: &mut DocumentMut,
+        events: Vec<egui::Event>,
+    ) -> (Vec<(String, egui::Rect)>, Option<Vec<String>>) {
+        // Tall enough for every section of `large` open at once: egui culls a
+        // shape past the screen, and a count of drawn rows would otherwise
+        // be a count of the screen.
+        let input = egui::RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(
+                egui::Pos2::ZERO,
+                egui::vec2(900.0, 40_000.0),
+            )),
+            events,
+            ..Default::default()
+        };
+        let mut selected = None;
+        let mut output = ctx.run_ui(input, |ui| {
+            ui.set_max_width(900.0);
+            selected = render(ui, doc, &());
+        });
+        let shapes = std::mem::take(&mut output.shapes);
+        output.drop_without_applying_deltas();
+        let mut texts = Vec::new();
+        for clipped in &shapes {
+            if let egui::Shape::Text(t) = &clipped.shape {
+                let rect = egui::Rect::from_min_size(t.pos, t.galley.size());
+                texts.push((t.galley.text().to_owned(), rect));
+            }
+        }
+        (texts, selected)
+    }
+
+    fn large() -> DocumentMut {
+        use std::fmt::Write as _;
+        let mut text = String::new();
+        for i in 0..=super::OPEN_ALL_UP_TO {
+            writeln!(text, "[t{i}]\nleaf = 1").expect("writing to a String");
+        }
+        text.parse().expect("valid TOML")
+    }
+
+    /// A context whose sections open and close at once. egui animates a
+    /// section over a tenth of a second of its own clock, which a headless
+    /// frame does not advance, so the frame after a request would otherwise
+    /// draw the body at an openness of zero, which is not at all.
+    fn instant() -> egui::Context {
+        let ctx = egui::Context::default();
+        ctx.all_styles_mut(|s| s.animation_time = 0.0);
+        ctx
+    }
+
+    /// A document over the threshold starts with every section closed, and
+    /// one under it starts with every section open.
+    ///
+    /// Catches the threshold being ignored in either direction: a large
+    /// document drawing every row, which is the wall this exists to avoid,
+    /// or a small one hiding its rows behind headers somebody has to open.
+    #[test]
+    fn a_large_document_starts_closed_and_a_small_one_open() {
+        let ctx = instant();
+        let (texts, _) = frame(&ctx, &mut large(), Vec::new());
+        assert!(
+            texts.iter().any(|(t, _)| t == "t0"),
+            "the headers are drawn"
+        );
+        assert!(
+            !texts.iter().any(|(t, _)| t == "leaf"),
+            "a row inside a closed section was drawn"
+        );
+
+        let ctx = instant();
+        let (texts, _) = frame(&ctx, &mut parsed(), Vec::new());
+        assert!(
+            texts.iter().any(|(t, _)| t == "count"),
+            "a row inside an open section"
+        );
+    }
+
+    /// `open_all` opens every section on the next frame and closes them on
+    /// the one after, and does nothing further: it is a request, not a
+    /// setting, so a section closed by hand afterwards stays closed.
+    #[test]
+    fn open_all_is_a_request_the_next_frame_consumes() {
+        let ctx = instant();
+        let mut doc = large();
+        frame(&ctx, &mut doc, Vec::new());
+
+        super::open_all(&ctx, true);
+        let (texts, _) = frame(&ctx, &mut doc, Vec::new());
+        let leaves = texts.iter().filter(|(t, _)| t == "leaf").count();
+        assert_eq!(leaves, super::OPEN_ALL_UP_TO + 1, "every section opened");
+
+        super::open_all(&ctx, false);
+        let (texts, _) = frame(&ctx, &mut doc, Vec::new());
+        assert!(
+            !texts.iter().any(|(t, _)| t == "leaf"),
+            "every section closed"
+        );
+
+        // Consumed: a further frame with no request changes nothing.
+        let (texts, _) = frame(&ctx, &mut doc, Vec::new());
+        assert!(!texts.iter().any(|(t, _)| t == "leaf"));
+    }
+
+    /// Clicking into a row's key field selects that row: `render` returns
+    /// its path, and nothing is selected before the click.
+    ///
+    /// Catches the selection being stale, which the clear-then-set in
+    /// `render` exists for, and the path being wrong, which the test asks by
+    /// clicking the second of two rows.
+    #[test]
+    fn the_row_with_focus_is_the_selection() {
+        let ctx = egui::Context::default();
+        let mut doc: DocumentMut = "first = 1\nsecond = \"two\"\n".parse().expect("valid TOML");
+        let (texts, selected) = frame(&ctx, &mut doc, Vec::new());
+        assert_eq!(selected, None, "nothing has focus before a click");
+
+        let (_, rect) = texts
+            .iter()
+            .find(|(t, _)| t == "second")
+            .expect("the key field shows its name");
+        let pos = rect.center();
+        let click = vec![
+            egui::Event::PointerMoved(pos),
+            egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed: true,
+                modifiers: egui::Modifiers::NONE,
+            },
+            egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed: false,
+                modifiers: egui::Modifiers::NONE,
+            },
+        ];
+        frame(&ctx, &mut doc, click);
+        let (_, selected) = frame(&ctx, &mut doc, Vec::new());
+        assert_eq!(selected.as_deref(), Some(&["second".to_owned()][..]));
     }
 
     /// An array is a leaf, and its text is the array rather than its decor.
