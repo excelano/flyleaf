@@ -1,172 +1,176 @@
-1x rect 0.0,0.0 162.0x19.0
-1x text 4.0,4.0 93.0x12.0 "slipcase_version"
-1x rect 198.0,0.0 320.0x19.0
-1x text 203.0,5.0 17.0x9.0 "1.0"
-1x rect 526.0,0.5 24.4x18.0
-1x text 530.0,6.5 17.0x6.0 "text"
-1x text 558.4,4.0 259.8x12.0 "# slipcase metadata the specification version"
-1x rect 824.7,2.0 19.7x15.0
-1x text 828.7,4.0 10.0x12.0 "🗑"
-1x path 6.0,28.0 6.0x6.0
-1x text 19.0,25.5 44.0x12.0 "payload"
-1x rect 18.0,43.0 162.0x19.0
-1x text 23.0,47.0 44.0x12.0 "payload"
-1x rect 216.0,43.5 28.5x18.0
-1x text 220.0,48.5 20.0x7.0 "table"
-1x rect 252.5,45.0 19.7x15.0
-1x text 256.5,47.0 10.0x12.0 "🗑"
-1x rect 18.0,65.0 162.0x19.0
-1x text 23.0,69.0 17.0x10.0 "file"
-1x rect 216.0,65.0 320.0x19.0
-1x text 221.0,69.0 60.0x12.0 "report.pdf"
-1x rect 544.0,65.5 24.4x18.0
-1x text 548.0,71.5 17.0x6.0 "text"
-1x text 576.4,69.0 166.8x10.0 "# the member this describes"
-1x rect 748.9,67.0 19.7x15.0
-1x text 752.9,69.0 10.0x12.0 "🗑"
-1x rect 18.0,87.0 162.0x19.0
-1x text 22.0,91.0 54.0x12.0 "add a key"
+1x text 0.0,2.0 116.8x12.0 "# slipcase metadata"
+1x rect 0.0,18.0 162.0x19.0
+1x text 4.0,22.0 93.0x12.0 "slipcase_version"
+1x rect 198.0,18.0 320.0x19.0
+1x text 203.0,23.0 17.0x9.0 "1.0"
+1x rect 526.0,18.5 24.4x18.0
+1x text 530.0,24.5 17.0x6.0 "text"
+1x text 558.4,22.0 152.8x12.0 "# the specification version"
+1x rect 718.1,20.0 19.7x15.0
+1x text 722.1,22.0 10.0x12.0 "🗑"
+1x path 6.0,46.0 6.0x6.0
+1x text 19.0,43.5 44.0x12.0 "payload"
+1x rect 18.0,61.0 162.0x19.0
+1x text 23.0,65.0 44.0x12.0 "payload"
+1x rect 216.0,61.5 28.5x18.0
+1x text 220.0,66.5 20.0x7.0 "table"
+1x rect 252.5,63.0 19.7x15.0
+1x text 256.5,65.0 10.0x12.0 "🗑"
+1x text 18.0,85.0 166.8x10.0 "# the member this describes"
+1x rect 18.0,101.0 162.0x19.0
+1x text 23.0,105.0 17.0x10.0 "file"
+1x rect 216.0,101.0 320.0x19.0
+1x text 221.0,105.0 60.0x12.0 "report.pdf"
+1x rect 544.0,101.5 24.4x18.0
+1x text 548.0,107.5 17.0x6.0 "text"
+1x rect 576.4,103.0 19.7x15.0
+1x text 580.4,105.0 10.0x12.0 "🗑"
+1x rect 18.0,123.0 162.0x19.0
+1x text 22.0,127.0 54.0x12.0 "add a key"
 1x text NaN,NaN NaNxNaN ""
-1x rect 216.0,87.5 100.0x18.0
-1x path 300.1,93.3 9.8x6.3
-1x text 221.0,92.0 23.0x9.0 "text"
-1x rect 324.0,87.5 31.5x18.0
-1x text 328.0,91.0 23.0x10.0 "Add"
-1x line 8.5,42.5 1.0x62.0
-1x rect 0.0,109.0 162.0x19.0
-1x text 4.0,113.0 54.0x12.0 "add a key"
+1x rect 216.0,123.5 100.0x18.0
+1x path 300.1,129.4 9.8x6.3
+1x text 221.0,128.0 23.0x9.0 "text"
+1x rect 324.0,123.5 31.5x18.0
+1x text 328.0,127.0 23.0x10.0 "Add"
+1x line 8.5,60.5 1.0x80.0
+1x rect 0.0,145.0 162.0x19.0
+1x text 4.0,149.0 54.0x12.0 "add a key"
 1x text NaN,NaN NaNxNaN ""
-1x rect 198.0,109.5 100.0x18.0
-1x path 282.1,115.3 9.8x6.3
-1x text 203.0,114.0 23.0x9.0 "text"
-1x rect 306.0,109.5 31.5x18.0
-1x text 310.0,113.0 23.0x10.0 "Add"
-1.5x rect 0.0,0.0 162.0x19.0
-1.5x text 4.0,3.3 92.7x13.3 "slipcase_version"
-1.5x rect 198.0,0.0 320.0x19.0
-1.5x text 203.3,4.7 16.0x9.3 "1.0"
-1.5x rect 526.0,0.5 24.4x18.0
-1.5x text 530.7,5.8 16.0x6.7 "text"
-1.5x text 558.4,3.5 259.8x13.3 "# slipcase metadata the specification version"
-1.5x rect 824.7,2.2 19.7x14.7
-1.5x text 829.4,3.5 9.3x12.0 "🗑"
-1.5x path 6.0,28.0 6.0x6.0
-1.5x text 18.7,25.0 44.0x13.3 "payload"
-1.5x rect 18.0,43.0 162.0x19.0
-1.5x text 22.7,46.3 44.0x13.3 "payload"
-1.5x rect 216.0,43.5 28.5x18.0
-1.5x text 220.7,48.1 20.0x7.3 "table"
-1.5x rect 252.5,45.1 19.7x14.7
-1.5x text 257.2,46.5 9.3x12.0 "🗑"
-1.5x rect 18.0,64.9 162.0x19.0
-1.5x text 22.7,68.3 17.3x10.7 "file"
-1.5x rect 216.0,64.9 320.0x19.0
-1.5x text 220.7,68.3 60.0x13.3 "report.pdf"
-1.5x rect 544.0,65.4 24.4x18.0
-1.5x text 548.7,70.8 16.0x6.7 "text"
-1.5x text 576.4,68.4 166.5x10.7 "# the member this describes"
-1.5x rect 748.9,67.1 19.7x14.7
-1.5x text 753.6,68.4 9.3x12.0 "🗑"
-1.5x rect 18.0,86.9 162.0x19.0
-1.5x text 22.0,90.2 54.0x13.3 "add a key"
+1x rect 198.0,145.5 100.0x18.0
+1x path 282.1,151.4 9.8x6.3
+1x text 203.0,150.0 23.0x9.0 "text"
+1x rect 306.0,145.5 31.5x18.0
+1x text 310.0,149.0 23.0x10.0 "Add"
+1.5x text 0.0,1.3 116.5x13.3 "# slipcase metadata"
+1.5x rect 0.0,17.7 162.0x19.0
+1.5x text 4.0,21.0 92.7x13.3 "slipcase_version"
+1.5x rect 198.0,17.7 320.0x19.0
+1.5x text 203.3,22.3 16.0x9.3 "1.0"
+1.5x rect 526.0,18.2 24.4x18.0
+1.5x text 530.7,23.5 16.0x6.7 "text"
+1.5x text 558.4,21.1 153.2x13.3 "# the specification version"
+1.5x rect 718.1,19.8 19.7x14.7
+1.5x text 722.8,21.1 9.3x12.0 "🗑"
+1.5x path 6.0,45.6 6.0x6.0
+1.5x text 18.7,42.6 44.0x13.3 "payload"
+1.5x rect 18.0,60.6 162.0x19.0
+1.5x text 22.7,64.0 44.0x13.3 "payload"
+1.5x rect 216.0,61.1 28.5x18.0
+1.5x text 220.7,65.8 20.0x7.3 "table"
+1.5x rect 252.5,62.8 19.7x14.7
+1.5x text 257.2,64.1 9.3x12.0 "🗑"
+1.5x text 18.0,83.9 166.5x10.7 "# the member this describes"
+1.5x rect 18.0,100.2 162.0x19.0
+1.5x text 22.7,103.6 17.3x10.7 "file"
+1.5x rect 216.0,100.2 320.0x19.0
+1.5x text 220.7,103.6 60.0x13.3 "report.pdf"
+1.5x rect 544.0,100.8 24.4x18.0
+1.5x text 548.7,106.1 16.0x6.7 "text"
+1.5x rect 576.4,102.4 19.7x14.7
+1.5x text 581.0,103.7 9.3x12.0 "🗑"
+1.5x rect 18.0,122.2 162.0x19.0
+1.5x text 22.0,125.6 54.0x13.3 "add a key"
 1.5x text NaN,NaN NaNxNaN ""
-1.5x rect 216.0,87.4 100.0x18.0
-1.5x path 300.1,93.3 9.8x6.3
-1.5x text 220.7,91.8 23.3x9.3 "text"
-1.5x rect 324.0,87.4 31.5x18.0
-1.5x text 328.0,90.4 22.7x10.7 "Add"
-1.5x line 8.5,42.5 1.0x61.9
-1.5x rect 0.0,108.9 162.0x19.0
-1.5x text 4.0,112.2 54.0x13.3 "add a key"
+1.5x rect 216.0,122.7 100.0x18.0
+1.5x path 300.1,128.6 9.8x6.3
+1.5x text 220.7,127.1 23.3x9.3 "text"
+1.5x rect 324.0,122.7 31.5x18.0
+1.5x text 328.0,125.7 22.7x10.7 "Add"
+1.5x line 8.5,60.1 1.0x79.6
+1.5x rect 0.0,144.2 162.0x19.0
+1.5x text 4.0,147.5 54.0x13.3 "add a key"
 1.5x text NaN,NaN NaNxNaN ""
-1.5x rect 198.0,109.4 100.0x18.0
-1.5x path 282.1,115.2 9.8x6.3
-1.5x text 202.7,113.7 23.3x9.3 "text"
-1.5x rect 306.0,109.4 31.5x18.0
-1.5x text 310.0,112.4 22.7x10.7 "Add"
-2x rect 0.0,0.0 162.0x19.0
-2x text 4.5,4.0 91.5x12.5 "slipcase_version"
-2x rect 198.0,0.0 320.0x19.0
-2x text 203.0,5.0 16.5x9.0 "1.0"
-2x rect 526.0,0.5 24.4x18.0
-2x text 530.5,6.8 16.0x6.0 "text"
-2x text 558.9,4.0 258.6x12.5 "# slipcase metadata the specification version"
-2x rect 824.7,2.0 19.7x15.0
-2x text 829.2,3.5 9.5x12.0 "🗑"
-2x path 6.0,28.0 6.0x6.0
-2x text 19.0,25.5 43.5x12.5 "payload"
-2x rect 18.0,43.0 162.0x19.0
-2x text 23.0,47.0 43.5x12.5 "payload"
-2x rect 216.0,43.5 28.5x18.0
-2x text 220.5,48.8 20.0x7.0 "table"
-2x rect 252.5,45.0 19.7x15.0
-2x text 257.0,46.5 9.5x12.0 "🗑"
-2x rect 18.0,65.0 162.0x19.0
-2x text 23.0,69.0 17.0x10.0 "file"
-2x rect 216.0,65.0 320.0x19.0
-2x text 221.0,69.0 59.5x12.5 "report.pdf"
-2x rect 544.0,65.5 24.4x18.0
-2x text 548.5,71.8 16.0x6.0 "text"
-2x text 576.9,69.0 165.6x10.0 "# the member this describes"
-2x rect 748.9,67.0 19.7x15.0
-2x text 753.4,68.5 9.5x12.0 "🗑"
-2x rect 18.0,87.0 162.0x19.0
-2x text 22.5,91.0 53.0x12.5 "add a key"
+1.5x rect 198.0,144.7 100.0x18.0
+1.5x path 282.1,150.6 9.8x6.3
+1.5x text 202.7,149.0 23.3x9.3 "text"
+1.5x rect 306.0,144.7 31.5x18.0
+1.5x text 310.0,147.7 22.7x10.7 "Add"
+2x text 0.5,2.0 115.6x12.5 "# slipcase metadata"
+2x rect 0.0,18.0 162.0x19.0
+2x text 4.5,22.0 91.5x12.5 "slipcase_version"
+2x rect 198.0,18.0 320.0x19.0
+2x text 203.0,23.0 16.5x9.0 "1.0"
+2x rect 526.0,18.5 24.4x18.0
+2x text 530.5,24.8 16.0x6.0 "text"
+2x text 558.9,22.0 152.1x12.5 "# the specification version"
+2x rect 718.1,20.0 19.7x15.0
+2x text 722.6,21.5 9.5x12.0 "🗑"
+2x path 6.0,46.0 6.0x6.0
+2x text 19.0,43.5 43.5x12.5 "payload"
+2x rect 18.0,61.0 162.0x19.0
+2x text 23.0,65.0 43.5x12.5 "payload"
+2x rect 216.0,61.5 28.5x18.0
+2x text 220.5,66.8 20.0x7.0 "table"
+2x rect 252.5,63.0 19.7x15.0
+2x text 257.0,64.5 9.5x12.0 "🗑"
+2x text 18.5,85.0 165.6x10.0 "# the member this describes"
+2x rect 18.0,101.0 162.0x19.0
+2x text 23.0,105.0 17.0x10.0 "file"
+2x rect 216.0,101.0 320.0x19.0
+2x text 221.0,105.0 59.5x12.5 "report.pdf"
+2x rect 544.0,101.5 24.4x18.0
+2x text 548.5,107.8 16.0x6.0 "text"
+2x rect 576.4,103.0 19.7x15.0
+2x text 580.9,104.5 9.5x12.0 "🗑"
+2x rect 18.0,123.0 162.0x19.0
+2x text 22.5,127.0 53.0x12.5 "add a key"
 2x text NaN,NaN NaNxNaN ""
-2x rect 216.0,87.5 100.0x18.0
-2x path 300.1,93.3 9.8x6.3
-2x text 221.0,92.0 22.5x9.0 "text"
-2x rect 324.0,87.5 31.5x18.0
-2x text 328.0,91.0 22.5x10.0 "Add"
-2x line 8.5,42.5 1.0x62.0
-2x rect 0.0,109.0 162.0x19.0
-2x text 4.5,113.0 53.0x12.5 "add a key"
+2x rect 216.0,123.5 100.0x18.0
+2x path 300.1,129.4 9.8x6.3
+2x text 221.0,128.0 22.5x9.0 "text"
+2x rect 324.0,123.5 31.5x18.0
+2x text 328.0,127.0 22.5x10.0 "Add"
+2x line 8.5,60.5 1.0x80.0
+2x rect 0.0,145.0 162.0x19.0
+2x text 4.5,149.0 53.0x12.5 "add a key"
 2x text NaN,NaN NaNxNaN ""
-2x rect 198.0,109.5 100.0x18.0
-2x path 282.1,115.3 9.8x6.3
-2x text 203.0,114.0 22.5x9.0 "text"
-2x rect 306.0,109.5 31.5x18.0
-2x text 310.0,113.0 22.5x10.0 "Add"
-3x rect 0.0,0.0 162.0x19.0
-3x text 4.3,4.0 92.0x12.3 "slipcase_version"
-3x rect 198.0,0.0 320.0x19.0
-3x text 203.3,5.0 16.0x9.0 "1.0"
-3x rect 526.0,0.5 24.4x18.0
-3x text 530.7,6.7 15.7x6.0 "text"
-3x text 558.7,4.0 258.7x12.3 "# slipcase metadata the specification version"
-3x rect 824.7,2.0 19.7x15.0
-3x text 829.4,3.7 9.3x11.7 "🗑"
-3x path 6.0,28.0 6.0x6.0
-3x text 19.0,25.5 43.3x12.3 "payload"
-3x rect 18.0,43.0 162.0x19.0
-3x text 23.0,47.0 43.3x12.3 "payload"
-3x rect 216.0,43.5 28.5x18.0
-3x text 220.7,48.7 19.3x7.0 "table"
-3x rect 252.5,45.0 19.7x15.0
-3x text 257.2,46.7 9.3x11.7 "🗑"
-3x rect 18.0,65.0 162.0x19.0
-3x text 23.0,69.0 16.7x10.0 "file"
-3x rect 216.0,65.0 320.0x19.0
-3x text 221.0,69.0 59.7x12.3 "report.pdf"
-3x rect 544.0,65.5 24.4x18.0
-3x text 548.7,71.7 15.7x6.0 "text"
-3x text 576.7,69.0 165.7x10.0 "# the member this describes"
-3x rect 748.9,67.0 19.7x15.0
-3x text 753.6,68.7 9.3x11.7 "🗑"
-3x rect 18.0,87.0 162.0x19.0
-3x text 22.3,91.0 53.3x12.3 "add a key"
+2x rect 198.0,145.5 100.0x18.0
+2x path 282.1,151.4 9.8x6.3
+2x text 203.0,150.0 22.5x9.0 "text"
+2x rect 306.0,145.5 31.5x18.0
+2x text 310.0,149.0 22.5x10.0 "Add"
+3x text 0.3,2.0 115.7x12.3 "# slipcase metadata"
+3x rect 0.0,18.0 162.0x19.0
+3x text 4.3,22.0 92.0x12.3 "slipcase_version"
+3x rect 198.0,18.0 320.0x19.0
+3x text 203.3,23.0 16.0x9.0 "1.0"
+3x rect 526.0,18.5 24.4x18.0
+3x text 530.7,24.7 15.7x6.0 "text"
+3x text 558.7,22.0 152.3x12.3 "# the specification version"
+3x rect 718.1,20.0 19.7x15.0
+3x text 722.8,21.7 9.3x11.7 "🗑"
+3x path 6.0,46.0 6.0x6.0
+3x text 19.0,43.5 43.3x12.3 "payload"
+3x rect 18.0,61.0 162.0x19.0
+3x text 23.0,65.0 43.3x12.3 "payload"
+3x rect 216.0,61.5 28.5x18.0
+3x text 220.7,66.7 19.3x7.0 "table"
+3x rect 252.5,63.0 19.7x15.0
+3x text 257.2,64.7 9.3x11.7 "🗑"
+3x text 18.3,85.0 165.7x10.0 "# the member this describes"
+3x rect 18.0,101.0 162.0x19.0
+3x text 23.0,105.0 16.7x10.0 "file"
+3x rect 216.0,101.0 320.0x19.0
+3x text 221.0,105.0 59.7x12.3 "report.pdf"
+3x rect 544.0,101.5 24.4x18.0
+3x text 548.7,107.7 15.7x6.0 "text"
+3x rect 576.4,103.0 19.7x15.0
+3x text 581.0,104.7 9.3x11.7 "🗑"
+3x rect 18.0,123.0 162.0x19.0
+3x text 22.3,127.0 53.3x12.3 "add a key"
 3x text NaN,NaN NaNxNaN ""
-3x rect 216.0,87.5 100.0x18.0
-3x path 300.1,93.3 9.8x6.3
-3x text 221.0,92.0 22.7x9.0 "text"
-3x rect 324.0,87.5 31.5x18.0
-3x text 328.0,91.0 22.7x10.0 "Add"
-3x line 8.5,42.5 1.0x62.0
-3x rect 0.0,109.0 162.0x19.0
-3x text 4.3,113.0 53.3x12.3 "add a key"
+3x rect 216.0,123.5 100.0x18.0
+3x path 300.1,129.4 9.8x6.3
+3x text 221.0,128.0 22.7x9.0 "text"
+3x rect 324.0,123.5 31.5x18.0
+3x text 328.0,127.0 22.7x10.0 "Add"
+3x line 8.5,60.5 1.0x80.0
+3x rect 0.0,145.0 162.0x19.0
+3x text 4.3,149.0 53.3x12.3 "add a key"
 3x text NaN,NaN NaNxNaN ""
-3x rect 198.0,109.5 100.0x18.0
-3x path 282.1,115.3 9.8x6.3
-3x text 203.0,114.0 22.7x9.0 "text"
-3x rect 306.0,109.5 31.5x18.0
-3x text 310.0,113.0 22.7x10.0 "Add"
+3x rect 198.0,145.5 100.0x18.0
+3x path 282.1,151.4 9.8x6.3
+3x text 203.0,150.0 22.7x9.0 "text"
+3x rect 306.0,145.5 31.5x18.0
+3x text 310.0,149.0 22.7x10.0 "Add"

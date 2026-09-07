@@ -247,11 +247,12 @@ fn entry(
     match item {
         // A key that was removed. Nothing was written for it and nothing shows.
         Item::None => {}
-        Item::Value(v) => value(ui, name, v, above, path, siblings, tree),
+        Item::Value(v) => value(ui, name, v, &above, path, siblings, tree),
         Item::Table(t) => {
             // A `[header]` carries its own comments rather than the key's.
-            let comments = joined(&comment_lines(t.decor().prefix()));
-            section(ui, name, comments.as_deref(), tree, |ui| {
+            comment_rows(ui, &above);
+            comment_rows(ui, &comment_lines(t.decor().prefix()));
+            section(ui, name, tree, |ui| {
                 // Inside the section rather than beside its header: a
                 // `CollapsingHeader` draws its body as well as its title, and a
                 // body laid out sideways is what putting one in a row gives.
@@ -272,13 +273,14 @@ fn entry(
         Item::ArrayOfTables(a) => {
             // Neither a section nor a leaf: a section
             // whose children are numbered sections, one per table.
-            section(ui, name, joined(&above).as_deref(), tree, |ui| {
+            comment_rows(ui, &above);
+            section(ui, name, tree, |ui| {
                 controls(ui, name, path, siblings, tree, None);
                 for (n, t) in a.iter_mut().enumerate() {
-                    let comments = joined(&comment_lines(t.decor().prefix()));
                     let label = format!("[{n}]");
                     path.push(label.clone());
-                    section(ui, &label, comments.as_deref(), tree, |ui| {
+                    comment_rows(ui, &comment_lines(t.decor().prefix()));
+                    section(ui, &label, tree, |ui| {
                         table(ui, t, path, tree);
                     });
                     path.pop();
@@ -293,15 +295,21 @@ fn value(
     ui: &mut Ui,
     name: &str,
     v: &mut Value,
-    above: Vec<String>,
+    above: &[String],
     path: &mut Vec<String>,
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
 ) {
-    // A comment after the value on its own line sits in the value's suffix.
-    let mut comments = above;
-    comments.extend(comment_lines(v.decor().suffix()));
-    let comment = joined(&comments);
+    // A comment above the key is a line of its own, as it is in the file; a
+    // comment beside the value sits in the value's suffix and stays beside
+    // it. They were one label after the value until 2026-09-07, when the
+    // one above the first key of a document vanished: the label sat after a
+    // 320-point field and truncated to nothing in a window the source pane
+    // had half of. Found by hand; the headless frame is wide enough to hide
+    // it.
+    comment_rows(ui, above);
+    let beside = comment_lines(v.decor().suffix());
+    let comment = joined(&beside);
 
     // What a section could become is decided before its body borrows it.
     // An inline table can be written as a table where the container holds
@@ -316,7 +324,8 @@ fn value(
     match v {
         Value::InlineTable(t) => {
             let becomes = |k: Kind| k == Kind::Table && holds_tables;
-            section(ui, name, comment.as_deref(), tree, |ui| {
+            comment_rows(ui, &beside);
+            section(ui, name, tree, |ui| {
                 controls(
                     ui,
                     name,
@@ -334,7 +343,8 @@ fn value(
                     .as_ref()
                     .is_some_and(|e| kinds.contains(&k) && convert(e, k).is_some())
             };
-            section(ui, name, comment.as_deref(), tree, |ui| {
+            comment_rows(ui, &beside);
+            section(ui, name, tree, |ui| {
                 controls(
                     ui,
                     name,
@@ -401,11 +411,11 @@ fn element(
     tree: &Tree<'_>,
     change: &mut Option<ArrayChange>,
 ) {
-    // In a multi-line array a comment sits before its element; on one line,
-    // after it.
-    let mut comments = comment_lines(v.decor().prefix());
-    comments.extend(comment_lines(v.decor().suffix()));
-    let comment = joined(&comments);
+    // In a multi-line array a comment sits before its element, and is a
+    // line of its own here; on one line it sits after, and stays beside.
+    comment_rows(ui, &comment_lines(v.decor().prefix()));
+    let beside = comment_lines(v.decor().suffix());
+    let comment = joined(&beside);
 
     let single = match v {
         Value::Array(a) if a.len() == 1 => a.get(0).cloned(),
@@ -424,7 +434,7 @@ fn element(
     };
 
     let asked = match v {
-        Value::InlineTable(t) => section(ui, label, comment.as_deref(), tree, |ui| {
+        Value::InlineTable(t) => section(ui, label, tree, |ui| {
             let asked = line_of(
                 ui,
                 path,
@@ -439,7 +449,7 @@ fn element(
         .flatten(),
         Value::Array(inner) => {
             let becomes = |k: Kind| single.as_ref().is_some_and(|e| convert(e, k).is_some());
-            section(ui, label, comment.as_deref(), tree, |ui| {
+            section(ui, label, tree, |ui| {
                 let asked = line_of(
                     ui,
                     path,
@@ -516,7 +526,7 @@ fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, tree: 
         let name = key.get().to_owned();
         let above = comment_lines(key.leaf_decor().prefix());
         path.push(name.clone());
-        value(ui, &name, v, above, path, &mut rows, tree);
+        value(ui, &name, v, &above, path, &mut rows, tree);
         path.pop();
     }
 
@@ -823,17 +833,10 @@ fn buffered_text(ui: &mut Ui, id: egui::Id, current: &str, editable: bool) -> Fi
 fn section<R>(
     ui: &mut Ui,
     name: &str,
-    comment: Option<&str>,
     tree: &Tree<'_>,
     body: impl FnOnce(&mut Ui) -> R,
 ) -> Option<R> {
-    // A header is one piece of text, so a comment beside this key joins it
-    // rather than sitting in a column of its own.
-    let title = match comment {
-        Some(c) => format!("{name}    # {c}"),
-        None => name.to_owned(),
-    };
-    egui::CollapsingHeader::new(title)
+    egui::CollapsingHeader::new(name)
         .default_open(tree.open_by_default)
         .open(tree.force_open)
         .show(ui, body)
@@ -1131,6 +1134,14 @@ fn add_row(
             ui.label(egui::RichText::new("name taken").italics().weak());
         }
     });
+}
+
+/// Comment lines above a row or a section, one line each, as they are in
+/// the file.
+fn comment_rows(ui: &mut Ui, lines: &[String]) {
+    for line in lines {
+        ui.label(comment_text(line));
+    }
 }
 
 /// How a comment reads: quieter than the data it annotates, and still a comment.
