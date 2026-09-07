@@ -8,3 +8,7 @@
 #![warn(missing_docs, clippy::pedantic)]
 
 pub use flyleaf_core;
+
+mod tree;
+
+pub use tree::{render, Policy};
