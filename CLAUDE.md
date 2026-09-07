@@ -130,3 +130,5 @@ against what it replaced is too big.
     .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, and
                             the rule against compiling C
     PROMPT.md               the plan, alive
+    UPSTREAM.md             what toml_edit does to a document, each finding's
+                            reproduction, and whether it is filed
