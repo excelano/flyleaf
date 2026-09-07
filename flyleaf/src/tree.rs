@@ -223,7 +223,7 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
         let name = key.get().to_owned();
         let above = comment_lines(key.leaf_decor().prefix());
         path.push(name.clone());
-        entry(ui, &name, item, above, path, &mut rows, tree);
+        entry(ui, &name, item, &above, path, &mut rows, tree);
         path.pop();
     }
 
@@ -239,7 +239,7 @@ fn entry(
     ui: &mut Ui,
     name: &str,
     item: &mut Item,
-    above: Vec<String>,
+    above: &[String],
     path: &mut Vec<String>,
     siblings: &mut Siblings<'_>,
     tree: &Tree<'_>,
@@ -247,10 +247,10 @@ fn entry(
     match item {
         // A key that was removed. Nothing was written for it and nothing shows.
         Item::None => {}
-        Item::Value(v) => value(ui, name, v, &above, path, siblings, tree),
+        Item::Value(v) => value(ui, name, v, above, path, siblings, tree),
         Item::Table(t) => {
             // A `[header]` carries its own comments rather than the key's.
-            comment_rows(ui, &above);
+            comment_rows(ui, above);
             comment_rows(ui, &comment_lines(t.decor().prefix()));
             section(ui, name, tree, |ui| {
                 // Inside the section rather than beside its header: a
@@ -273,7 +273,7 @@ fn entry(
         Item::ArrayOfTables(a) => {
             // Neither a section nor a leaf: a section
             // whose children are numbered sections, one per table.
-            comment_rows(ui, &above);
+            comment_rows(ui, above);
             section(ui, name, tree, |ui| {
                 controls(ui, name, path, siblings, tree, None);
                 for (n, t) in a.iter_mut().enumerate() {
