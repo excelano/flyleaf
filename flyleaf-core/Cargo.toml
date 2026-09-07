@@ -1,0 +1,15 @@
+[package]
+name = "flyleaf-core"
+description = "The document model behind Tommy Flyleaf: TOML edited as a tree, with comments, order and formatting kept"
+readme = "../README.md"
+keywords = ["toml", "editor", "toml_edit"]
+categories = ["parser-implementations", "config"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+toml_edit.workspace = true

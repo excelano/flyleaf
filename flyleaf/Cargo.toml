@@ -1,0 +1,22 @@
+[package]
+name = "flyleaf"
+description = "Tommy Flyleaf: a structure-aware TOML editor, as an egui widget and as a desktop application"
+readme = "../README.md"
+keywords = ["toml", "editor", "egui", "gui"]
+categories = ["gui", "config"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+flyleaf-core.workspace = true
+# The widget wants egui and not eframe: it draws into a `Ui` somebody else
+# owns a window for. slipcase-desktop reaches egui through eframe 0.36, which
+# re-exports this same crate at this same version, so the types unify. The
+# application binary is what needs eframe, and it arrives behind an `app`
+# feature so that a consumer of the widget does not carry a window framework
+# it already has.
+egui = "0.36"

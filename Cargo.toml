@@ -1,0 +1,29 @@
+[workspace]
+resolver = "3"
+members = ["flyleaf-core", "flyleaf"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["David M. Anderson"]
+license = "MIT"
+repository = "https://github.com/excelano/flyleaf"
+# eframe's number rather than this code's, the same reasoning slipcase-desktop's
+# manifest records: nothing here needs past edition 2021's 1.56, and every
+# other crate in the tree sits below egui. It rises when egui raises its own,
+# so the msrv job in ci.yml builds at it rather than trusting this line. Raise
+# it here and there together.
+rust-version = "1.95"
+
+# The widget's dependency on the core lives here so that it sits beside the
+# version above and the two obviously move together. crates.io rejects a
+# path-only dependency and a version requirement cannot inherit
+# `workspace.package.version`, so the number is written twice by necessity.
+[workspace.dependencies]
+flyleaf-core = { path = "flyleaf-core", version = "0.1.0" }
+
+# One `toml_edit` across the fleet. `slpc` depends on this same major and
+# re-exports it, and slipcase-desktop holds a `DocumentMut` from `slpc` and
+# hands it to this widget: a second `toml_edit` in the graph would make that
+# two types and stop slipcase-desktop compiling. Move this and `slpc` together.
+toml_edit = "0.25"
