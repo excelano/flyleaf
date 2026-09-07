@@ -39,6 +39,7 @@ what was measured. Do not smooth an amendment away.
     cargo +1.95 build --all-targets               # the floor, measured
     cargo check -p flyleaf --no-default-features  # the widget alone
     cargo run -- path/to/file.toml                # the application
+    ./packaging/linux/install.sh                  # Linux desktop integration
 
 The workflow in `.github/workflows/ci.yml` runs all of these on every push,
 and reads the floor out of `Cargo.toml` rather than carrying its own copy.
@@ -130,6 +131,8 @@ against what it replaced is too big.
                             default `app` feature; tests/golden/ is the record
     .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, and
                             the rule against compiling C
+    packaging/linux/        the desktop entry, the icon, install.sh and
+                            uninstall.sh; Windows and macOS follow
     PROMPT.md               the plan, alive
     UPSTREAM.md             what toml_edit does to a document, each finding's
                             reproduction, and whether it is filed

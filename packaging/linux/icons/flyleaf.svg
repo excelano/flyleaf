@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    Tommy Flyleaf: a book's flyleaf, the blank page inside the cover, with
+    the corner turned back and three lines of a tree on it.
+
+    Author: David M. Anderson
+    Built with AI assistance (Claude, Anthropic)
+
+    This comment is inside the element rather than above it, for the reason
+    slipcase-desktop's icon records: gdk-pixbuf sniffs for `<svg` within the
+    first 256 bytes and refuses the file otherwise, and a file manager then
+    shows the generic icon. Keep the opening tag on the second line.
+
+    Drawn on a 64-unit grid with 3-unit strokes, so it survives the 16-pixel
+    size a file manager uses in a list. The cover is drawn first and the page
+    over it, which is what puts the page inside the book. Anything finer than
+    a page, a fold and three lines is mud at 16 pixels.
+  -->
+  <g stroke="#2f3337" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <!-- The cover, a shade of the family's slate blue, showing at the spine and the foot. -->
+    <rect x="8" y="6" width="44" height="54" rx="3" fill="#38557f"/>
+    <!-- The flyleaf, set in from the spine, with its top-right corner turned back. -->
+    <path d="M16 10 H44 L50 16 V56 H16 Z" fill="#f2ece1"/>
+    <path d="M44 10 V16 H50" fill="#9aa1a8"/>
+    <!-- Three lines of the tree: a key, and two beneath it, indented. -->
+    <path d="M23 28 H38" stroke="#4a6fa5"/>
+    <path d="M27 37 H41" stroke="#4a6fa5"/>
+    <path d="M27 46 H36" stroke="#4a6fa5"/>
+  </g>
+</svg>

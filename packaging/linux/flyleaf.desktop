@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Tommy Flyleaf
+GenericName=TOML Editor
+Comment=Edit a TOML file as a tree, keeping its comments and layout
+Exec=flyleaf %f
+Icon=flyleaf
+Terminal=false
+MimeType=application/toml;
+Categories=Utility;TextEditor;
+Keywords=toml;config;configuration;editor;cargo;
+StartupNotify=true
+StartupWMClass=flyleaf
