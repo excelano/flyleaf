@@ -1,0 +1,28 @@
+# Line endings, decided here rather than by whichever machine cloned.
+#
+# Git for Windows installs with `core.autocrlf=true`, which converts every
+# text file to CRLF on checkout. The Windows workflow found what that does
+# here on its first run: the golden fixtures came off the runner with CRLF
+# and every golden failed against files git had rewritten, and a `#!/bin/sh`
+# script under `packaging/` with CRLF endings fails on Linux naming an
+# interpreter that does not exist. `text=auto eol=lf` normalizes to LF in the
+# repository and checks out LF everywhere. slipcase-desktop's file, from
+# which this is taken, records the shell-script half.
+* text=auto eol=lf
+
+# Templates that become a Debian control file, a property list and a
+# package manifest, all line-oriented where CRLF is not part of the format.
+*.in text eol=lf
+
+# The toml-test corpus is byte-exact by definition: nine of its cases carry
+# a carriage return on purpose, valid and invalid, and `tests/roundtrip.rs`
+# compares what a save writes against the bytes as vendored. No conversion
+# in either direction.
+flyleaf-core/tests/toml-test/** -text
+
+# Not text, whatever the contents look like to a heuristic.
+*.png binary
+*.ico binary
+*.icns binary
+*.deb binary
+*.wasm binary
