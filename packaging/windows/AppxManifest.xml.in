@@ -6,7 +6,12 @@
   records why the identity cannot be guessed: @IDENTITY_NAME@, @PUBLISHER@ and
   @PUBLISHER_DISPLAY_NAME@ are assigned when the name is reserved in Partner
   Center and live in `identity.psd1`, and @VERSION_APPX@ is what
-  `packaging/version.sh --appx` prints, four parts with the fourth 0.
+  `packaging/version.sh` prints for its appx spelling, four parts with the
+  fourth 0. That flag is not written out here because XML forbids a double
+  hyphen inside a comment: the first build of this package on Windows died at
+  `makepri` with "Incorrect syntax was used in a comment", which is the only
+  thing in the fleet that parses this file and the reason the same sentence
+  survived being written on Linux.
 
   WHAT IS DECIDED HERE
 
