@@ -131,7 +131,9 @@ Three things it found, none of which a Linux build could have said:
 
 One blemish seen in the store screenshot and not fixed: a multi-line string, the sample's `notes`, shows a missing-glyph box where each line break is, because the tree edits every string in a single-line field. It is the widget's and shows on every platform; a decision about a multi-line field belongs with Phase 2, not a packaging session.
 
-**What is left on the Mac:** the App ID, the profile and the App Store Connect record, which are the portal's forms; then `build-app.sh --store`, the validate and upload in the gitignored `SUBMITTING.local.md`, and TestFlight. The Mac App Store cut of the listing is in `packaging/store-listing.md`, the screenshot script produced the 1440x900 capture from the development bundle, and both slices are built for the universal package. The version stays 0.2.1 until the Mac build is through review; then 0.3.0.
+**Uploaded to App Store Connect the same day**, build 46 of 0.2.1. The App ID, the profile and the app record were made in the portal by hand; the first `altool --validate-app` ran before the record existed and said *Cannot determine the Apple ID from Bundle ID*, which is what a missing record looks like and not a signing fault, and the API confirmed it rather than a guess: the bundle ID registered, no app against it. With the record made, `build-app.sh --store` had already produced the package, validate said *VERIFY SUCCEEDED with no errors*, upload said the same, and the build read back `processingState: VALID` two minutes later through the general API, with a token minted by hand because `altool --generate-jwt` omits `iat`. The account-side facts are in the gitignored `SUBMITTING.local.md`.
+
+**What is left on the Mac:** the App Store Connect form, filled from the Mac App Store section of `packaging/store-listing.md` with the 1440x900 capture; TestFlight, which is how a person runs the article Apple re-signs, and `check-install.sh` against that install; and what review says. The version stays 0.2.1 until the Mac build is through review; then 0.3.0.
 
 ## Current commitments
 
