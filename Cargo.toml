@@ -29,3 +29,17 @@ flyleaf-core = { path = "flyleaf-core", version = "0.2.0", default-features = fa
 # hands it to this widget: a second `toml_edit` in the graph would make that
 # two types and stop slipcase-desktop compiling. Move this and `slpc` together.
 toml_edit = "0.25"
+
+# The web build's profile. Size is what a page pays for, so this trades the
+# native binary's speed settings for the smallest wasm: `opt-level = "z"`
+# and fat LTO with one codegen unit, so that egui's unused arms are dropped
+# across crates, and `panic = "abort"`, since wasm has no unwinding to keep
+# the landing pads for. Trunk.toml names this profile; the native binary
+# keeps `release`. Measured in PROMPT.md's Phase 3 note against the 7.5 MB
+# the default release profile produced after wasm-opt.
+[profile.web]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"

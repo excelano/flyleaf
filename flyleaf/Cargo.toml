@@ -29,8 +29,10 @@ required-features = ["app"]
 # owns a window for. slipcase-desktop reaches egui through eframe 0.36, which
 # re-exports this same crate at this same version, so the types unify.
 egui = "0.36"
-# The window, for the binary alone. Defaults carry accesskit, which stays on.
-eframe = { version = "0.36", optional = true }
+# The window, for the binary alone. Its defaults carry wgpu as the renderer
+# and accesskit, both of which stay on for the native binary, in the two
+# target tables below: the web build takes a different renderer, and one
+# line here cannot say so.
 # File dialogs, for the binary alone. Defaults are `xdg-portal` and `wayland`,
 # both pure Rust; the `gtk3` feature links C through gtk-sys and stays off,
 # which is what taking the defaults does.
@@ -42,9 +44,18 @@ rfd = { version = "0.17", optional = true }
 # `tempfile`, which has no wasm build.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 flyleaf-core = { workspace = true, features = ["fs"] }
+eframe = { version = "0.36", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 flyleaf-core = { workspace = true }
+# eframe without its default `wgpu`, which on the web means WebGPU with a
+# WebGL fallback and carries wgpu-core and naga into the page, and with
+# `glow` instead, which is WebGL2 alone. Measured: the size profile took the
+# wasm from 7.5 MB to 6.4 MB and this took it to 4.8 MB, 1.9 MB gzipped.
+# Dropping `accesskit` here saved nothing, since the glow path enables it on
+# egui anyway, so it stays for symmetry with the native line. The native
+# binary above keeps wgpu, as slipcase-desktop does.
+eframe = { version = "0.36", optional = true, default-features = false, features = ["accesskit", "default_fonts", "glow", "web_screen_reader"] }
 # The browser: a future to run the dialog on, since there is no thread to
 # run it on, and the page's canvas for eframe to draw into. Both for the
 # binary alone; eframe and rfd carry their own.

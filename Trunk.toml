@@ -7,3 +7,9 @@
 [build]
 target = "flyleaf/index.html"
 dist = "dist"
+# The size profile in Cargo.toml, not `release`: the page pays for every byte.
+cargo_profile = "web"
+# The page is served from excelano.com/flyleaf/try/, and the loader trunk
+# writes into index.html reaches the wasm and the glue by this prefix. A
+# build for the site root would load them from /flyleaf-….js and fail there.
+public_url = "/flyleaf/try/"

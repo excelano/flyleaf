@@ -35,7 +35,10 @@ type Place = String;
 
 /// What the window shows.
 enum Shown {
-    /// No argument was given, or nothing has been opened yet.
+    /// No argument was given, or nothing has been opened yet. The web build
+    /// starts on the sample instead and never constructs this, and the
+    /// variant stays so that the two builds match arms in one place.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     Nothing,
     /// The file, parsed. Boxed: a document carries its history, and the
     /// other two variants are a place and a string.
@@ -651,12 +654,17 @@ fn main() -> eframe::Result {
     )
 }
 
-/// The same application in the page's canvas. Nothing to open at the start,
-/// since a browser has no argument to give; the picker is where a file
-/// comes from.
+/// The same application in the page's canvas. A browser has no argument to
+/// give, so the page opens on the sample file instead of on nothing: an empty
+/// editor shows a visitor a button, and the sample shows them the editor.
+/// Their own file comes through the picker, as before.
 #[cfg(target_arch = "wasm32")]
 fn main() {
     use web_sys::wasm_bindgen::JsCast as _;
+    let sample = parsed(
+        "sample.toml".to_owned(),
+        Ok(include_bytes!("../../packaging/sample.toml").to_vec()),
+    );
     wasm_bindgen_futures::spawn_local(async {
         let canvas = web_sys::window()
             .and_then(|w| w.document())
@@ -667,7 +675,7 @@ fn main() {
             .start(
                 canvas,
                 eframe::WebOptions::default(),
-                Box::new(|cc| Ok(Box::new(App::new(Shown::Nothing, cc.egui_ctx.clone())))),
+                Box::new(|cc| Ok(Box::new(App::new(sample, cc.egui_ctx.clone())))),
             )
             .await
             .expect("the application starts");
@@ -678,7 +686,7 @@ fn main() {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use super::{shown, title, App, Shown, Then};
+    use super::{parsed, shown, title, App, Shown, Then};
 
     fn fixture(name: &str) -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -911,6 +919,21 @@ mod tests {
     }
 
     /// The file's name leads the title, so a task bar reads as files.
+    /// The web build opens on `packaging/sample.toml`, and a sample that does
+    /// not parse would open on its error message instead. The native suite is
+    /// where that is caught, since the wasm build runs no tests.
+    #[test]
+    fn the_sample_the_web_build_opens_with_parses() {
+        let sample = parsed(
+            PathBuf::from("sample.toml"),
+            Ok(include_bytes!("../../packaging/sample.toml").to_vec()),
+        );
+        assert!(
+            matches!(sample, Shown::Document { .. }),
+            "the sample did not parse"
+        );
+    }
+
     #[test]
     fn the_title_leads_with_the_file() {
         assert_eq!(title(&Shown::Nothing), "Tommy Flyleaf");

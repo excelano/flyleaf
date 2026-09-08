@@ -114,6 +114,21 @@ jobs:
         run: cargo check -p flyleaf --target wasm32-unknown-unknown
       - name: Clippy
         run: cargo clippy -p flyleaf --target wasm32-unknown-unknown -- -D warnings
+      # The bundle itself, with the trunk release pinned to the version that
+      # built it locally, so that a size regression shows up here as a number
+      # and a deploy can take this artifact rather than a working copy's.
+      - name: Trunk
+        run: |
+          curl -fsSL "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C /usr/local/bin trunk
+          trunk --version
+      - name: Build the page
+        run: |
+          trunk build --release
+          ls -l dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: dist/
 
   # `rust-version` in Cargo.toml is a claim, and this is what makes it a
   # measurement. The number is read out of the manifest rather than written
