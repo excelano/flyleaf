@@ -115,7 +115,9 @@ Three things it found, all of them things no Linux run could have said:
 
 The check that would have caught the second one is `check-install.ps1`, new here: it installs, plants a `UserChoice` the way Explorer writes one, deny rule and all, uninstalls, and reads back that everything of ours is gone and that another application's registration on the shared extension is untouched. It bites — broken deliberately against the fix, it fails on exactly that line — and `windows.yml` runs it, which is the first time CI has reached the install scripts at all.
 
-**What is left on Windows:** the certification kit, which needs elevation and whose prompt went unanswered, and with it `$KNOWN_FINDINGS`, still empty; then the store listing and the submission. The version stays 0.2.1: this is a packaging session, and 0.3.0 waits for the macOS half to have been through the same on a Mac.
+**The certification kit ran the same day**, elevated, against the self-signed package: overall PASS with one test FAIL, `Blocked executables`, which is exactly the finding slipcase-desktop's baseline predicted for this application and the only thing `$KNOWN_FINDINGS` now holds. Traced rather than assumed: nothing in this repository spawns a process — `std::process` appears only as `process::id()` in test paths — and the About box's two `hyperlink_to` calls reach `webbrowser` through `egui-winit` and `eframe`, which is where `CreateProcessW` and the `cmd.exe` strings come from; the report's `rEG` and `dNx` lines are the kit's string scanner finding those letters somewhere in 15 MB of binary and refer to nothing. Being on the list means the gate is quiet about it and loud about anything else, not that review will accept it. The gate was checked the way `-ReadReport` exists to be checked: the baseline broken deliberately, the run refusing, the baseline put back.
+
+**What is left on Windows:** the store listing and the submission. The version stays 0.2.1: this is a packaging session, and 0.3.0 waits for the macOS half to have been through the same on a Mac.
 
 ## Current commitments
 

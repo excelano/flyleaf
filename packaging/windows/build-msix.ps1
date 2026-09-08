@@ -56,17 +56,43 @@ $ErrorActionPreference = 'Stop'
 # so that `-Certify` can be quiet about those and loud about anything else.
 #
 # **This is a record of what is known, not a claim that it is acceptable.**
-# Empty until the first kit run fills it, which is the rule the fleet note
-# gives: a baseline copied from another application would be a claim about a
-# binary nobody has run the kit against. slipcase-desktop's carries `Blocked
-# executables` FAIL, traced there to the standard library's batch-file spawn
-# and to `ShellExecuteW` under `opener`; this application opens two links from
-# its About box through the same route, so the same finding is likely and is
-# recorded here the day the kit reports it, with the decision to submit
-# despite it taken then and written into PROMPT.md.
+# It was empty until the kit first ran, which is the rule the fleet note gives:
+# a baseline copied from another application would be a claim about a binary
+# nobody has run the kit against.
+#
+# Filled 2026-09-08, from the first run, on 0.2.1. Overall PASS, one test FAIL,
+# the one slipcase-desktop's baseline predicted:
+#
+#   Blocked executables
+#     File flyleaf.exe contains a reference to a "Launch Process" related API
+#       kernel32.dll!CreateProcessW
+#     File flyleaf.exe contains a blocked executable reference to "cmd.exe".
+#     File flyleaf.exe contains a blocked executable reference to "\cmd.exe".
+#     File flyleaf.exe contains a blocked executable reference to "rEG".
+#     File flyleaf.exe contains a blocked executable reference to "dNx".
+#
+# Where it comes from, traced rather than assumed. Nothing in this repository
+# spawns a process: `std::process` appears in `flyleaf` and `flyleaf-core` only
+# as `process::id()`, in test paths. The About box has two `hyperlink_to` calls,
+# egui hands a clicked link to eframe, and `cargo tree -i webbrowser` on this
+# target reads webbrowser <- egui-winit <- eframe <- flyleaf. That crate opens a
+# URL through the shell, which is where `CreateProcessW` and the two `cmd.exe`
+# strings enter, along with the standard library's own batch-file spawn. The
+# last two lines are the kit's string scanner matching byte sequences that spell
+# `reg` and `dnx` somewhere in 15 MB of binary; they are not references to those
+# programs and there is nothing to remove.
+#
+# What being on this list means, and does not. It means the kit says this every
+# run and the gate stays quiet about it so that it can be loud about anything
+# else; it does not mean the finding is acceptable to certification, which is
+# review's to say. Removing it means an application that cannot open a link:
+# the only other route is `ShellExecuteW`, which is the other half of what the
+# kit is naming. slipcase-desktop went to review with the same finding, and
+# PROMPT.md carries what came back.
 #
 # Shrink this list when a finding goes away; the run says so when one does.
 $KNOWN_FINDINGS = @{
+    'Blocked executables' = 'FAIL'
 }
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
