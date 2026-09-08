@@ -65,11 +65,25 @@ public struct RECT { public int Left, Top, Right, Bottom; }
 Get-Process flyleaf -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 Start-Process $File
-Start-Sleep -Seconds 6
 
-$app = Get-Process flyleaf -ErrorAction SilentlyContinue | Select-Object -First 1
-if (-not $app -or $app.MainWindowHandle -eq [IntPtr]::Zero) {
+# Waited for rather than slept through. This was a flat six seconds, and the
+# first run on the Windows machine 2026-09-08 refused with the message below
+# against a process that was starting perfectly well: a cold 15 MB binary off a
+# disk that has never read it takes longer than that to put a window up, and the
+# same run a minute later took under two seconds. A fixed sleep that is long
+# enough for a cold start is time paid on every warm one, and the message it
+# fails with sends the reader to the association, which was not the fault.
+$deadline = (Get-Date).AddSeconds(60)
+do {
+    Start-Sleep -Milliseconds 500
+    $app = Get-Process flyleaf -ErrorAction SilentlyContinue | Select-Object -First 1
+} while ((-not $app -or $app.MainWindowHandle -eq [IntPtr]::Zero) -and (Get-Date) -lt $deadline)
+
+if (-not $app) {
     Refuse "nothing opened $File - is this application the .toml handler here?"
+}
+if ($app.MainWindowHandle -eq [IntPtr]::Zero) {
+    Refuse "$($app.Path) started and put no window up within 60 seconds"
 }
 $handle = $app.MainWindowHandle
 
