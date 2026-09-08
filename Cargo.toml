@@ -3,7 +3,7 @@ resolver = "3"
 members = ["flyleaf-core", "flyleaf"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["David M. Anderson"]
 license = "MIT"
@@ -22,7 +22,7 @@ rust-version = "1.95"
 [workspace.dependencies]
 # Without its `fs` feature here, so that the web build can leave the file
 # system out; the native build turns it back on in the widget's manifest.
-flyleaf-core = { path = "flyleaf-core", version = "0.2.0", default-features = false }
+flyleaf-core = { path = "flyleaf-core", version = "0.2.1", default-features = false }
 
 # One `toml_edit` across the fleet. `slpc` depends on this same major and
 # re-exports it, and slipcase-desktop holds a `DocumentMut` from `slpc` and

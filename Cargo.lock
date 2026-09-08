@@ -1063,7 +1063,7 @@ dependencies = [
 
 [[package]]
 name = "flyleaf"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "eframe",
  "egui",
@@ -1075,7 +1075,7 @@ dependencies = [
 
 [[package]]
 name = "flyleaf-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "tempfile",
  "toml_edit",

@@ -1,0 +1,37 @@
+name: Publish to crates.io
+
+# Fires on the version tag the release pushes, and can be run by hand.
+# `cargo publish` compiles and uploads from source, so it is independent of
+# the .deb and runs beside it; the tag is pushed before the GitHub release
+# exists, so the crates land first. Copied from slipcase-desktop's, in
+# segler's workspace form: `--workspace` publishes `flyleaf-core` first and
+# then `flyleaf`, which depends on it, in one command.
+#
+# The step is token-gated: it skips cleanly, with no failed run, unless a
+# CRATES_IO_TOKEN secret is available (repo- or org-level). Versions on
+# crates.io are immutable: a bad one is yanked, never re-published, and the
+# fix is the next number.
+on:
+  push:
+    tags:
+      - '**[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check for a crates.io token
+        id: token
+        env:
+          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: echo "present=${CRATES_IO_TOKEN:+true}" >> "$GITHUB_OUTPUT"
+      - name: Publish
+        if: steps.token.outputs.present == 'true'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --workspace
