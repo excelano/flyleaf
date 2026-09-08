@@ -42,6 +42,9 @@ what was measured. Do not smooth an amendment away.
     ./packaging/linux/install.sh                  # Linux desktop integration
     cargo check -p flyleaf --target wasm32-unknown-unknown   # the web arm
     trunk build --release                         # the web page, into dist/
+    ./packaging/debian/build-deb.sh               # the .deb, after a release build
+    ./packaging/linux/check-libraries.sh          # what the running app opens, against Depends;
+                                                  # needs a display, so run it after touching a dependency
 
 The workflow in `.github/workflows/ci.yml` runs all of these on every push,
 and reads the floor out of `Cargo.toml` rather than carrying its own copy.
@@ -135,8 +138,11 @@ against what it replaced is too big.
                             the rule against compiling C
     flyleaf/index.html      the page the web build draws into; Trunk.toml
                             at the root says how it is built
-    packaging/linux/        the desktop entry, the icon, install.sh and
-                            uninstall.sh; Windows and macOS follow
+    packaging/linux/        the desktop entry, the icon, install.sh,
+                            uninstall.sh and check-libraries.sh
+    packaging/debian/       control.in, the changelog, the manual page and
+                            build-deb.sh; version.sh beside them reads the
+                            one version in Cargo.toml in every spelling
     PROMPT.md               the plan, alive
     UPSTREAM.md             what toml_edit does to a document, each finding's
                             reproduction, and whether it is filed

@@ -1,0 +1,35 @@
+Package: flyleaf
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: David M. Anderson <david.anderson@excelano.com>
+Installed-Size: @SIZE@
+Section: editors
+Priority: optional
+Homepage: https://github.com/excelano/flyleaf
+Depends: libc6, libgcc-s1, libwayland-client0, libxkbcommon0, libxkbcommon-x11-0, libegl1, libvulkan1 | libgl1, libx11-6, libx11-xcb1, libxi6, libxcursor1, libxrandr2, shared-mime-info, desktop-file-utils, hicolor-icon-theme
+Description: Structure-aware TOML editor
+ Tommy Flyleaf opens a TOML file and shows it as a tree beside what a save
+ would write. Values are edited by their type, keys, tables, arrays and
+ comments can be added, renamed, converted and removed, and a save keeps
+ every comment, the key order, the whitespace and the quoting of everything
+ that was not edited. The same editor is the metadata editor inside Slipcase.
+ .
+ Only two of the libraries above are found by dpkg-shlibdeps. The executable
+ links libc and libgcc and nothing else; the display stack, the graphics
+ driver loader, and the keyboard map libraries are all opened by name at run
+ time, so a package built from the linker's answer alone would install on a
+ machine where it cannot start. The list is the one slipcase-desktop measured
+ for the same framework, checked here by packaging/linux/check-libraries.sh,
+ which runs the application under both display backends and reads what it
+ mapped.
+ .
+ There are two keyboard map libraries and not one, because there are two
+ display backends. A Wayland session never loads libxkbcommon-x11, and an X11
+ session panics at startup without it; nothing pulls it in behind
+ libxkbcommon0, which is the dependency in the other direction.
+ .
+ shared-mime-info declares application/toml, which is what makes a file
+ manager offer this application for a .toml file; the type has been in it
+ since 2.1. The two tool packages at the end own the dpkg triggers that
+ rebuild the desktop and icon caches, which is why this package carries no
+ maintainer scripts.

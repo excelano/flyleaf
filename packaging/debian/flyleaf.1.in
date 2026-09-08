@@ -1,0 +1,76 @@
+.\" Manual page for flyleaf.
+.\"
+.\" It exists because the binary takes an argument and has no --help to
+.\" describe it: src/main.rs reads args_os().nth(1) and nothing else, so this
+.\" is the only place that argument is written down. slipcase-desktop's page
+.\" exists for the same reason, and lintian tagged its absence there.
+.\"
+.\" @VERSION@ is substituted by packaging/debian/build-deb.sh, the same way
+.\" control.in is, so the version in the header cannot drift from the package.
+.\" The date is the date this page was last revised and not the build date,
+.\" which is the convention and is also what makes the page reproducible.
+.\"
+.\" Author: David M. Anderson
+.\" Built with AI assistance (Claude, Anthropic)
+.TH FLYLEAF 1 "2026\-09\-07" "flyleaf @VERSION@" "User Commands"
+.SH NAME
+flyleaf \- structure\-aware TOML editor
+.SH SYNOPSIS
+.B flyleaf
+.RI [ file ]
+.SH DESCRIPTION
+.B Tommy Flyleaf
+opens a TOML file and shows it as a tree beside what a save would write.
+Values are edited by their type, keys, tables, arrays and comments can be
+added, renamed, converted and removed, and a save keeps every comment, the
+key order, the whitespace and the quoting of everything that was not edited.
+.PP
+It is a windowed application, normally started by opening a file from a file
+manager rather than from a shell. The package registers the desktop entry
+that makes that work, so a .toml file opens on a double\-click once the
+application is chosen for it.
+.SH OPTIONS
+There are none.
+.B flyleaf
+is a window rather than a command\-line interface, and it takes one optional
+positional argument and nothing else.
+.SH ARGUMENTS
+.TP
+.I file
+The TOML file to open. With no argument the window opens empty and offers to
+choose one.
+.PP
+A file that cannot be read, or is not TOML, is reported in the window rather
+than on the standard error, with the line and column the parser objected to,
+because the argument usually arrives from a file manager where nobody is
+watching a terminal.
+.SH KEYS
+.TP
+.B Ctrl+O
+Open a file.
+.TP
+.B Ctrl+S
+Save. The file is written beside itself and renamed over the original, so a
+failure at any point leaves the original whole.
+.TP
+.B Ctrl+Shift+S
+Save as.
+.TP
+.B Ctrl+Z, Ctrl+Shift+Z
+Undo and redo. Edits to one row are one step.
+.SH EXIT STATUS
+Returns success when the window has been closed. A non\-zero status means the
+window could not be created at all \(em no display, or no usable graphics
+driver \(em rather than anything about a file.
+.SH FILES
+.TP
+.I /usr/share/applications/flyleaf.desktop
+The desktop entry, naming application/toml.
+.SH SEE ALSO
+.BR xdg\-mime (1),
+.BR update\-desktop\-database (1)
+.PP
+The TOML specification is at https://toml.io. The plan and the design
+decisions behind this application are in PROMPT.md in its repository.
+.SH AUTHOR
+David M. Anderson

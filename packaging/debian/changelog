@@ -1,0 +1,15 @@
+flyleaf (0.2.0) unstable; urgency=medium
+
+  * The general editor. Every value is edited by its kind, the four datetime
+    shapes told apart, and can be converted to another kind where it reads as
+    one; arrays are editable; comments can be edited, added and removed in
+    every place TOML allows one; undo and redo; a source pane showing what a
+    save would write, with the row being edited highlighted; open, save and
+    save as, with a prompt before unsaved changes are lost.
+  * A save keeps the byte order mark, the line endings and the absence of a
+    final newline the file had, which the parser alone drops. Every valid
+    TOML 1.1.0 case of toml-test round-trips byte for byte, except seven the
+    parser itself changes; those are named in the tests and filed upstream.
+  * The first package. Registers the desktop entry for application/toml.
+
+ -- David M. Anderson <david.anderson@excelano.com>  Mon, 07 Sep 2026 19:40:00 -0500
