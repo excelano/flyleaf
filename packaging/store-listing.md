@@ -16,7 +16,8 @@ submission, identity and all, goes in `windows/SUBMITTING.local.md`, which
 Paragraphs are single lines on purpose. A store field is a web form, and text
 hard-wrapped at 80 columns pastes into one with the wraps still in it.
 
-Submitted to the Microsoft Store 2026-09-08, at 0.2.1.
+Submitted to the Microsoft Store 2026-09-08, at 0.2.1. The Mac App Store cut
+was written the same day, from a Mac; its section is at the end.
 
 ---
 
@@ -43,7 +44,7 @@ What it does:
 • Adds, renames, converts and removes keys, tables, inline tables and arrays.
 • Edits comments wherever TOML allows one: above a key, beside a value, or at the end of the file.
 • Undo and redo, one step per row worked in.
-• Saves atomically. The file is written beside the original and renamed over it in one step, so an interruption leaves the old file or the new one, never half of each. A read-only file is refused rather than replaced.
+• Saves atomically. The new file replaces the old in one step, so an interruption leaves the old file or the new one, never half of each. A read-only file is refused rather than replaced.
 
 TOML 1.1.0. Every valid case of the toml-test conformance corpus round-trips byte for byte.
 
@@ -56,6 +57,12 @@ Open source, MIT licensed: github.com/excelano/flyleaf
 **What's new in this version**
 
 First release in the Microsoft Store.
+
+The save bullet above said "written beside the original and renamed over it"
+when the Microsoft submission was pasted. That is how Windows and Linux do it
+and not how the sandboxed Mac build does, so the sentence now says only what is
+true everywhere; the Microsoft listing carries the older wording until its next
+submission.
 
 **Category**
 
@@ -124,6 +131,7 @@ The application makes no network request. Its import table names nineteen librar
 | What | Where | Built by |
 | --- | --- | --- |
 | Screenshot, 1366x768 | `dist/store/01-window.png` | `windows/screenshot.ps1 -File packaging/sample.toml` |
+| Mac screenshot, 1440x900 | `dist/store/mac-01-window.png` | `macos/screenshot.sh --app "dist/Tommy Flyleaf.app" --file packaging/sample.toml --out dist/store/mac-01-window.png` |
 | Store logo, 1080x1080 | `windows/listing/store-logo-1080.png` | `windows/make-ico` |
 | Store logo, 2160x2160 | `windows/listing/store-logo-2160.png` | `windows/make-ico` |
 
@@ -136,10 +144,56 @@ it is a photograph of a build, and it is retaken when the interface changes.
 
 ## The Mac App Store
 
-Not submitted yet. Most of the above carries over: the name, both descriptions,
-the links, the pricing and the age rating are the same product. What differs is
-Apple's own fields — a subtitle, promotional text, keywords as one
-comma-separated string, and App Review notes rather than certification notes.
-The review notes start from the section above with the certification-kit
-paragraph dropped and Apple's sandbox entitlements described instead; that is
-`macos/README.md`'s to say when the Mac session happens.
+Most of the above carries over: the name, the description, the links, the
+pricing and the age rating are the same product. What differs is Apple's own
+fields, and they are here. The Mac screenshot is taken from a development-signed
+bundle of the same commit, because a Store-signed one cannot launch off the
+Store; `macos/screenshot.sh` refuses any size App Store Connect would.
+
+**Name**
+
+Tommy Flyleaf
+
+**Subtitle** (limit 30; this is 26)
+
+TOML editor, one edit deep
+
+**Promotional text** (limit 170; this is 156)
+
+Open a TOML file as a tree, change one value, and save. Every comment, key and line you did not touch comes back exactly as it was. Nothing leaves your Mac.
+
+**Keywords** (limit 100 characters, one comma-separated string; this is 88)
+
+TOML,editor,config,configuration,Cargo.toml,pyproject.toml,developer,settings,round-trip
+
+**Description**
+
+The Microsoft Store description above, verbatim.
+
+**What's new in this version**
+
+First release on the Mac App Store.
+
+**Category**
+
+Developer Tools
+
+**App Review notes**
+
+Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
+
+To exercise it: launch it and click Open, or drop any .toml file on the Dock icon, or choose Tommy Flyleaf from Open With on one. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file saved from TextEdit with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
+
+The application declares the TOML document type and claims it at rank Alternate, not Owner: it is one editor for a format many applications open, and any application that claims .toml at a higher rank keeps double-clicks. On a Mac where nothing else claims the type, macOS will pick it, since there is no other candidate.
+
+The App Sandbox is on with exactly two entitlements: the sandbox itself and read-write access to user-selected files. A save replaces the file the person chose, staged in the replacement directory macOS provides on the file's own volume and swapped in with one call, so it stays inside that grant. There is no network entitlement, and the application makes no network request; the About box has two links, to the product page and to the source repository, which open in the default browser.
+
+The full privacy statement is at https://excelano.com/legal/#flyleaf and the complete source is at https://github.com/excelano/flyleaf.
+
+**Export compliance**
+
+Answered in the bundle: `Info.plist.in` declares `ITSAppUsesNonExemptEncryption` false. The application implements no cryptography.
+
+**Privacy questionnaire**
+
+Data not collected, every category. The statement above is the reason each answer is "no".
