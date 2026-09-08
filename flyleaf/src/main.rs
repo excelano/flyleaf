@@ -15,9 +15,21 @@
 // Author: David M. Anderson
 // Built with AI assistance (Claude, Anthropic)
 
-#![forbid(unsafe_code)]
+// `deny` rather than `forbid`, for one module: macOS delivers a double-clicked
+// document as an Apple Event and never as an argument, and receiving one means
+// defining an Objective-C class, which `objc2` cannot do without `unsafe`.
+// `forbid` cannot be lifted beneath it, so the application crate carries
+// `deny` and the handler carries the one `allow`; the widget in `lib.rs` and
+// `flyleaf-core` stay `forbid`. `CLAUDE.md` records the decision.
+#![deny(unsafe_code)]
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(windows, windows_subsystem = "windows")]
+
+// The one exception to `deny(unsafe_code)` above. Nothing else in this crate
+// is permitted it, and a second module wanting the allow is a decision.
+#[cfg(target_os = "macos")]
+#[allow(unsafe_code)]
+mod opened_document;
 
 use std::ops::Range;
 #[cfg(not(target_arch = "wasm32"))]
@@ -25,6 +37,32 @@ use std::path::PathBuf;
 use std::sync::mpsc;
 
 use flyleaf_core::Document;
+
+/// The name the binary, the Linux desktop entry and the reverse-DNS bundle
+/// identifier share. `with_app_id` is Wayland's `xdg_toplevel.set_app_id`,
+/// which is how a compositor finds the window's icon; it does nothing on the
+/// other two platforms, where the bundle and the executable's path do that.
+#[cfg(not(target_arch = "wasm32"))]
+const APP_ID: &str = "flyleaf";
+
+/// The icon the window shows on Windows, as bytes, because a window icon
+/// there comes from a resource compiled into the executable and a resource
+/// compiler is what `CLAUDE.md` keeps out of the build. The 64-pixel entry
+/// is decoded at startup; slipcase-desktop's README records why that size.
+#[cfg(target_os = "windows")]
+const WINDOW_ICON: &[u8] = include_bytes!("../../packaging/windows/flyleaf.ico");
+
+#[cfg(target_os = "windows")]
+fn window_icon() -> Option<egui::IconData> {
+    let directory = ico::IconDir::read(std::io::Cursor::new(WINDOW_ICON)).ok()?;
+    let entry = directory.entries().iter().find(|e| e.width() == 64)?;
+    let image = entry.decode().ok()?;
+    Some(egui::IconData {
+        rgba: image.rgba_data().to_vec(),
+        width: image.width(),
+        height: image.height(),
+    })
+}
 
 /// Where a document is. A path on disk; on the web a name, which is all a
 /// browser will say about a file it hands over.
@@ -144,12 +182,16 @@ enum Answer {
 }
 
 /// What to do once unsaved changes have been dealt with.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 enum Then {
     /// Close the window.
     Close,
     /// Open another file.
     Open,
+    /// Show this file, which the platform handed over: on macOS a document
+    /// double-clicked into a running window arrives this way.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    Show(Place),
 }
 
 struct App {
@@ -401,12 +443,13 @@ impl App {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
             Then::Open => self.start_picking(ctx, Ask::Open),
+            Then::Show(at) => self.show(opened(at, None)),
         }
     }
 
     /// The prompt: save, don't save, or stay.
     fn ask(&mut self, ctx: &egui::Context) {
-        let Some(then) = self.asking else {
+        let Some(then) = self.asking.clone() else {
             return;
         };
         let name = match &self.shown {
@@ -419,7 +462,9 @@ impl App {
             ui.heading(format!("Save changes to {name}?"));
             ui.label(match then {
                 Then::Close => "The window is closing. Unsaved changes will be lost.",
-                Then::Open => "Another file is opening. Unsaved changes will be lost.",
+                Then::Open | Then::Show(_) => {
+                    "Another file is opening. Unsaved changes will be lost."
+                }
             });
             if let Some(said) = &self.said {
                 ui.label(egui::RichText::new(said.as_str()).color(ui.visuals().error_fg_color));
@@ -454,6 +499,15 @@ impl App {
 
     fn render(&mut self, ui: &mut egui::Ui) {
         self.poll_picking();
+        // A document the platform handed over is opened the way one chosen in
+        // the dialog is, unsaved changes asked about first. Not while a dialog
+        // is up, since the answer to that dialog is a file too.
+        #[cfg(target_os = "macos")]
+        if self.picking.is_none() {
+            if let Some(path) = opened_document::taken() {
+                self.after_asking(ui.ctx(), Then::Show(path));
+            }
+        }
 
         // Closing is the window's request; with something unsaved it is
         // refused this frame and asked about, and granted once answered.
@@ -767,16 +821,40 @@ fn opened(at: Place, bytes: Option<Vec<u8>>) -> Shown {
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     let shown = shown(std::env::args_os().nth(1).map(PathBuf::from));
+    let viewport = egui::ViewportBuilder::default()
+        .with_title(title(&shown))
+        .with_app_id(APP_ID)
+        .with_inner_size([1100.0, 700.0]);
+    #[cfg(target_os = "windows")]
+    let viewport = match window_icon() {
+        Some(icon) => viewport.with_icon(icon),
+        None => viewport,
+    };
+    // An empty `IconData` is how the icon is declined rather than replaced:
+    // eframe substitutes its own egui logo for a viewport that names no icon
+    // and hands it to `setApplicationIconImage:`, which outranks the bundle's
+    // `.icns` in the Dock. Measured in slipcase-desktop and segler, both by a
+    // person looking at the Dock.
+    #[cfg(target_os = "macos")]
+    let viewport = viewport.with_icon(egui::IconData::default());
+
+    // Before `eframe` runs, since the handler has to be on at
+    // `applicationWillFinishLaunching:`; `opened_document` says why.
+    #[cfg(target_os = "macos")]
+    opened_document::watch();
+
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_title(title(&shown))
-            .with_inner_size([1100.0, 700.0]),
+        viewport,
         ..Default::default()
     };
     eframe::run_native(
         "Tommy Flyleaf",
         options,
-        Box::new(|cc| Ok(Box::new(App::new(shown, cc.egui_ctx.clone())))),
+        Box::new(|cc| {
+            #[cfg(target_os = "macos")]
+            opened_document::wake_with(&cc.egui_ctx);
+            Ok(Box::new(App::new(shown, cc.egui_ctx.clone())))
+        }),
     )
 }
 

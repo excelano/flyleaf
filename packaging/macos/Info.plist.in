@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The bundle's property list. `build-app.sh` substitutes @VERSION@ and @BUILD@
+  from Cargo.toml through `packaging/version.sh`, the way `control.in` is
+  substituted. Adapted from slipcase-desktop's, whose comments record why each
+  key is here; what differs is the type.
+
+  The type is imported, not exported, because this application does not own
+  TOML: an imported declaration says what a `.toml` is so that Launch Services
+  can match it, and `CFBundleDocumentTypes` says this application opens it.
+  There is no system-declared TOML type as of macOS 15, measured by the
+  absence of one in the public UTType list, so the identifier is chosen in the
+  format's own domain, `io.toml.toml`, conforming to `public.plain-text`.
+  **To measure on the Mac before the first upload:** `lsregister -dump | grep
+  -i toml` for what other installed applications declare, and if several agree
+  on an identifier, take theirs, since two applications importing one type
+  under two identifiers give Finder two kinds of file for one extension.
+
+  The role is Editor, since the application writes the file back, and the
+  rank is Alternate rather than Owner: this is one editor for a format many
+  applications open, and claiming ownership would take double-clicks away from
+  whatever a person already uses. A person who wants that makes the choice in
+  Finder's Get Info.
+
+  `LSMinimumSystemVersion` is 12.0, inherited from slipcase-desktop's floor;
+  nothing here needs a newer selector, and the floor may come down once
+  `MACOSX_DEPLOYMENT_TARGET` is measured against what winit and eframe need.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>flyleaf</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.excelano.flyleaf</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleName</key>
+	<string>Tommy Flyleaf</string>
+	<key>CFBundleDisplayName</key>
+	<string>Tommy Flyleaf</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@VERSION@</string>
+	<!-- The commit count, not @VERSION@: App Store Connect deduplicates
+	     uploads by this key and it must rise on every upload. -->
+	<key>CFBundleVersion</key>
+	<string>@BUILD@</string>
+	<key>CFBundleIconFile</key>
+	<string>flyleaf</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<!-- No cryptography of its own and no network call, so the export
+	     compliance question is answered here once rather than per upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>TOML document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>io.toml.toml</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>flyleaf</string>
+		</dict>
+	</array>
+
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.toml.toml</string>
+			<key>UTTypeDescription</key>
+			<string>TOML document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>toml</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/toml</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

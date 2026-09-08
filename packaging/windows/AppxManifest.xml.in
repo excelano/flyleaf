@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The MSIX package manifest, templated the way `control.in` and `Info.plist.in`
+  are. `build-msix.ps1` substitutes the placeholders below; nothing here is
+  meant to be edited per build. Adapted from slipcase-desktop's, whose comment
+  records why the identity cannot be guessed: @IDENTITY_NAME@, @PUBLISHER@ and
+  @PUBLISHER_DISPLAY_NAME@ are assigned when the name is reserved in Partner
+  Center and live in `identity.psd1`, and @VERSION_APPX@ is what
+  `packaging/version.sh --appx` prints, four parts with the fourth 0.
+
+  WHAT IS DECIDED HERE
+
+  The file-type association is for `.toml`, which this application does not
+  own: a Cargo.toml or a pyproject.toml is usually somebody else's file and
+  often already somebody else's association. A packaged handler is added to
+  the extension's Open With list and never made its default, which is what an
+  MSIX association does on its own; `install.ps1` writes the same ProgID for a
+  side-loaded install and takes the default only when asked, so the two
+  installs agree the way slipcase-desktop's do.
+
+  No capabilities beyond `runFullTrust`. This application makes no network
+  call, opens the file it was launched with and writes where a person points
+  a save dialog, and asks for no device. A capability requested and unused is
+  a question at certification with no good answer.
+
+  Author: David M. Anderson
+  Built with AI assistance (Claude, Anthropic)
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="@IDENTITY_NAME@"
+    Publisher="@PUBLISHER@"
+    Version="@VERSION_APPX@"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Tommy Flyleaf</DisplayName>
+    <PublisherDisplayName>@PUBLISHER_DISPLAY_NAME@</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Edit a TOML file as a tree, every value by its kind, and save it with the comments, key order and formatting of everything you did not edit kept.</Description>
+  </Properties>
+
+  <Dependencies>
+    <!-- 10.0.17763 is the oldest Windows 10 that supports the packaging
+         features used here. Raising it excludes machines for nothing; lowering
+         it is not possible. -->
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="10.0.17763.0"
+      MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <!-- US English, the fleet's one tag since 2026-09-06; slipcase-desktop's
+         manifest records the two spellings it went through. This is the only
+         place in the repository that names a language, and `build-msix.ps1`
+         spells the same tag a second time for `makepri`; changing one without
+         the other is the silent failure that script's comment describes. -->
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application
+      Id="Flyleaf"
+      Executable="flyleaf.exe"
+      EntryPoint="Windows.FullTrustApplication">
+
+      <uap:VisualElements
+        DisplayName="Tommy Flyleaf"
+        Description="Edit a TOML file as a tree and keep the rest of the file as it was."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- The same extension, content type and friendly name `install.ps1`
+             writes for a side-loaded install. The content type is the one
+             IANA registered for TOML in 2024. The icon index is 0 because
+             `flyleaf.ico` holds one image set; `make-ico` builds it and
+             `windows.yml` checks the committed copy still matches its
+             generator. -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="toml">
+            <uap:SupportedFileTypes>
+              <uap:FileType ContentType="application/toml">.toml</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:DisplayName>TOML document</uap:DisplayName>
+            <uap:Logo>Assets\flyleaf.png</uap:Logo>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- A packaged desktop application needs this and nothing else. See the
+         comment at the top of this file. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

@@ -1,0 +1,117 @@
+# Run the suite on Apple silicon, because nothing else here can, and open a
+# document through Launch Services to watch the one module no test reaches.
+# Adapted from slipcase-desktop's; the reasoning for asking the window server
+# rather than taking a screenshot is recorded there and in
+# `packaging/macos/window-probe.swift`.
+#
+# What this reaches: the suite, including `flyleaf-core`'s macOS save arm,
+# which calls `-[NSFileManager replaceItemAtURL:]` for real; the bundle
+# assembling; and a document opened with `open`, which delivers the Apple Event
+# a double-click delivers, so `src/opened_document.rs` runs on arm64. What it
+# cannot say is whether the document was delivered rather than the application
+# merely launched: the window's title would say so and reading titles needs
+# Screen Recording permission, which a runner does not grant. A person's
+# double-click on the Mac is where that is checked.
+#
+# What it does not reach: a sandbox, which needs a signing identity no runner
+# has; a high-density display; and the Finder icon.
+#
+# Author: David M. Anderson
+# Built with AI assistance (Claude, Anthropic)
+
+name: Apple silicon
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  arm64:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # A label is a promise rather than a fact: `macos-13` is Intel and
+      # `macos-14` onwards is Apple silicon, which is a mapping GitHub can
+      # change. Checked, so that this fails loudly rather than quietly testing
+      # x86_64 twice.
+      - name: The runner is Apple silicon
+        run: |
+          arch=$(uname -m)
+          echo "runner reports ${arch}"
+          [ "$arch" = arm64 ] || {
+            echo "this workflow exists to test arm64 and the runner is ${arch}" >&2
+            exit 1
+          }
+
+      - name: What is installed
+        run: rustc -V && cargo -V
+
+      - name: Build
+        run: cargo build --all-targets
+
+      - name: Test
+        run: cargo test
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      # The bundle is the unit: a bare executable has no bundle identifier and
+      # no Apple Event reaches it. From the debug binary the steps above
+      # produced, since the question does not depend on optimisation.
+      - name: Assemble the bundle
+        run: |
+          target=$(cargo metadata --format-version 1 --no-deps |
+              sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')
+          ./packaging/macos/build-app.sh --binary "${target}/debug/flyleaf"
+          lipo -info "dist/Tommy Flyleaf.app/Contents/MacOS/flyleaf"
+
+      - name: A document opens, and a window appears
+        run: |
+          lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+          "$lsregister" -f "$PWD/dist/Tommy Flyleaf.app"
+
+          swiftc -O packaging/macos/window-probe.swift -o "${RUNNER_TEMP}/window-probe"
+
+          open -a "$PWD/dist/Tommy Flyleaf.app" packaging/sample.toml
+
+          # Cold launch, a window server, and a first frame. Polled rather than
+          # slept at; 30 seconds is far past anything measured by hand.
+          for _ in $(seq 1 15); do
+            sleep 2
+            "${RUNNER_TEMP}/window-probe" "Tommy Flyleaf" >/dev/null 2>&1 && break
+          done
+
+          set +e
+          "${RUNNER_TEMP}/window-probe" "Tommy Flyleaf"
+          verdict=$?
+          set -e
+          case "$verdict" in
+            0)
+              echo "the arm64 build drew a window for a document opened through Launch Services"
+              ;;
+            2)
+              echo "::error::The window server listed nothing, so this run answered nothing about the window. Decide whether this runner can host one at all before trusting a green tick here."
+              exit 1
+              ;;
+            *)
+              echo "::error::No window appeared for a document opened through Launch Services on arm64. This is src/opened_document.rs, the only unsafe in this crate."
+              exit 1
+              ;;
+          esac
+
+      # For eyes, not for the verdict.
+      - name: Photograph it, for a person
+        if: always()
+        run: |
+          screencapture -x "${RUNNER_TEMP}/screen.png" || true
+          ls -l "${RUNNER_TEMP}/screen.png" || true
+
+      - name: Keep the photograph
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-window
+          path: ${{ runner.temp }}/screen.png
+          if-no-files-found: warn

@@ -45,6 +45,12 @@ what was measured. Do not smooth an amendment away.
     ./packaging/debian/build-deb.sh               # the .deb, after a release build
     ./packaging/linux/check-libraries.sh          # what the running app opens, against Depends;
                                                   # needs a display, so run it after touching a dependency
+    cargo clippy -p flyleaf --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+    cargo clippy --workspace --all-targets --target aarch64-apple-darwin -- -D warnings
+                                                  # the two platform halves, type-checked from here;
+                                                  # windows.yml and apple-silicon.yml run them
+    powershell -File packaging\windows\install.ps1       # on Windows; README there has the order
+    ./packaging/macos/build-app.sh                # on a Mac; README there has the order
 
 The workflow in `.github/workflows/ci.yml` runs all of these on every push,
 and reads the floor out of `Cargo.toml` rather than carrying its own copy.
@@ -53,10 +59,14 @@ and reads the floor out of `Cargo.toml` rather than carrying its own copy.
 
 ## Rules with no exceptions
 
-**No unsafe.** Both crates are `#![forbid(unsafe_code)]`. A dependency that
-carries unsafe on our behalf is fine, as `egui` does; unsafe in this
-repository's own source is not, and lifting the `forbid` is a decision to take
-with David.
+**No unsafe, with one exception.** `flyleaf-core` and the widget are
+`#![forbid(unsafe_code)]`. A dependency that carries unsafe on our behalf is
+fine, as `egui` does. The application binary carries `deny` instead, with one
+`allow`, on `src/opened_document.rs`: macOS delivers a double-clicked document
+as an Apple Event, receiving one means defining an Objective-C class, and
+`objc2` cannot do that without `unsafe`. It is slipcase-desktop's module with
+the class renamed, and the decision to take it was made with David on
+2026-09-08. A second module wanting the allow is a decision, not a precedent.
 
 **Nothing compiles C.** A crate that links a system library is fine; one that
 builds C is not. `cargo tree -i cc` is not the check, because `cc` sits in
@@ -134,12 +144,24 @@ against what it replaced is too big.
                             the widget, the tree and the source pane;
                             src/main.rs is the application, behind the
                             default `app` feature; tests/golden/ is the record
-    .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, and
-                            the rule against compiling C
+    .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, the
+                            rule against compiling C and the web bundle;
+                            windows.yml and apple-silicon.yml: the suite on
+                            those platforms, the import check, the icon
+                            check, and a document opened through Launch
+                            Services; publish-crate.yml on a tag
     flyleaf/index.html      the page the web build draws into; Trunk.toml
                             at the root says how it is built
     packaging/linux/        the desktop entry, the icon, install.sh,
-                            uninstall.sh and check-libraries.sh
+                            uninstall.sh and check-libraries.sh; the icon in
+                            icons/ is the one drawing every platform's comes from
+    packaging/windows/      the two install scripts, the MSIX build, the import
+                            check, the committed .ico and assets and make-ico
+                            that builds them; README says what differs from
+                            slipcase-desktop's
+    packaging/macos/        the bundle build, the property list, the
+                            entitlements, the install check and the window
+                            probe; README says what differs
     packaging/sample.toml   the file the screenshots and the hosted demo open
     packaging/privacy-entry.html
                             the privacy statement, copied verbatim into

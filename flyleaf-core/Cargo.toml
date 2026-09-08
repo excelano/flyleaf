@@ -15,7 +15,7 @@ rust-version.workspace = true
 # system, which is what the web build will be.
 [features]
 default = ["fs"]
-fs = ["dep:tempfile"]
+fs = ["dep:tempfile", "dep:objc2", "dep:objc2-foundation"]
 
 [dependencies]
 toml_edit.workspace = true
@@ -23,3 +23,15 @@ toml_edit.workspace = true
 # leaves the original whole. Pure Rust: its tree is declarations, not a C
 # library to compile.
 tempfile = { version = "3.27", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# The two calls that let a sandboxed application replace a file it was given
+# rather than write into a directory it was not: the request for somewhere to
+# stage the rewrite on the file's own volume, and the replacement itself.
+# Every call `save_to` makes into this is a safe function, so the crate keeps
+# `forbid(unsafe_code)`; the unsafe is carried on our behalf, as `tempfile`'s
+# is. slipcase-desktop's `staging.rs` is where both calls were measured.
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSFileManager", "NSPathUtilities", "NSError"], optional = true }
+# `Retained`, which the calls above return and the crate above does not
+# re-export.
+objc2 = { version = "0.6", default-features = false, features = ["std"], optional = true }

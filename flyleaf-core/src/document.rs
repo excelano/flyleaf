@@ -188,6 +188,24 @@ impl Document {
             .into());
         }
 
+        // On macOS a file that already exists is replaced through the
+        // platform's own call rather than through a sibling, because under
+        // the App Sandbox the grant a person gives by choosing a file covers
+        // the file and not its directory, and a temporary sibling stops with
+        // *Operation not permitted*. A new file has no such grant problem:
+        // the save panel's grant covers the name chosen, and it is written
+        // directly, there being nothing to lose if the write fails.
+        #[cfg(target_os = "macos")]
+        if original.is_some() {
+            macos::replace(path, self.render().as_bytes())?;
+            self.mark_saved();
+            return Ok(());
+        }
+
+        // `mut` for the permissions call below, which only Unix makes; the
+        // Windows build is checked with warnings as errors and would refuse
+        // the unused `mut` there.
+        #[cfg_attr(not(unix), allow(unused_mut))]
         let mut builder = tempfile::Builder::new();
         // A temporary file is made private, which is right for one and
         // wrong for a document somebody will keep: a new file gets what
@@ -438,6 +456,33 @@ fn with_crlf(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+
+    /// The defect this catches is the rewrite waiting beside the file.
+    ///
+    /// On macOS that is what makes Save fail under the App Sandbox: the grant
+    /// a person gives through the open panel covers the file they chose and
+    /// not the directory holding it, so a randomly-named sibling stops with
+    /// *Operation not permitted*, measured in slipcase-desktop. A test cannot
+    /// enter a sandbox, so it asserts the property the sandbox refuses: after
+    /// a save, nothing but the file is in the file's directory, which a
+    /// sibling that failed to land, or one still waiting, would break. It runs
+    /// on the Apple silicon workflow, since no machine here is a Mac.
+    #[cfg(all(feature = "fs", target_os = "macos"))]
+    #[test]
+    fn a_save_leaves_nothing_beside_the_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("only.toml");
+        std::fs::write(&path, "a = 1\n").unwrap();
+        let mut doc = Document::from_path(&path).unwrap();
+        doc.tree_mut()["a"] = toml_edit::value(2);
+        doc.save_to(&path).unwrap();
+        let beside: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect();
+        assert_eq!(beside, vec![std::ffi::OsString::from("only.toml")]);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "a = 2\n");
+    }
     use super::{Document, Error, Newline};
 
     /// The three things `toml_edit` reads past come back on render, each on
@@ -689,5 +734,126 @@ id = 2
             Err(Error::Toml(e)) => assert!(e.to_string().contains("line 1"), "{e}"),
             other => panic!("{other:?}"),
         }
+    }
+}
+
+/// Replacing a file the way a sandboxed application is allowed to.
+///
+/// slipcase-desktop's `staging.rs` is where both calls were measured, and the
+/// two findings there decide the shape of this: the rewrite waits in the
+/// directory macOS provides for replacements, asked for with the file's own
+/// URL so that it lands on the file's volume, because a directory under
+/// `TMPDIR` fails the replacement with `EXDEV` for any file not on the boot
+/// volume; and it lands with `replaceItemAtURL:`, which keeps the original's
+/// permissions and extended attributes, where a rename into the file's
+/// directory is a write a sandboxed application has no grant for.
+#[cfg(all(feature = "fs", target_os = "macos"))]
+mod macos {
+    use std::path::{Path, PathBuf};
+
+    use objc2_foundation::{
+        NSFileManager, NSFileManagerItemReplacementOptions, NSSearchPathDirectory,
+        NSSearchPathDomainMask, NSString, NSURL,
+    };
+
+    /// Write `bytes` over the file at `path`, whole or not at all.
+    pub(super) fn replace(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+        // Resolved first, for the reason a rename would resolve it: a file
+        // reached through a symbolic link should have the file replaced and
+        // not the link, and the volume that matters is the file's.
+        let original = std::fs::canonicalize(path)?;
+        let scratch = Scratch::on_the_volume_holding(&original)?;
+        let name = original.file_name().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("{} names no file", original.display()),
+            )
+        })?;
+        let staged = scratch.path().join(name);
+        std::fs::write(&staged, bytes)?;
+        std::fs::File::open(&staged)?.sync_all()?;
+
+        NSFileManager::defaultManager()
+            .replaceItemAtURL_withItemAtURL_backupItemName_options_resultingItemURL_error(
+                &url_for(&original),
+                &url_for(&staged),
+                None,
+                NSFileManagerItemReplacementOptions::empty(),
+                None,
+            )
+            .map_err(|e| {
+                std::io::Error::other(format!(
+                    "cannot replace {}: {}{}",
+                    original.display(),
+                    e.localizedDescription(),
+                    because_of(&e)
+                ))
+            })?;
+        // After the replacement, which has moved the staged file out.
+        drop(scratch);
+        Ok(())
+    }
+
+    /// The directory macOS made for one replacement, removed when it is over.
+    struct Scratch(PathBuf);
+
+    impl Scratch {
+        /// `NSItemReplacementDirectory` in the user domain, `appropriateForURL:`
+        /// being what decides where the directory lands.
+        fn on_the_volume_holding(original: &Path) -> std::io::Result<Self> {
+            let url = NSFileManager::defaultManager()
+                .URLForDirectory_inDomain_appropriateForURL_create_error(
+                    NSSearchPathDirectory::ItemReplacementDirectory,
+                    NSSearchPathDomainMask::UserDomainMask,
+                    Some(&url_for(original)),
+                    true,
+                )
+                .map_err(|e| {
+                    std::io::Error::other(format!(
+                        "nowhere to rewrite {}: {}",
+                        original.display(),
+                        e.localizedDescription()
+                    ))
+                })?;
+            let path = url.path().ok_or_else(|| {
+                std::io::Error::other("macOS named a replacement directory with no path")
+            })?;
+            Ok(Self(PathBuf::from(path.to_string())))
+        }
+
+        fn path(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            // The whole tree: a replacement that succeeded left this empty, and
+            // one that failed left the staged file in it.
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    /// The errno under Cocoa's sentence, if it said, because
+    /// `localizedDescription` is written for a dialog and hides the fact worth
+    /// having; `EXDEV` is the one this module exists to avoid.
+    fn because_of(error: &objc2_foundation::NSError) -> String {
+        use std::fmt::Write as _;
+        error
+            .underlyingErrors()
+            .iter()
+            .fold(String::new(), |mut so_far, under| {
+                let _ = write!(
+                    so_far,
+                    " ({} {})",
+                    under.domain(),
+                    under.localizedDescription()
+                );
+                so_far
+            })
+    }
+
+    fn url_for(path: &Path) -> objc2::rc::Retained<NSURL> {
+        NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()))
     }
 }

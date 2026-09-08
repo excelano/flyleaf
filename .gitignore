@@ -2,3 +2,23 @@
 .DS_Store
 *.swp
 /dist
+
+# Built bundles and packages, every one assembled by a packaging script from
+# what is committed.
+/dist-sandboxed
+/dist-universal
+/dist-store
+/dist-devid
+/dist-refused
+
+# `make-ico` is its own package, so its build directory is its own too and the
+# root-anchored rule above does not reach it.
+/packaging/windows/make-ico/target/
+
+# The two store walkthroughs and the Windows identity Partner Center assigned:
+# an account's identifiers, kept off a public record, as slipcase-desktop's
+# .gitignore records. `identity.psd1.example` beside the last is committed
+# and says what goes in.
+/packaging/macos/SUBMITTING.local.md
+/packaging/windows/SUBMITTING.local.md
+/packaging/windows/identity.psd1

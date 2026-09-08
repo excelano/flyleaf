@@ -43,3 +43,17 @@ opt-level = "z"
 lto = "fat"
 codegen-units = 1
 panic = "abort"
+
+# winit 0.30 declares a private CoreGraphics symbol whether or not it is
+# called, App Store review reads the symbol table rather than the call graph,
+# and slipcase-desktop lost a review cycle to it (Guideline 2.5.1). Upstream
+# removed it in winit#4541 behind a `private-apple-apis` feature that no
+# published release carries yet, so this is that change on the `v0.30.13`
+# tag, pinned by revision; `packaging/macos/build-app.sh` refuses any binary
+# importing a symbol no public framework header declares, which is what found
+# it. The same pin as slipcase-desktop's, moved together. **Delete it when a
+# winit release carries the gate.** Patching from a git repository makes that
+# repository's `dpi` a candidate too, so `Cargo.lock` moves by more than the
+# winit line; slipcase-desktop's manifest records the one-line check.
+[patch.crates-io]
+winit = { git = "https://github.com/excelano/winit", rev = "3cfd905679da3ca241b97dea723211b580620a27" }

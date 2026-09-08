@@ -1,0 +1,57 @@
+# Run the suite on Windows, and check the two things only a Windows binary can
+# say about itself. Adapted from slipcase-desktop's; what it reaches and what
+# it does not is the same there and is stated because a green tick invites
+# more faith than it has earned: nothing here reaches the window, the install
+# scripts, an MSIX package, a file association, or the icon at any size.
+#
+# Author: David M. Anderson
+# Built with AI assistance (Claude, Anthropic)
+
+name: Windows
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: What is installed
+        run: |
+          rustc -V
+          cargo -V
+
+      - name: Build
+        run: cargo build --all-targets
+
+      - name: Test
+        run: cargo test
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      # slipcase-desktop 0.1.1 was packaged, certified, submitted and failed
+      # Store policy 10.2.4.1 for importing VCRUNTIME140.dll from the Visual
+      # C++ Redistributable, which every build machine has and a tester's
+      # clean one does not. `.cargo/config.toml` is the fix and this is the
+      # guard on it, against the release binary because that is what ships.
+      - name: Every DLL the shipped binary imports comes with Windows
+        run: |
+          cargo build --release
+          powershell -ExecutionPolicy Bypass -File packaging/windows/check-imports.ps1
+
+      # The `.ico` and the Store assets are committed artifacts, because
+      # nothing on Windows rasterizes an SVG and `rc.exe` is a tool the build
+      # keeps out. A committed artifact can fall out of step with the drawing
+      # it was generated from and nothing would say so, so the generator is
+      # run and its output compared against the tree.
+      - name: The committed icon and Store assets still match their generator
+        run: |
+          cd packaging/windows/make-ico
+          cargo run --release
+          cd ../../..
+          git diff --exit-code -- packaging/windows/flyleaf.ico packaging/windows/assets packaging/windows/listing

@@ -4,6 +4,23 @@ The record for people who take these crates from crates.io, where the git log
 does not travel. Each entry says what changed for a consumer of `flyleaf-core`
 or the `flyleaf` widget; the reasoning is in the commits.
 
+## Unreleased
+
+`flyleaf`, the application:
+
+- Windows: a DPI manifest embedded through the linker, the window icon from
+  the committed `.ico`, and `packaging/windows` with the per-user install
+  scripts and the MSIX build.
+- macOS: a double-clicked document arrives through an Apple Event handler, the
+  bundle keeps its own icon in the Dock, and `packaging/macos` builds and
+  signs the bundle.
+
+`flyleaf-core`:
+
+- On macOS, `save_to` replaces an existing file through `replaceItemAtURL:`
+  from a staging directory on the file's own volume, which is what the App
+  Sandbox permits; other platforms are unchanged.
+
 ## 0.2.1 — 2026-09-07
 
 `flyleaf`, the application:
