@@ -17,6 +17,12 @@ again so `windows.yml` finds the committed rasters current.
 **One version.** `version.sh` is the only thing that reads it out of
 `Cargo.toml`, in whichever spelling a platform wants.
 
-**One sample and one statement.** `sample.toml` is what the screenshots, the
-marketing page and the hosted demo open with, and `privacy-entry.html` is the
-privacy statement copied verbatim into excelano.com/legal.
+**One sample, one statement and one listing.** `sample.toml` is what the
+screenshots, the marketing page and the hosted demo open with;
+`privacy-entry.html` is the privacy statement copied verbatim into
+excelano.com/legal; and `store-listing.md` is the copy a store listing is
+filled in from, including the notes a reviewer reads. All three are here rather
+than in the place they are pasted into, because each is a set of claims about
+the code and the code is what moves. Edit here first. The identity a store
+assigns is the one thing that stays out: `windows/identity.psd1` holds it and
+is not committed.

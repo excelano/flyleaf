@@ -170,6 +170,10 @@ against what it replaced is too big.
     packaging/privacy-entry.html
                             the privacy statement, copied verbatim into
                             excelano.com/legal; edit here first
+    packaging/store-listing.md
+                            the store listing copy and the notes a reviewer
+                            reads; edit here first. The identity a store
+                            assigns is not here, and does not go here
     packaging/debian/       control.in, the changelog, the manual page and
                             build-deb.sh; version.sh beside them reads the
                             one version in Cargo.toml in every spelling
