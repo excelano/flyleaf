@@ -17,10 +17,13 @@ different here and how the pieces are used, and does not restate the rest.
 so `Info.plist.in` imports a declaration for it under `io.toml.toml`, chosen in
 the format's own domain because macOS declares none, and claims it with rank
 `Alternate` rather than `Owner`: one editor among the many that open a `.toml`,
-never the default unless a person makes it so. The identifier is the one thing
-in this directory to measure before the first upload: if `lsregister -dump |
-grep -i toml` shows other installed applications agreeing on an identifier,
-take theirs.
+and never the default over an application that claims the type at a higher
+rank. Measured 2026-09-08 on this Mac: nothing else declared a TOML type at
+all, `.toml` had no default handler before this bundle was registered, and
+after it this application was the default, because rank decides among
+claimants and there was no other. The identifier was measured the same day
+against everything installed, `Info.plist.in` records how, and `io.toml.toml`
+stands.
 
 **The bundle has a space in its name**, `Tommy Flyleaf.app`, because that is
 the product name and it is what a person sees in Applications and the Dock.
@@ -56,9 +59,26 @@ application crate for it; `flyleaf-core` stays `forbid`.
 1. `cargo build --release`, `build-app.sh --sign` with the Apple Development
    identity, `lsregister -f`, and look: the Dock icon, a `.toml` under Open
    With, a double-click delivering the document, a save on a file chosen in the
-   open panel, and one on a file on a second volume.
-2. `lsregister -dump | grep -i toml`, and settle the identifier.
+   open panel, and one on a file on a second volume. **Done 2026-09-08** on an
+   Intel Mac running macOS 15.7.9; `PROMPT.md` has what each one measured.
+2. `lsregister -dump | grep -i toml`, and settle the identifier. **Done the
+   same day**, above.
 3. The two `MACOSX_DEPLOYMENT_TARGET=12.0` builds and `build-app.sh --store`
    with the profile, once the name is reserved in App Store Connect and the
-   profile downloaded.
+   profile downloaded. The two builds are done and `build-app.sh --universal
+   --sign` passed the floor check on both slices; `--store` waits on the
+   profile.
 4. `check-install.sh` against the installed copy, then TestFlight.
+
+**What the sandbox writes, measured.** After a launch, an open through the
+panel and a save, `~/Library/Containers/com.excelano.flyleaf` holds one
+preferences plist with four keys, all the open panel's own: its size, two
+window frames, and a bookmark of the last folder it showed. `lsof -i` on the
+running process lists nothing. `privacy-entry.html` says both.
+
+**Driving the window from a script.** egui exposes no accessibility elements,
+so System Events cannot click a widget, and `click at` is refused even where
+`set position` is allowed. A mouse event posted through `CGEvent` from a
+process the terminal is responsible for lands; the save checks above were
+made that way, each one diffing the saved file against `sample.toml` and
+finding exactly the one line changed.
