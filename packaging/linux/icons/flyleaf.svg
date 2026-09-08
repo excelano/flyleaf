@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <!--
-    Tommy Flyleaf: a book's flyleaf, the blank page inside the cover, with
-    the corner turned back and three lines of a tree on it.
+    Tommy Flyleaf: a bound book, face on, with its cover folded back to the
+    flyleaf, the blank page inside the cover that is the one place in a book
+    meant for someone to write on later. The page has its corner turned and
+    three lines of a tree on it, a key and two beneath it. The cloth is the
+    oxblood and the spine the brass that excelano.com/flyleaf is set in, so
+    that the icon, the page and the store listings read as one thing.
 
     Author: David M. Anderson
     Built with AI assistance (Claude, Anthropic)
@@ -13,19 +17,23 @@
     shows the generic icon. Keep the opening tag on the second line.
 
     Drawn on a 64-unit grid with 3-unit strokes, so it survives the 16-pixel
-    size a file manager uses in a list. The cover is drawn first and the page
-    over it, which is what puts the page inside the book. Anything finer than
-    a page, a fold and three lines is mud at 16 pixels.
+    size a file manager uses in a list; checked there, at 24, 32, 48 and 128,
+    on a light ground and a dark one, before this replaced the placeholder.
+    The cover is drawn first, the spine over its left edge, and the page over
+    both, which is what puts the page inside the book. Anything finer than a
+    page, a fold and three lines is mud at 16 pixels.
   -->
   <g stroke="#2f3337" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
-    <!-- The cover, a shade of the family's slate blue, showing at the spine and the foot. -->
-    <rect x="8" y="6" width="44" height="54" rx="3" fill="#38557f"/>
-    <!-- The flyleaf, set in from the spine, with its top-right corner turned back. -->
-    <path d="M16 10 H44 L50 16 V56 H16 Z" fill="#f2ece1"/>
-    <path d="M44 10 V16 H50" fill="#9aa1a8"/>
+    <!-- The cover, oxblood cloth. -->
+    <rect x="6" y="4" width="52" height="56" rx="3" fill="#5c2231"/>
+    <!-- The spine, brass, rounded only where it shares the cover's corners. -->
+    <path d="M9 4 H15 V60 H9 a3 3 0 0 1 -3 -3 V7 a3 3 0 0 1 3 -3 Z" fill="#c9963a"/>
+    <!-- The flyleaf, set in from the spine, its top-right corner turned back. -->
+    <path d="M20 10 H45 L53 18 V54 H20 Z" fill="#f2ece1"/>
+    <path d="M45 10 V18 H53" fill="#d9cfbf"/>
     <!-- Three lines of the tree: a key, and two beneath it, indented. -->
-    <path d="M23 28 H38" stroke="#4a6fa5"/>
-    <path d="M27 37 H41" stroke="#4a6fa5"/>
-    <path d="M27 46 H36" stroke="#4a6fa5"/>
+    <path d="M27 27 H40" stroke="#5c2231"/>
+    <path d="M31 36 H46" stroke="#5c2231"/>
+    <path d="M31 45 H41" stroke="#5c2231"/>
   </g>
 </svg>

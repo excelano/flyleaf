@@ -175,6 +175,8 @@ struct App {
     /// Whether a close may go ahead: set once the prompt has been answered,
     /// or where there was nothing to ask about.
     may_close: bool,
+    /// Whether the About box is up.
+    about: bool,
     /// The title as last sent to the window, so it is sent only on change.
     titled: String,
     /// The context, for the one place that has to start a dialog with no
@@ -195,6 +197,7 @@ impl App {
             said: None,
             asking: None,
             may_close: false,
+            about: false,
             titled: String::new(),
             ctx,
         }
@@ -479,6 +482,7 @@ impl App {
             }
         }
         self.ask(ui.ctx());
+        self.about(ui.ctx());
 
         let title = title(&self.shown);
         if title != self.titled {
@@ -527,8 +531,66 @@ impl App {
             if let Some(said) = &self.said {
                 ui.label(egui::RichText::new(said.as_str()).color(ui.visuals().error_fg_color));
             }
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui.small_button("About").clicked() {
+                    self.about = true;
+                }
+            });
         });
         pressed
+    }
+
+    /// The About box: the icon, the name and version, what the application
+    /// is, where it comes from, and the name's story. Escape, the backdrop or
+    /// the button closes it.
+    fn about(&mut self, ctx: &egui::Context) {
+        if !self.about {
+            return;
+        }
+        let response = egui::Modal::new(egui::Id::new("about")).show(ctx, |ui| {
+            ui.set_width(420.0);
+            ui.horizontal(|ui| {
+                icon(ui, 56.0);
+                ui.vertical(|ui| {
+                    ui.heading("Tommy Flyleaf");
+                    ui.label(concat!("Version ", env!("CARGO_PKG_VERSION")));
+                });
+            });
+            ui.add_space(8.0);
+            ui.label(
+                "A TOML editor that shows the file as a tree and edits every value by \
+                 its kind, then saves a file with the comments, key order, whitespace \
+                 and quoting untouched everywhere you did not edit.",
+            );
+            ui.add_space(6.0);
+            ui.label(
+                "Named for a bookbinder's apprentice. The flyleaf is the blank page \
+                 inside a book's cover, the one place in a bound book meant for \
+                 someone to write on later. The book is somebody else's; write on \
+                 the page provided, and leave the rest as it was bound.",
+            );
+            ui.add_space(6.0);
+            ui.hyperlink_to("excelano.com/flyleaf", "https://excelano.com/flyleaf/");
+            ui.hyperlink_to(
+                "github.com/excelano/flyleaf",
+                "https://github.com/excelano/flyleaf",
+            );
+            ui.add_space(6.0);
+            ui.label(
+                egui::RichText::new(
+                    "MIT licensed. Written by David M. Anderson, with AI assistance \
+                     (Claude, Anthropic).",
+                )
+                .weak(),
+            );
+            ui.add_space(8.0);
+            if ui.button("Close").clicked() {
+                self.about = false;
+            }
+        });
+        if response.should_close() {
+            self.about = false;
+        }
     }
 
     /// Below the bar: nothing, a refusal, or the pane and the tree.
@@ -582,6 +644,70 @@ impl App {
             self.highlighted.clone_from(&self.selected);
         }
     }
+}
+
+/// The application icon, painted from the geometry of
+/// `packaging/linux/icons/flyleaf.svg` rather than loaded from a raster, so
+/// that the repository keeps one drawing and no bitmap. The two are kept in
+/// step by hand: the SVG's comment names its shapes, and these are them,
+/// on the same 64-unit grid, scaled to `size`.
+fn icon(ui: &mut egui::Ui, size: f32) {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::hover());
+    let unit = size / 64.0;
+    let at = |x: f32, y: f32| rect.min + egui::vec2(x * unit, y * unit);
+    let outline = egui::Stroke::new(3.0 * unit, egui::Color32::from_rgb(0x2f, 0x33, 0x37));
+    let oxblood = egui::Color32::from_rgb(0x5c, 0x22, 0x31);
+    let brass = egui::Color32::from_rgb(0xc9, 0x96, 0x3a);
+    let cream = egui::Color32::from_rgb(0xf2, 0xec, 0xe1);
+    let fold = egui::Color32::from_rgb(0xd9, 0xcf, 0xbf);
+    let painter = ui.painter();
+    // The cover, then the spine over its left edge, then the page over both.
+    let cover = egui::Rect::from_min_max(at(6.0, 4.0), at(58.0, 60.0));
+    painter.rect(
+        cover,
+        3.0 * unit,
+        oxblood,
+        outline,
+        egui::StrokeKind::Middle,
+    );
+    let spine = egui::Rect::from_min_max(at(6.0, 4.0), at(15.0, 60.0));
+    // A corner radius is a u8 of pixels in egui, and the icon is drawn at
+    // sizes under a few hundred pixels, so the radius is a small positive
+    // number that fits; rounded first so that 2.6 becomes 3, not 2.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let rounding = (3.0 * unit).round().clamp(0.0, 255.0) as u8;
+    painter.rect_filled(
+        spine,
+        egui::CornerRadius {
+            nw: rounding,
+            sw: rounding,
+            ne: 0,
+            se: 0,
+        },
+        brass,
+    );
+    painter.line_segment([at(15.0, 4.0), at(15.0, 60.0)], outline);
+    painter.add(egui::Shape::convex_polygon(
+        vec![
+            at(20.0, 10.0),
+            at(45.0, 10.0),
+            at(53.0, 18.0),
+            at(53.0, 54.0),
+            at(20.0, 54.0),
+        ],
+        cream,
+        outline,
+    ));
+    painter.add(egui::Shape::convex_polygon(
+        vec![at(45.0, 10.0), at(45.0, 18.0), at(53.0, 18.0)],
+        fold,
+        outline,
+    ));
+    // Three lines of the tree: a key, and two beneath it, indented.
+    let line = egui::Stroke::new(3.0 * unit, oxblood);
+    painter.line_segment([at(27.0, 27.0), at(40.0, 27.0)], line);
+    painter.line_segment([at(31.0, 36.0), at(46.0, 36.0)], line);
+    painter.line_segment([at(31.0, 45.0), at(41.0, 45.0)], line);
 }
 
 /// What a chord or a button asks for.
@@ -922,6 +1048,28 @@ mod tests {
     /// The web build opens on `packaging/sample.toml`, and a sample that does
     /// not parse would open on its error message instead. The native suite is
     /// where that is caught, since the wasm build runs no tests.
+    /// The About box is a modal, and a modal that Escape does not close is a
+    /// window nobody can get out of without the mouse. The button is drawn
+    /// too, but a click cannot be sent through a bare context, so this is the
+    /// keyboard's half.
+    #[test]
+    fn escape_closes_the_about_box() {
+        let mut app = App::new(Shown::Nothing, egui::Context::default());
+        let ctx = egui::Context::default();
+        app.about = true;
+        frame(&ctx, &mut app, Vec::new(), false);
+        assert!(app.about, "a frame with nothing pressed keeps it up");
+        let escape = egui::Event::Key {
+            key: egui::Key::Escape,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(&ctx, &mut app, vec![escape], false);
+        assert!(!app.about, "Escape did not close the About box");
+    }
+
     #[test]
     fn the_sample_the_web_build_opens_with_parses() {
         let sample = parsed(

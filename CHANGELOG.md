@@ -4,6 +4,19 @@ The record for people who take these crates from crates.io, where the git log
 does not travel. Each entry says what changed for a consumer of `flyleaf-core`
 or the `flyleaf` widget; the reasoning is in the commits.
 
+## Unreleased
+
+`flyleaf`, the application:
+
+- An About box, from a button at the bar's right end: the icon, the version,
+  what the application is, where it comes from, and the name's story. Escape,
+  the backdrop or its button closes it.
+- The icon: a bound book with its cover folded back to the flyleaf, in the
+  oxblood, brass and cream of excelano.com/flyleaf, replacing the placeholder.
+  The application paints it from the same geometry, so no raster ships.
+- The web build takes a size profile and the glow renderer, 4.8 MB from
+  7.5 MB, and opens on a sample file. Its page carries the icon.
+
 ## 0.2.0 — 2026-09-07
 
 The general editor. `flyleaf-core`:
