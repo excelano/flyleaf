@@ -40,6 +40,8 @@ what was measured. Do not smooth an amendment away.
     cargo check -p flyleaf --no-default-features  # the widget alone
     cargo run -- path/to/file.toml                # the application
     ./packaging/linux/install.sh                  # Linux desktop integration
+    cargo check -p flyleaf --target wasm32-unknown-unknown   # the web arm
+    trunk build --release                         # the web page, into dist/
 
 The workflow in `.github/workflows/ci.yml` runs all of these on every push,
 and reads the floor out of `Cargo.toml` rather than carrying its own copy.
@@ -131,6 +133,8 @@ against what it replaced is too big.
                             default `app` feature; tests/golden/ is the record
     .github/workflows/      ci.yml: the suite, clippy, fmt, the floor, and
                             the rule against compiling C
+    flyleaf/index.html      the page the web build draws into; Trunk.toml
+                            at the root says how it is built
     packaging/linux/        the desktop entry, the icon, install.sh and
                             uninstall.sh; Windows and macOS follow
     PROMPT.md               the plan, alive

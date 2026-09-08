@@ -59,6 +59,21 @@ jobs:
       - name: The widget builds without the application
         run: cargo check -p flyleaf --no-default-features
 
+  # The web build. Checked and linted rather than bundled: the page is built
+  # with trunk by hand, and the hosted demo that will build it here is Phase
+  # 3's. What this catches is a desktop assumption reaching the shell, which
+  # the native jobs cannot see: a thread, a path, a file.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: The wasm target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Check
+        run: cargo check -p flyleaf --target wasm32-unknown-unknown
+      - name: Clippy
+        run: cargo clippy -p flyleaf --target wasm32-unknown-unknown -- -D warnings
+
   # `rust-version` in Cargo.toml is a claim, and this is what makes it a
   # measurement. The number is read out of the manifest rather than written
   # here twice.

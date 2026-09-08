@@ -1,0 +1,9 @@
+# The web build: `trunk build --release` writes dist/ from flyleaf/index.html,
+# compiling the flyleaf binary for wasm32-unknown-unknown and running
+# wasm-bindgen over it. `trunk serve` does the same and serves it.
+#
+# Author: David M. Anderson
+# Built with AI assistance (Claude, Anthropic)
+[build]
+target = "flyleaf/index.html"
+dist = "dist"

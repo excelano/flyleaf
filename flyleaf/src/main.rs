@@ -6,6 +6,11 @@
 //! and no subcommands; on Windows this is a GUI-subsystem executable and
 //! prints nothing, which is why every error is shown in the window rather
 //! than written anywhere.
+//!
+//! The same shell runs in a browser, where a file has no path: it arrives as
+//! bytes from the browser's picker and leaves as a download, and a dialog
+//! runs on a future rather than a thread, there being none. Those are the
+//! only arms this file has, and each is marked with the target it is for.
 //
 // Author: David M. Anderson
 // Built with AI assistance (Claude, Anthropic)
@@ -15,41 +20,53 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
 use std::sync::mpsc;
 
 use flyleaf_core::Document;
+
+/// Where a document is. A path on disk; on the web a name, which is all a
+/// browser will say about a file it hands over.
+#[cfg(not(target_arch = "wasm32"))]
+type Place = PathBuf;
+#[cfg(target_arch = "wasm32")]
+type Place = String;
 
 /// What the window shows.
 enum Shown {
     /// No argument was given, or nothing has been opened yet.
     Nothing,
     /// The file, parsed. Boxed: a document carries its history, and the
-    /// other two variants are a path and a string.
-    Document { path: PathBuf, doc: Box<Document> },
+    /// other two variants are a place and a string.
+    Document { at: Place, doc: Box<Document> },
     /// The file could not be read or was not TOML, and this is what was said.
-    Failed { path: PathBuf, why: String },
+    Failed { at: Place, why: String },
 }
 
-/// Read and parse a file, with the reason where either fails.
+/// What a file's bytes become: the document, or what was wrong with them.
 ///
 /// `toml_edit`'s error carries the line and a caret under the column, which is
 /// what somebody wants to see beside a file that would not open.
-fn open(path: &Path) -> Result<Document, String> {
-    Document::from_path(path).map_err(|e| e.to_string())
+fn parsed(at: Place, bytes: Result<Vec<u8>, String>) -> Shown {
+    match bytes.and_then(|b| Document::from_bytes(&b).map_err(|e| e.to_string())) {
+        Ok(doc) => Shown::Document {
+            at,
+            doc: Box::new(doc),
+        },
+        Err(why) => Shown::Failed { at, why },
+    }
 }
 
 /// What a path opens, or what the window shows without one.
+#[cfg(not(target_arch = "wasm32"))]
 fn shown(arg: Option<PathBuf>) -> Shown {
     match arg {
         None => Shown::Nothing,
-        Some(path) => match open(&path) {
-            Ok(doc) => Shown::Document {
-                path,
-                doc: Box::new(doc),
-            },
-            Err(why) => Shown::Failed { path, why },
-        },
+        Some(path) => {
+            let bytes = std::fs::read(&path).map_err(|e| e.to_string());
+            parsed(path, bytes)
+        }
     }
 }
 
@@ -59,19 +76,35 @@ fn shown(arg: Option<PathBuf>) -> Shown {
 fn title(shown: &Shown) -> String {
     match shown {
         Shown::Nothing => "Tommy Flyleaf".to_owned(),
-        Shown::Document { path, doc } => {
+        Shown::Document { at, doc } => {
             let mark = if doc.edited() { "\u{2022} " } else { "" };
-            format!("{mark}{} \u{2014} Tommy Flyleaf", name_of(path))
+            format!("{mark}{} \u{2014} Tommy Flyleaf", name_of(at))
         }
-        Shown::Failed { path, .. } => format!("{} \u{2014} Tommy Flyleaf", name_of(path)),
+        Shown::Failed { at, .. } => format!("{} \u{2014} Tommy Flyleaf", name_of(at)),
     }
 }
 
-fn name_of(path: &Path) -> String {
-    path.file_name().map_or_else(
-        || path.display().to_string(),
+/// The file's own name, without the directory.
+#[cfg(not(target_arch = "wasm32"))]
+fn name_of(at: &Place) -> String {
+    at.file_name().map_or_else(
+        || at.display().to_string(),
         |n| n.to_string_lossy().into_owned(),
     )
+}
+#[cfg(target_arch = "wasm32")]
+fn name_of(at: &Place) -> String {
+    at.clone()
+}
+
+/// The place as the bar shows it: the whole path, or the name.
+#[cfg(not(target_arch = "wasm32"))]
+fn shown_at(at: &Place) -> String {
+    at.display().to_string()
+}
+#[cfg(target_arch = "wasm32")]
+fn shown_at(at: &Place) -> String {
+    at.clone()
 }
 
 /// Which dialog is up.
@@ -83,14 +116,28 @@ enum Ask {
     SaveAs,
 }
 
-/// A dialog on its own thread, and the channel its answer comes back on.
+/// A dialog running elsewhere, and the channel its answer comes back on.
 ///
-/// The dialog blocks the thread it runs on until it is closed, and the
-/// window has to go on drawing while it is up, so it runs elsewhere and is
-/// polled once a frame.
+/// The dialog blocks what it runs on until it is closed, and the window has
+/// to go on drawing while it is up, so it runs elsewhere and is polled once
+/// a frame: on its own thread, or on the web on a future, there being no
+/// thread.
 struct Picking {
     what: Ask,
-    answer: mpsc::Receiver<Option<PathBuf>>,
+    answer: mpsc::Receiver<Answer>,
+}
+
+/// What a dialog came back with.
+enum Answer {
+    /// Closed without choosing.
+    Nothing,
+    /// A file to open: where it is, and on the web its bytes, since the
+    /// browser hands those over with the name and nothing can read the
+    /// place again.
+    Open(Place, Option<Vec<u8>>),
+    /// Where the document was saved: a path the document is then written
+    /// to, or on the web a name it was already downloaded under.
+    SavedAs(Place),
 }
 
 /// What to do once unsaved changes have been dealt with.
@@ -127,10 +174,14 @@ struct App {
     may_close: bool,
     /// The title as last sent to the window, so it is sent only on change.
     titled: String,
+    /// The context, for the one place that has to start a dialog with no
+    /// `Ui` in hand: a save on the web, which is a download and so a dialog.
+    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+    ctx: egui::Context,
 }
 
 impl App {
-    fn new(shown: Shown) -> Self {
+    fn new(shown: Shown, ctx: egui::Context) -> Self {
         Self {
             shown,
             selected: None,
@@ -142,6 +193,7 @@ impl App {
             asking: None,
             may_close: false,
             titled: String::new(),
+            ctx,
         }
     }
 
@@ -149,19 +201,25 @@ impl App {
         matches!(&self.shown, Shown::Document { doc, .. } if doc.edited())
     }
 
+    /// Where the file that is open is, so a dialog can start beside it, and
+    /// its name, offered where the question is what to call the one being
+    /// written.
+    fn current(&self) -> Option<Place> {
+        match &self.shown {
+            Shown::Document { at, .. } | Shown::Failed { at, .. } => Some(at.clone()),
+            Shown::Nothing => None,
+        }
+    }
+
     /// Put a dialog up, unless one already is.
+    #[cfg(not(target_arch = "wasm32"))]
     fn start_picking(&mut self, ctx: &egui::Context, what: Ask) {
         if self.picking.is_some() {
             return;
         }
         let (sender, answer) = mpsc::channel();
         let ctx = ctx.clone();
-        // Beside the file that is open, under its name where the question
-        // is what to call the one being written.
-        let current = match &self.shown {
-            Shown::Document { path, .. } | Shown::Failed { path, .. } => Some(path.clone()),
-            Shown::Nothing => None,
-        };
+        let current = self.current();
         std::thread::spawn(move || {
             let mut dialog = rfd::FileDialog::new()
                 .add_filter("TOML", &["toml"])
@@ -172,17 +230,62 @@ impl App {
                 }
             }
             let chosen = match what {
-                Ask::Open => dialog.set_title("Open a TOML file").pick_file(),
+                Ask::Open => dialog
+                    .set_title("Open a TOML file")
+                    .pick_file()
+                    .map_or(Answer::Nothing, |p| Answer::Open(p, None)),
                 Ask::SaveAs => {
                     if let Some(name) = current.as_ref().and_then(|p| p.file_name()) {
                         dialog = dialog.set_file_name(name.to_string_lossy());
                     }
-                    dialog.set_title("Save as").save_file()
+                    dialog
+                        .set_title("Save as")
+                        .save_file()
+                        .map_or(Answer::Nothing, Answer::SavedAs)
                 }
             };
             let _ = sender.send(chosen);
             // Nothing has been touching the window while the dialog was up,
             // so it is asleep and has to be woken to notice the answer.
+            ctx.request_repaint();
+        });
+        self.picking = Some(Picking { what, answer });
+    }
+
+    /// The same on the web: the browser's picker on a future, a file read
+    /// as bytes, and a save as a download of what the document renders to
+    /// at the moment the dialog goes up.
+    #[cfg(target_arch = "wasm32")]
+    fn start_picking(&mut self, ctx: &egui::Context, what: Ask) {
+        if self.picking.is_some() {
+            return;
+        }
+        let (sender, answer) = mpsc::channel();
+        let ctx = ctx.clone();
+        let current = self.current();
+        let bytes = match (&what, &self.shown) {
+            (Ask::SaveAs, Shown::Document { doc, .. }) => doc.render().into_bytes(),
+            _ => Vec::new(),
+        };
+        wasm_bindgen_futures::spawn_local(async move {
+            let dialog = rfd::AsyncFileDialog::new().add_filter("TOML", &["toml"]);
+            let chosen = match what {
+                Ask::Open => match dialog.pick_file().await {
+                    Some(file) => Answer::Open(file.file_name(), Some(file.read().await)),
+                    None => Answer::Nothing,
+                },
+                Ask::SaveAs => {
+                    let dialog =
+                        dialog.set_file_name(current.unwrap_or_else(|| "document.toml".to_owned()));
+                    match dialog.save_file().await {
+                        Some(file) if file.write(&bytes).await.is_ok() => {
+                            Answer::SavedAs(file.file_name())
+                        }
+                        _ => Answer::Nothing,
+                    }
+                }
+            };
+            let _ = sender.send(chosen);
             ctx.request_repaint();
         });
         self.picking = Some(Picking { what, answer });
@@ -196,21 +299,37 @@ impl App {
         let what = picking.what;
         let chosen = match picking.answer.try_recv() {
             Err(mpsc::TryRecvError::Empty) => return,
-            Err(mpsc::TryRecvError::Disconnected) => None,
+            Err(mpsc::TryRecvError::Disconnected) => Answer::Nothing,
             Ok(chosen) => chosen,
         };
         self.picking = None;
-        let Some(path) = chosen else {
-            return;
-        };
-        match what {
-            Ask::Open => self.show(shown(Some(path))),
-            Ask::SaveAs => {
-                if let Shown::Document { path: at, .. } = &mut self.shown {
-                    *at = path;
-                }
-                self.save();
-            }
+        debug_assert!(matches!(
+            (&chosen, what),
+            (Answer::Nothing, _)
+                | (Answer::Open(..), Ask::Open)
+                | (Answer::SavedAs(_), Ask::SaveAs)
+        ));
+        match chosen {
+            Answer::Nothing => {}
+            Answer::Open(at, bytes) => self.show(opened(at, bytes)),
+            Answer::SavedAs(at) => self.saved_as(at),
+        }
+    }
+
+    /// The document is at a new place: written there, or on the web already
+    /// downloaded under that name.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn saved_as(&mut self, at: Place) {
+        if let Shown::Document { at: here, .. } = &mut self.shown {
+            *here = at;
+        }
+        self.save();
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn saved_as(&mut self, at: Place) {
+        if let Shown::Document { at: here, doc } = &mut self.shown {
+            *here = at;
+            doc.mark_saved();
         }
     }
 
@@ -227,11 +346,12 @@ impl App {
 
     /// Write the document to its path, and say so where it fails. Returns
     /// whether it was written.
+    #[cfg(not(target_arch = "wasm32"))]
     fn save(&mut self) -> bool {
-        let Shown::Document { path, doc } = &mut self.shown else {
+        let Shown::Document { at, doc } = &mut self.shown else {
             return false;
         };
-        match doc.save_to(path) {
+        match doc.save_to(at) {
             Ok(()) => {
                 self.said = None;
                 true
@@ -241,6 +361,20 @@ impl App {
                 false
             }
         }
+    }
+
+    /// On the web a save is a download, and a download is a dialog, so this
+    /// is Save as with the name filled in. Returns true once the dialog is
+    /// up: what follows the prompt's Save can go ahead, since nothing here
+    /// can wait for a download to land.
+    #[cfg(target_arch = "wasm32")]
+    fn save(&mut self) -> bool {
+        if !matches!(self.shown, Shown::Document { .. }) {
+            return false;
+        }
+        let ctx = self.ctx.clone();
+        self.start_picking(&ctx, Ask::SaveAs);
+        true
     }
 
     /// Ask about unsaved changes before doing something that would lose
@@ -270,7 +404,7 @@ impl App {
             return;
         };
         let name = match &self.shown {
-            Shown::Document { path, .. } => name_of(path),
+            Shown::Document { at, .. } => name_of(at),
             _ => String::new(),
         };
         let mut answer = None;
@@ -365,7 +499,7 @@ impl App {
         };
         ui.horizontal(|ui| {
             press(ui, !busy, "Open\u{2026}", Action::Open);
-            if let Shown::Document { path, doc } = &self.shown {
+            if let Shown::Document { at, doc } = &self.shown {
                 press(ui, !busy && doc.edited(), "Save", Action::Save);
                 press(ui, !busy, "Save as\u{2026}", Action::SaveAs);
                 ui.separator();
@@ -379,7 +513,7 @@ impl App {
                 }
                 ui.toggle_value(&mut self.show_source, "Source");
                 ui.separator();
-                ui.label(path.display().to_string());
+                ui.label(shown_at(at));
                 if let Some(selected) = &self.selected {
                     ui.label(egui::RichText::new(selected.join(".")).monospace().weak());
                 }
@@ -402,8 +536,8 @@ impl App {
                 ui.label("Open a file, or start with one: flyleaf path/to/file.toml");
                 return;
             }
-            Shown::Failed { path, why } => {
-                ui.label(path.display().to_string());
+            Shown::Failed { at, why } => {
+                ui.label(shown_at(at));
                 ui.label(egui::RichText::new(why.as_str()).color(ui.visuals().error_fg_color));
                 return;
             }
@@ -491,6 +625,17 @@ impl eframe::App for App {
     }
 }
 
+/// What a dialog's answer opens.
+#[cfg(not(target_arch = "wasm32"))]
+fn opened(at: Place, _bytes: Option<Vec<u8>>) -> Shown {
+    shown(Some(at))
+}
+#[cfg(target_arch = "wasm32")]
+fn opened(at: Place, bytes: Option<Vec<u8>>) -> Shown {
+    parsed(at, Ok(bytes.unwrap_or_default()))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     let shown = shown(std::env::args_os().nth(1).map(PathBuf::from));
     let options = eframe::NativeOptions {
@@ -502,15 +647,38 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Tommy Flyleaf",
         options,
-        Box::new(|_cc| Ok(Box::new(App::new(shown)))),
+        Box::new(|cc| Ok(Box::new(App::new(shown, cc.egui_ctx.clone())))),
     )
 }
 
-#[cfg(test)]
+/// The same application in the page's canvas. Nothing to open at the start,
+/// since a browser has no argument to give; the picker is where a file
+/// comes from.
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    use web_sys::wasm_bindgen::JsCast as _;
+    wasm_bindgen_futures::spawn_local(async {
+        let canvas = web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.get_element_by_id("flyleaf"))
+            .and_then(|e| e.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+            .expect("the page has a canvas called flyleaf");
+        eframe::WebRunner::new()
+            .start(
+                canvas,
+                eframe::WebOptions::default(),
+                Box::new(|cc| Ok(Box::new(App::new(Shown::Nothing, cc.egui_ctx.clone())))),
+            )
+            .await
+            .expect("the application starts");
+    });
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use super::{open, shown, title, App, Shown, Then};
+    use super::{shown, title, App, Shown, Then};
 
     fn fixture(name: &str) -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -571,12 +739,21 @@ mod tests {
         }]
     }
 
+    fn why(shown: &Shown) -> &str {
+        match shown {
+            Shown::Failed { why, .. } => why,
+            _ => "",
+        }
+    }
+
     /// A file that opens is the document it holds, unchanged: this is the
     /// shell, and the shell must not touch what it shows.
     #[test]
     fn a_file_opens_as_itself() {
         let path = fixture("every-type.toml");
-        let doc = open(&path).expect("the fixture opens");
+        let Shown::Document { doc, .. } = shown(Some(path.clone())) else {
+            panic!("the fixture opens");
+        };
         assert_eq!(doc.render(), std::fs::read_to_string(&path).unwrap());
     }
 
@@ -586,16 +763,16 @@ mod tests {
     /// to another tool to find out where.
     #[test]
     fn a_file_that_will_not_open_says_why() {
-        let missing = open(Path::new("/nowhere/at/all.toml")).unwrap_err();
-        assert!(!missing.is_empty());
+        let missing = shown(Some(PathBuf::from("/nowhere/at/all.toml")));
+        assert!(!why(&missing).is_empty());
 
         let dir = std::env::temp_dir().join(format!("flyleaf-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let bad = dir.join("bad.toml");
         std::fs::write(&bad, "a = 1\nb = \n").unwrap();
-        let why = open(&bad).unwrap_err();
+        let bad = shown(Some(bad));
         std::fs::remove_dir_all(&dir).unwrap();
-        assert!(why.contains("line 2"), "{why}");
+        assert!(why(&bad).contains("line 2"), "{}", why(&bad));
     }
 
     /// No argument shows the window with nothing in it rather than failing,
@@ -624,7 +801,7 @@ mod tests {
             shown(Some(PathBuf::from("/nowhere/at/all.toml"))),
             shown(Some(fixture("every-type.toml"))),
         ] {
-            let mut app = App::new(shown);
+            let mut app = App::new(shown, egui::Context::default());
             egui::__run_test_ui(|ui| app.render(ui));
         }
     }
@@ -633,7 +810,10 @@ mod tests {
     /// window, with the chord consumed before a field could take it.
     #[test]
     fn the_undo_and_redo_chords_reach_the_document() {
-        let mut app = App::new(shown(Some(fixture("every-type.toml"))));
+        let mut app = App::new(
+            shown(Some(fixture("every-type.toml"))),
+            egui::Context::default(),
+        );
         let Shown::Document { doc, .. } = &mut app.shown else {
             panic!("the fixture opens");
         };
@@ -669,7 +849,7 @@ mod tests {
     #[test]
     fn the_save_chord_writes_the_file() {
         let (dir, path) = scratch("top-level-keys.toml");
-        let mut app = App::new(shown(Some(path.clone())));
+        let mut app = App::new(shown(Some(path.clone())), egui::Context::default());
         let Shown::Document { doc, .. } = &mut app.shown else {
             panic!("the copy opens");
         };
@@ -703,7 +883,10 @@ mod tests {
     /// strength of a click on its corner and take the changes with it.
     #[test]
     fn a_close_with_unsaved_changes_is_refused_and_asked_about() {
-        let mut app = App::new(shown(Some(fixture("every-type.toml"))));
+        let mut app = App::new(
+            shown(Some(fixture("every-type.toml"))),
+            egui::Context::default(),
+        );
         let ctx = egui::Context::default();
         let commands = frame(&ctx, &mut app, Vec::new(), true);
         assert!(
@@ -732,7 +915,7 @@ mod tests {
     fn the_title_leads_with_the_file() {
         assert_eq!(title(&Shown::Nothing), "Tommy Flyleaf");
         let failed = Shown::Failed {
-            path: PathBuf::from("/some/where/Cargo.toml"),
+            at: PathBuf::from("/some/where/Cargo.toml"),
             why: String::new(),
         };
         assert_eq!(title(&failed), "Cargo.toml \u{2014} Tommy Flyleaf");

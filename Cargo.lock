@@ -1068,6 +1068,8 @@ dependencies = [
  "egui",
  "flyleaf-core",
  "rfd",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
