@@ -1,9 +1,9 @@
 <!-- ============================================================
-     TOMMY FLYLEAF (Linux, Web; macOS and Windows to follow) — Privacy Statement
+     TOMMY FLYLEAF (Linux, Windows, Web; macOS to follow) — Privacy Statement
      Canonical text. Copied verbatim into excelano.com/legal/index.html
      under the "Applications" heading; update the two in lockstep.
      ============================================================ -->
-<h3 id="flyleaf">Tommy Flyleaf (Linux, Web) — Privacy</h3>
+<h3 id="flyleaf">Tommy Flyleaf (Linux, Windows, Web) — Privacy</h3>
 <p>Tommy Flyleaf is an open-source TOML editor: it shows a file as a tree, lets you edit every value by its kind, and saves a file with everything you did not edit left as it was. It runs as a desktop application and as a page in a browser, and this section names where the two differ. It makes no network connection of any kind. This section is the canonical statement of what Tommy Flyleaf does and does not do with your data. The application is open source so that every claim here is independently verifiable, and the claims are enforced by how the code is built rather than by a policy that depends on the developer behaving well. The repository is at <a href="https://github.com/excelano/flyleaf" rel="noopener noreferrer">github.com/excelano/flyleaf</a>.</p>
 
 <h4>The short version</h4>
@@ -15,6 +15,7 @@
 
 <h4>What leaves your device</h4>
 <p><strong>Nothing.</strong> Tommy Flyleaf makes no network request. It has no update check, no license check, no analytics service, no crash reporter, and no remote logging. The project imports none of that on purpose, and the dependency list is short enough to read. The web page is served by excelano.com like any other page on the site, and the site's own statement above covers what a web server records when a page is fetched.</p>
+<p><strong>The one exception is a link you click.</strong> The About box has two links, to this application's page and to its source. Clicking one hands the address to whatever browser your system opens links with, and that browser fetches it the way it fetches anything else you ask for. Tommy Flyleaf does not fetch it, and sends nothing along with it.</p>
 
 <h4>What Tommy Flyleaf does not collect</h4>
 <p>Tommy Flyleaf does not collect the contents of your files, the names of your files, what you opened, when you opened it, how often, which buttons you pressed, screen views, crash reports, performance metrics, diagnostic logs, device identifiers, advertising identifiers, installation identifiers, or anything else. It has no way to, because it makes no network connection.</p>
@@ -22,7 +23,7 @@
 <h4>How to verify the claims yourself</h4>
 <p>The full source is at <a href="https://github.com/excelano/flyleaf" rel="noopener noreferrer">github.com/excelano/flyleaf</a>. To check the claims here independently:</p>
 <ol class="legal-steps">
-    <li>Search the project for anything that opens a network connection. There is nothing: no HTTP client, no TCP or UDP socket, and no URL is contacted. What the desktop application does open are local sockets, because drawing a window and showing a file dialog are done that way: on Linux, one to the display server and the desktop's own file-dialog service. Both stay on this machine. The dependency manifest lists a window toolkit, a file dialog, and the TOML library, none of which reaches the network.</li>
+    <li>Search the project for anything that opens a network connection. There is nothing: no HTTP client, no TCP or UDP socket, and no URL is contacted. What the desktop application does open on Linux are local sockets, because drawing a window and showing a file dialog are done that way there: one to the display server, one to the desktop's own file-dialog service. Both stay on this machine. On Windows there are not even those, and what can be checked there is stronger: <code>packaging/windows/check-imports.ps1</code> reads the import table of the executable that ships and refuses any library that is not part of Windows. It finds nineteen, every one of them Windows' own, and not one of them is a networking library &mdash; no <code>ws2_32.dll</code>, no <code>winhttp.dll</code>, no <code>wininet.dll</code>. A program that cannot resolve a name or open a socket cannot phone home whatever its code says. The dependency manifest lists a window toolkit, a file dialog, and the TOML library, none of which reaches the network.</li>
     <li>Search for analytics and crash-reporter names: Firebase, Sentry, Crashlytics, Mixpanel, Amplitude, Segment, GoogleAnalytics. None appears.</li>
     <li>Search for what is written to disk. One thing: the file you save, written beside the original and renamed over it.</li>
     <li>In the browser, open the page with the network panel of the browser's developer tools showing. After the page and its two files have loaded, nothing further is fetched, whatever you open or save.</li>
