@@ -140,6 +140,10 @@ against what it replaced is too big.
                             at the root says how it is built
     packaging/linux/        the desktop entry, the icon, install.sh,
                             uninstall.sh and check-libraries.sh
+    packaging/sample.toml   the file the screenshots and the hosted demo open
+    packaging/privacy-entry.html
+                            the privacy statement, copied verbatim into
+                            excelano.com/legal; edit here first
     packaging/debian/       control.in, the changelog, the manual page and
                             build-deb.sh; version.sh beside them reads the
                             one version in Cargo.toml in every spelling

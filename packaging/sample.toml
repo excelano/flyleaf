@@ -1,0 +1,55 @@
+# A bindery's job ticket, as the sample Tommy Flyleaf opens with. It is here to
+# have a comment in every place TOML allows one, a key of every kind, and
+# enough structure to fold, so that a save can be seen to change nothing but
+# the value edited. Nothing in it is real.
+
+title = "Job ticket"          # shown at the top of the ticket
+ticket = 4_812                # the fourth thousand and some
+opened = 2026-09-07T09:15:00-05:00
+due = 2026-09-21              # a local date, no time of day
+rush = false
+
+[customer]
+name = "Harriet Vane"
+email = "h.vane@example.org"
+# The customer's own reference, kept as they wrote it.
+reference = 'PO/2026/0093'
+
+[book]
+title = "The Anatomy of Melancholy"
+pages = 1_392
+trim = { width = 156, height = 234, unit = "mm" }
+signatures = [16, 16, 16, 16, 16, 8]   # leaves per gathering
+notes = """
+Rebind in quarter cloth over boards.
+Retain the original endpapers; the flyleaf carries an inscription.
+"""
+
+[book.cover]
+cloth = "buckram"
+colour = 0x3f1621   # oxblood
+gilt = true
+
+# Each step is logged as it is done. The order here is the order of work.
+[[step]]
+name = "collate"
+done = 2026-09-08T14:02:00-05:00
+by = "T. Flyleaf"
+
+[[step]]
+name = "sew"
+done = 2026-09-09T11:40:00-05:00
+by = "T. Flyleaf"
+
+[[step]]
+name = "case in"
+# Not yet done, so no timestamp.
+by = "T. Flyleaf"
+
+[pricing]
+labour = 240.00
+materials = 63.50
+discount = 0.1   # returning customer
+currency = "USD"
+
+# Trailing comment: the ticket is closed by moving it to the archive directory.
