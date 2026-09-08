@@ -22,13 +22,43 @@ $extension = '.toml'
 $progId = 'Excelano.Flyleaf'
 $exeName = 'flyleaf.exe'
 
+# A key that is not there is nothing to do; a key that is there and will not go
+# is a failure, and the first version of this could not tell the two apart. It
+# caught every exception and wrote "nothing at $Path", which is how the
+# UserChoice key below survived an uninstall that reported success. Both are
+# read back now, so the only thing passed over is the absence.
 function Remove-Key {
     param([string] $Path)
-    try {
-        [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree($Path, $false)
-    } catch {
-        Write-Verbose "nothing at $Path"
+    if (-not (Test-OurKey $Path)) { return }
+    [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree($Path, $false)
+    if (Test-OurKey $Path) { throw "uninstall.ps1: HKCU\$Path is still there after being deleted" }
+}
+
+# The same, for a key that cannot be opened for writing. `DeleteSubKeyTree` and
+# `reg delete` both open the key itself with write access before deleting it,
+# and Explorer writes a *Deny SetValue* rule on UserChoice so that no
+# application can quietly take an extension over. That deny makes the write
+# open fail, and then `reg delete` says *Access is denied* while
+# `DeleteSubKeyTree` reads the failure as the key being missing and returns
+# quietly, which is the half that hid this. Deleting the name from the parent
+# needs DELETE on the child and nothing else, which the rule beside the deny
+# allows: measured here 2026-09-08, unelevated, on the real key Explorer wrote.
+function Remove-Subkey {
+    param([string] $Parent, [string] $Name)
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($Parent, $true)
+    if (-not $key) { return }
+    try { $key.DeleteSubKey($Name, $false) } finally { $key.Close() }
+    if (Test-OurKey "$Parent\$Name") {
+        throw "uninstall.ps1: HKCU\$Parent\$Name is still there after being deleted"
     }
+}
+
+function Test-OurKey {
+    param([string] $Path)
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($Path, $false)
+    if (-not $key) { return $false }
+    $key.Close()
+    return $true
 }
 
 # A value, or the key's default when $Name is empty, removed only if it holds
@@ -57,18 +87,22 @@ Remove-Key "$classes\Applications\$exeName"
 Remove-Key 'Software\Microsoft\Windows\CurrentVersion\Uninstall\Tommy Flyleaf (script install)'
 
 # The one that is easy to miss. Choosing "always open with" writes a UserChoice
-# here, and a UserChoice naming a ProgID whose executable is gone kills the
-# extension outright, measured in slipcase-desktop. Removed only when it names
-# this application, since on a shared extension it may well name somebody
-# else's, and that choice is theirs to keep.
-$choice = "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$extension\UserChoice"
-$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($choice, $false)
+# here, and so does opening a file through the association, measured on this
+# machine 2026-09-08; a UserChoice naming a ProgID whose executable is gone
+# kills the extension outright, measured in slipcase-desktop. Removed only when
+# it names this application, since on a shared extension it may well name
+# somebody else's, and that choice is theirs to keep.
+#
+# The UserChoice key by name through `Remove-Subkey`, and not the
+# `FileExts\.toml` tree above it, which is what this deleted first and what
+# never worked. It is also the narrower thing to do: that tree holds other
+# applications' entries for a shared extension, and none of those are ours.
+$exts = "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$extension"
+$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("$exts\UserChoice", $false)
 if ($key) {
     $chosen = $key.GetValue('ProgId', $null)
     $key.Close()
-    if ($chosen -eq $progId) {
-        Remove-Key "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$extension"
-    }
+    if ($chosen -eq $progId) { Remove-Subkey $exts 'UserChoice' }
 }
 
 $shortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Tommy Flyleaf.lnk'

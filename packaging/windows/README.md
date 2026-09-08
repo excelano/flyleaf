@@ -20,6 +20,17 @@ ProgID from the list, the default only where it is this application's, and a
 the same way without being asked, since an MSIX association is only ever an
 Open With entry.
 
+**The `UserChoice` key is deleted by name, not with the tree above it.**
+slipcase-desktop's `uninstall.ps1` removes `FileExts\<ext>` whole, and that call
+does not work: Explorer writes a *Deny SetValue* rule on `UserChoice` so no
+application can quietly take an extension over, and every delete that opens the
+key for writing — `.NET`'s `DeleteSubKeyTree`, `reg delete` — fails on it.
+Measured here 2026-09-08, unelevated, on the real key: `reg delete` says *Access
+is denied*, `DeleteSubKeyTree` reads the same failure as the key being missing
+and returns quietly, and deleting the name from the parent works, because that
+needs only DELETE and the rule beside the deny allows it. This repository does
+the last; **slipcase-desktop has the first and leaves the key behind.**
+
 **The certification baseline is empty** until a kit run fills it, which is the
 fleet's rule. slipcase-desktop's carries `Blocked executables`, traced to the
 standard library's batch-file spawn and `ShellExecuteW` under `opener`; this
@@ -42,6 +53,7 @@ every double-click.
 | `flyleaf.manifest` | The DPI declaration `build.rs` hands the linker |
 | `AppxManifest.xml.in`, `identity.psd1.example` | The Store package's manifest and the identity Partner Center assigns |
 | `build-msix.ps1`, `check-imports.ps1`, `screenshot.ps1` | Build, the in-box import check, and the store screenshot |
+| `check-install.ps1` | The two scripts above run against the registry and read back: what goes on comes off, a `UserChoice` naming this application goes with it, and another application's does not. Registers the real ProgID, so it is for a runner or a machine where that does not matter |
 
 ## The order, on the Windows machine
 

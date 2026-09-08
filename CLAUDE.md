@@ -50,6 +50,9 @@ what was measured. Do not smooth an amendment away.
                                                   # the two platform halves, type-checked from here;
                                                   # windows.yml and apple-silicon.yml run them
     powershell -File packaging\windows\install.ps1       # on Windows; README there has the order
+    powershell -File packaging\windows\check-install.ps1 # what it registers, on and off again;
+                                                  # windows.yml runs it, and it takes the real
+                                                  # .toml registration over while it does
     ./packaging/macos/build-app.sh                # on a Mac; README there has the order
 
 The workflow in `.github/workflows/ci.yml` runs all of these on every push,
@@ -155,7 +158,8 @@ against what it replaced is too big.
     packaging/linux/        the desktop entry, the icon, install.sh,
                             uninstall.sh and check-libraries.sh; the icon in
                             icons/ is the one drawing every platform's comes from
-    packaging/windows/      the two install scripts, the MSIX build, the import
+    packaging/windows/      the two install scripts and the check that they go
+                            on and come off cleanly, the MSIX build, the import
                             check, the committed .ico and assets and make-ico
                             that builds them; README says what differs from
                             slipcase-desktop's

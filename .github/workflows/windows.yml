@@ -1,8 +1,14 @@
-# Run the suite on Windows, and check the two things only a Windows binary can
-# say about itself. Adapted from slipcase-desktop's; what it reaches and what
-# it does not is the same there and is stated because a green tick invites
-# more faith than it has earned: nothing here reaches the window, the install
-# scripts, an MSIX package, a file association, or the icon at any size.
+# Run the suite on Windows, and check the three things only a Windows machine
+# can say. Adapted from slipcase-desktop's; what it reaches and what it does
+# not is stated because a green tick invites more faith than it has earned.
+#
+# The install scripts were on the list of what this does not reach until
+# 2026-09-08, when the first run of the packaging order on the Windows machine
+# found `uninstall.ps1` reporting success and leaving a `UserChoice` naming a
+# ProgID it had just deleted — the state its own comment calls killing the
+# extension outright. `check-install.ps1` is that measurement made permanent
+# and is run below. What is still out of reach here: the window, an MSIX
+# package, and the icon at any size.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)
@@ -43,6 +49,12 @@ jobs:
         run: |
           cargo build --release
           powershell -ExecutionPolicy Bypass -File packaging/windows/check-imports.ps1
+
+      # The registry half of what a person installs. It registers the real
+      # ProgID under HKCU and takes it away again, which is why it belongs on a
+      # runner rather than in the middle of somebody's day.
+      - name: The integration goes on and comes off cleanly
+        run: powershell -ExecutionPolicy Bypass -File packaging/windows/check-install.ps1
 
       # The `.ico` and the Store assets are committed artifacts, because
       # nothing on Windows rasterizes an SVG and `rc.exe` is a tool the build
