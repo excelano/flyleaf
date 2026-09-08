@@ -131,7 +131,8 @@ The application makes no network request. Its import table names nineteen librar
 | What | Where | Built by |
 | --- | --- | --- |
 | Screenshot, 1366x768 | `dist/store/01-window.png` | `windows/screenshot.ps1 -File packaging/sample.toml` |
-| Mac screenshot, 1440x900 | `dist/store/mac-01-window.png` | `macos/screenshot.sh --app "dist/Tommy Flyleaf.app" --file packaging/sample.toml --out dist/store/mac-01-window.png` |
+| Mac screenshot, light, 1440x900 | `dist/store/mac-01-window-light.png` | `macos/screenshot.sh --app "dist-universal/Tommy Flyleaf.app" --file packaging/sample.toml --out dist/store/mac-01-window-light.png`, with the Mac in Light |
+| Mac screenshot, dark, 1440x900 | `dist/store/mac-01-window.png` | the same, with the Mac in Dark |
 | Store logo, 1080x1080 | `windows/listing/store-logo-1080.png` | `windows/make-ico` |
 | Store logo, 2160x2160 | `windows/listing/store-logo-2160.png` | `windows/make-ico` |
 
@@ -148,7 +149,11 @@ Most of the above carries over: the name, the description, the links, the
 pricing and the age rating are the same product. What differs is Apple's own
 fields, and they are here. The Mac screenshot is taken from a development-signed
 bundle of the same commit, because a Store-signed one cannot launch off the
-Store; `macos/screenshot.sh` refuses any size App Store Connect would.
+Store; `macos/screenshot.sh` refuses any size App Store Connect would. Two
+captures, the light one first: the application follows the system appearance
+and sets no theme of its own, so the Mac's appearance is switched for each
+(`tell appearance preferences to set dark mode to false` in System Events,
+and back), and the light one leads because the product page is set in cream.
 
 **Name**
 
