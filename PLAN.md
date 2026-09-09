@@ -1,8 +1,19 @@
-# Tommy Flyleaf — project kickoff
+# Tommy Flyleaf — the plan
 
-You are starting a new project in this empty folder. Read this whole file, then work through the open questions at the bottom with me before writing code.
+What this project is for, the order it is being built in, and what each phase
+cost when it was built. Every phase below carries its own record: what was
+done, on what day, and what was measured rather than assumed.
 
-This document is a starting position, not a spec. Everything in it is open to revision as we go. When you think something here is wrong, or a better option appears once you've seen the code, say so and propose the change — then update this file so it stays the current statement of the plan. Treat it as living: we will edit it together throughout the project.
+**It is living and it is not a specification.** Where building contradicts
+something here, amend it in place, marked **Amended**, saying what was
+measured — and do not smooth the amendment away, because a plan that quietly
+rewrites itself to match the code is worth nothing as a record. `DESIGN.md`
+in slipcase-desktop is the model for that habit; this file keeps it too.
+
+It began on 2026-09-07 as `PROMPT.md`, addressed to a session starting in an
+empty folder, and its first two paragraphs said so long after the folder
+stopped being empty. Renamed 2026-09-09 to what it had become, which is what
+`slipcase-open/PLAN.md` was already called.
 
 ## What it is
 
@@ -119,9 +130,9 @@ The check that would have caught the second one is `check-install.ps1`, new here
 
 **Submitted to the Microsoft Store 2026-09-08**, at 0.2.1, the same day the Windows machine first built a package. The listing copy is `packaging/store-listing.md`, committed and edited there first for the reason `sample.toml` and `privacy-entry.html` are: every line of it is a claim about the code, and a claim like that goes stale silently in a web form nobody diffs. The identity Partner Center assigned stays out of it, in the gitignored `identity.psd1`, and the filled sheet with both together is `packaging/windows/SUBMITTING.local.md`, which `.gitignore` had already reserved. The notes for certification are the field that decides whether a submission comes back, and they answer four things a reviewer would otherwise guess at: that no account or network is needed and any `.toml` will do, that the empty window on launch is the application working rather than failing, that `.toml` is claimed as Open With and never as the default on purpose, and where the kit's `Blocked executables` finding comes from, ahead of review raising it.
 
-**What is left on Windows:** what review says. The version stays 0.2.1: this is a packaging session, and 0.3.0 waits for the macOS half to have been through the same on a Mac.
+**What is left on Windows:** what review says.
 
-**Amended 2026-09-09.** 0.2.2 went out and the hold above did not cover it. Its reason was that a packaging session should not move the number under two submissions; this was not that. German arrived, and with it `set_language`, which slipcase-desktop cannot call until a published version carries it — a downstream application cannot wait on a store review it has no part in. Both submissions stay at 0.2.1, since a crates.io publish rebuilds neither, and **0.3.0 is still reserved for the Mac clearing review**, which is what the hold was protecting.
+**The stores and crates.io are separate channels and their numbers need not agree.** A `cargo publish` rebuilds no submission and a submission in review holds no crate, so a version that goes out on one is not a decision about the other. What the next release carries is decided when there is a release to cut. This paragraph replaced a pinned number on 2026-09-09, the day 0.2.2 went to crates.io while both submissions sat in review: a number written down in advance is a decision made before the facts, and it was wrong within a week of being written.
 
 **macOS half run on the Mac 2026-09-08**, an Intel machine on macOS 15.7.9 with stable 1.98.0, Xcode's 26.2 SDK, and all four certificates installed from the slipcase-desktop work. The README's first two steps, measured: the sample opened by `open` on the file, which is the double-click route, and drew its window in two seconds with the title naming the file; the bundle listed under Open With beside TextEdit, Xcode, Instruments and Notes; the Dock showing the book with its running dot; the icon read at 16, 32 and 128 out of the `.icns` `build-app.sh` rasterized from the one SVG; and three saves, each on a copy of the sample and each diffed against it afterwards with exactly `rush` changed and nothing else: on a file received through the launch, on one chosen in the open panel, which is a different sandbox grant, and on one on a FAT32 USB volume, which is `replaceItemAtURL:` staging on a foreign filesystem. Those were driven from a script, since egui exposes nothing to System Events; the macOS README says how. `check-install.sh` on the signed universal bundle finds nothing mechanical wrong. The identifier is settled: nothing on the machine declared a TOML type, in 182,416 lines of `lsregister -dump`, so `io.toml.toml` stands, and the plist's comment says what to repeat where other editors are installed.
 
@@ -137,7 +148,7 @@ One blemish seen in the store screenshot and not fixed: a multi-line string, the
 
 **Submitted to the Mac App Store 2026-09-08**, at 0.2.1, build 46, the same day the Mac first built a bundle and the same day as the Microsoft submission. The App Store Connect form was filled through the API from `packaging/store-listing.md` rather than pasted, so the record and the file agree by construction: version string, build, description, keywords, promotional text, URLs, subtitle, category, review notes with the account's contact block, and two 1440x900 screenshots with the light one leading, since the application follows the system appearance and the product page is set in cream. The privacy questionnaire, the age rating and the submit button were David's in the web form. Read back afterwards: `appVersionState: WAITING_FOR_REVIEW`.
 
-**What is left on the Mac:** what review says, which arrives by email; TestFlight, which is how a person runs the article Apple re-signs, with `check-install.sh` against that install and a Retina display if one is to hand; and `$mac_store_id` on the product page once the listing is live. The version stays 0.2.1 until the Mac build is through review; then 0.3.0. (Amended 2026-09-09: 0.2.2 was published to crates.io for the reason recorded under Windows above. It does not touch the build in review, and 0.3.0 is still the Mac's number.)
+**What is left on the Mac:** what review says, which arrives by email; TestFlight, which is how a person runs the article Apple re-signs, with `check-install.sh` against that install and a Retina display if one is to hand; and `$mac_store_id` on the product page once the listing is live.
 
 ## Current commitments
 

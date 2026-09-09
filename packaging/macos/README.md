@@ -60,7 +60,7 @@ application crate for it; `flyleaf-core` stays `forbid`.
    identity, `lsregister -f`, and look: the Dock icon, a `.toml` under Open
    With, a double-click delivering the document, a save on a file chosen in the
    open panel, and one on a file on a second volume. **Done 2026-09-08** on an
-   Intel Mac running macOS 15.7.9; `PROMPT.md` has what each one measured.
+   Intel Mac running macOS 15.7.9; `PLAN.md` has what each one measured.
 2. `lsregister -dump | grep -i toml`, and settle the identifier. **Done the
    same day**, above.
 3. The two `MACOSX_DEPLOYMENT_TARGET=12.0` builds and `build-app.sh --store`

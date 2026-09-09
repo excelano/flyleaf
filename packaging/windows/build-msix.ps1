@@ -88,7 +88,7 @@ $ErrorActionPreference = 'Stop'
 # review's to say. Removing it means an application that cannot open a link:
 # the only other route is `ShellExecuteW`, which is the other half of what the
 # kit is naming. slipcase-desktop went to review with the same finding, and
-# PROMPT.md carries what came back.
+# PLAN.md carries what came back.
 #
 # Shrink this list when a finding goes away; the run says so when one does.
 $KNOWN_FINDINGS = @{
@@ -135,7 +135,7 @@ function Test-CertificationReport([string] $report) {
         $seen[$name] = $verdict
         $expected = $KNOWN_FINDINGS[$name]
         if ($expected -eq $verdict) {
-            Write-Host "$verdict  $name  (known - see PROMPT.md)"
+            Write-Host "$verdict  $name  (known - see PLAN.md)"
         } else {
             $unexpected += "$verdict $name"
             Write-Host "$verdict  $name  ** NOT IN THE KNOWN LIST **"
