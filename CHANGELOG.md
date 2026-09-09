@@ -4,6 +4,25 @@ The record for people who take these crates from crates.io, where the git log
 does not travel. Each entry says what changed for a consumer of `flyleaf-core`
 or the `flyleaf` widget; the reasoning is in the commits.
 
+## 0.2.3 — 2026-09-09
+
+**The packages 0.2.2 never got.** 0.2.2 reached crates.io and stopped there:
+its `packaging/debian/changelog` entry named Tuesday for a Wednesday, `lintian`
+refuses a package on that, and the fix landed after the tag was cut. A pushed
+tag is spent, so the way to a buildable package is the next number.
+
+Nothing a person using the editor will notice has changed since 0.2.2. The
+German support, the Windows and macOS packaging and the macOS save path are
+0.2.2's and are listed under it. What changed since is documentation — the
+plan became `DESIGN.md` and `PLAN.md`, and the references followed — and one
+fix to the translation tooling: `po/pseudo.sh` forces the catalogue's charset
+to UTF-8 before the pseudolocale filter runs, because `msgen` writes
+`charset=ASCII` where every message is ASCII and `msgfilter` then drops the
+accents and padding the filter had just added.
+
+For anyone installing from apt or from a release page, this is where 0.2.2's
+work arrives.
+
 ## 0.2.2 — 2026-09-09
 
 Both crates:

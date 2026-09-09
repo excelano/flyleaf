@@ -1069,7 +1069,7 @@ dependencies = [
 
 [[package]]
 name = "flyleaf"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "block2 0.6.2",
  "eframe",
@@ -1087,7 +1087,7 @@ dependencies = [
 
 [[package]]
 name = "flyleaf-core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "objc2 0.6.4",
  "objc2-foundation 0.3.2",

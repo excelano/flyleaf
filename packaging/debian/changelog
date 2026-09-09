@@ -1,3 +1,12 @@
+flyleaf (0.2.3) unstable; urgency=medium
+
+  * The packages 0.2.2 never got. That entry named the wrong day of the week,
+    which lintian refuses, and a pushed tag cannot be re-cut. Nothing a person
+    using the editor will notice has changed since; 0.2.2's entry below is
+    what this carries.
+
+ -- David M. Anderson <david.anderson@excelano.com>  Wed, 09 Sep 2026 22:30:00 -0500
+
 flyleaf (0.2.2) unstable; urgency=medium
 
   * German. The editor draws in German where the desktop asks for German, and
