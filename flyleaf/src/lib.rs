@@ -33,12 +33,12 @@ mod i18n {
 /// across would be a type, and two versions of this crate in one graph would
 /// make it two.
 const CATALOGUES: &[(&str, &str)] = &[
-    ("de", include_str!("../../po/de.po")),
+    ("de", include_str!("../po/de.po")),
     // Debug builds alone, so a release of this crate carries nothing of it.
     // A host running its own pseudolocale asks for this tag and gets a tree
     // that answers in the same alphabet as the window around it.
     #[cfg(debug_assertions)]
-    ("en-x-pseudo", include_str!("../../po/en-x-pseudo.po")),
+    ("en-x-pseudo", include_str!("../po/en-x-pseudo.po")),
 ];
 
 /// Draw this crate's strings in the named language, where there is one for it.

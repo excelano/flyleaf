@@ -15,7 +15,7 @@ Both crates:
   what language it is in, and a tree in a different language from the window
   around it would be worse than an English one. The application binary asks the
   platform itself, and the web build asks `navigator.language`.
-- Catalogues live in `po/`, read by [`potext`](https://crates.io/crates/potext).
+- Catalogues live in `flyleaf/po/`, read by [`potext`](https://crates.io/crates/potext).
   A translation whose English has since changed is not shown: `msgmerge` marks
   it `#, fuzzy` and the reader refuses to load one, so a message is either
   current or plainly in English and never quietly wrong.

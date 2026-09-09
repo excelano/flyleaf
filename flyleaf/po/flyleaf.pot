@@ -8,89 +8,86 @@ msgid ""
 msgstr ""
 "Project-Id-Version: flyleaf\n"
 "Report-Msgid-Bugs-To: https://github.com/excelano/flyleaf/issues\n"
-"POT-Creation-Date: 2026-09-09 09:14-0500\n"
+"POT-Creation-Date: 2026-09-09 10:25-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: none\n"
-"Language: en-x-pseudo\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: flyleaf/src/main.rs:274
 msgid "All files"
-msgstr "[Åll fíléš ····]"
+msgstr ""
 
 #: flyleaf/src/main.rs:282
 msgid "Open a TOML file"
-msgstr "[Öpéñ ä TÖML fílé ·······]"
+msgstr ""
 
 #: flyleaf/src/main.rs:290
 msgid "Save as"
-msgstr "[Sävé äš ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:463
 msgid "Save changes to {file}?"
-msgstr "[Sävé chäñgéš tö {file}? ··········]"
+msgstr ""
 
 #: flyleaf/src/main.rs:467
 msgid "The window is closing. Unsaved changes will be lost."
 msgstr ""
-"[Thé wíñdöw íš clöšíñg. Üñšävéd chäñgéš wíll bé löšt. ·····················]"
 
 #: flyleaf/src/main.rs:469
 msgid "Another file is opening. Unsaved changes will be lost."
 msgstr ""
-"[Åñöthér fílé íš öpéñíñg. Üñšävéd chäñgéš wíll bé löšt. "
-"······················]"
 
 #: flyleaf/src/main.rs:477 flyleaf/src/main.rs:567
 msgid "Save"
-msgstr "[Sävé ··]"
+msgstr ""
 
 #: flyleaf/src/main.rs:480
 msgid "Don't save"
-msgstr "[Döñ't šävé ·····]"
+msgstr ""
 
 #: flyleaf/src/main.rs:483
 msgid "Cancel"
-msgstr "[Cäñcél ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:565
 msgid "Open…"
-msgstr "[Öpéñ… ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:568
 msgid "Save as…"
-msgstr "[Sävé äš… ·····]"
+msgstr ""
 
 #: flyleaf/src/main.rs:570
 msgid "Undo"
-msgstr "[Üñdö ··]"
+msgstr ""
 
 #: flyleaf/src/main.rs:571
 msgid "Redo"
-msgstr "[Rédö ··]"
+msgstr ""
 
 #: flyleaf/src/main.rs:572
 msgid "Expand all"
-msgstr "[Éxpäñd äll ·····]"
+msgstr ""
 
 #: flyleaf/src/main.rs:575
 msgid "Collapse all"
-msgstr "[Cölläpšé äll ·····]"
+msgstr ""
 
 #: flyleaf/src/main.rs:578
 msgid "Source"
-msgstr "[Söürcé ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:585
 msgid "edited"
-msgstr "[édítéd ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:592
 msgid "About"
-msgstr "[Åböüt ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:617
 msgid ""
@@ -98,10 +95,6 @@ msgid ""
 "kind, then saves a file with the comments, key order, whitespace and quoting "
 "untouched everywhere you did not edit."
 msgstr ""
-"[Å TÖML édítör thät šhöwš thé fílé äš ä tréé äñd édítš évéry välüé by ítš "
-"kíñd, théñ šävéš ä fílé wíth thé cömméñtš, kéy ördér, whítéšpäcé äñd qüötíñg "
-"üñtöüchéd évérywhéré yöü díd ñöt édít. "
-"············································································]"
 
 #: flyleaf/src/main.rs:619
 msgid ""
@@ -110,102 +103,95 @@ msgid ""
 "later. The book is somebody else's; write on the page provided, and leave "
 "the rest as it was bound."
 msgstr ""
-"[Näméd för ä böökbíñdér'š äppréñtícé. Thé flyléäf íš thé bläñk pägé íñšídé ä "
-"böök'š cövér, thé öñé pläcé íñ ä böüñd böök méäñt för šöméöñé tö wríté öñ "
-"lätér. Thé böök íš šömébödy élšé'š; wríté öñ thé pägé prövídéd, äñd léävé "
-"thé réšt äš ít wäš böüñd. "
-"····································································································]"
 
 #: flyleaf/src/main.rs:635
 msgid "Close"
-msgstr "[Clöšé ···]"
+msgstr ""
 
 #: flyleaf/src/main.rs:650
 msgid "Open a file, or start with one: flyleaf path/to/file.toml"
 msgstr ""
-"[Öpéñ ä fílé, ör štärt wíth öñé: flyléäf päth/tö/fílé.töml "
-"·······················]"
 
 #: flyleaf/src/tree.rs:227
 msgid "add a comment at the end"
-msgstr "[ädd ä cömméñt ät thé éñd ··········]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:253
 msgid "text"
-msgstr "[téxt ··]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:254
 msgid "integer"
-msgstr "[íñtégér ···]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:255
 msgid "float"
-msgstr "[flöät ···]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:256
 msgid "boolean"
-msgstr "[bööléäñ ···]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:257
 msgid "offset date-time"
-msgstr "[öffšét däté-tímé ·······]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:258
 msgid "local date-time"
-msgstr "[löcäl däté-tímé ·······]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:259
 msgid "local date"
-msgstr "[löcäl däté ·····]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:260
 msgid "local time"
-msgstr "[löcäl tímé ·····]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:261 flyleaf/src/tree.rs:399 flyleaf/src/tree.rs:511
 msgid "array"
-msgstr "[ärräy ···]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:262 flyleaf/src/tree.rs:393 flyleaf/src/tree.rs:505
 msgid "inline table"
-msgstr "[íñlíñé täblé ·····]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:263 flyleaf/src/tree.rs:316
 msgid "table"
-msgstr "[täblé ···]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:335
 msgid "array of tables"
-msgstr "[ärräy öf täbléš ·······]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:458 flyleaf/src/tree.rs:1278
 msgid "Add"
-msgstr "[Ådd ··]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:495
 msgid "Remove this element"
-msgstr "[Rémövé thíš éléméñt ········]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:773
 msgid "Add comment above"
-msgstr "[Ådd cömméñt äbövé ·······]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:777
 msgid "Add comment beside"
-msgstr "[Ådd cömméñt béšídé ········]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:860
 msgid "not a date or time; not saved"
-msgstr "[ñöt ä däté ör tímé; ñöt šävéd ············]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:1165 flyleaf/src/tree.rs:1285
 msgid "name taken"
-msgstr "[ñämé täkéñ ·····]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:1232
 msgid "Remove this key"
-msgstr "[Rémövé thíš kéy ·······]"
+msgstr ""
 
 #: flyleaf/src/tree.rs:1256
 msgid "add a key"
-msgstr "[ädd ä kéy ····]"
+msgstr ""

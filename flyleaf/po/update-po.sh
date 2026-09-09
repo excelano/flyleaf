@@ -35,11 +35,18 @@
 # where anything still in English stands out on sight.
 set -eu
 
+# Two directories up: this script sits in the crate that owns the catalogues,
+# and the sources it scans are the whole workspace's.
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-cd "$here/.."
+cd "$here/../.."
 
 domain=flyleaf
-pot="po/$domain.pot"
+# **Inside the crate that reads them, not beside the workspace.**
+# `include_str!` reaching above a crate's own directory compiles here and fails
+# in `cargo package`, which copies only what is under the crate root: the
+# tarball then has no catalogue and the publish dies verifying it. Measured on
+# 2026-09-09 by a failed release, not by reasoning about it.
+pot="flyleaf/po/$domain.pot"
 
 # Sorted so that two runs on two machines produce the same file, and `find`
 # rather than a shell glob because the sources are two directories deep.
@@ -93,7 +100,7 @@ sed -i "s/^\"Project-Id-Version: $domain VERSION/\"Project-Id-Version: $domain/"
 # `#, fuzzy` — and `potext` refuses to show a fuzzy entry, so the window falls
 # back to English until a person has looked at it. A translation is never
 # silently wrong; it is either current or visibly absent.
-for catalogue in po/*.po; do
+for catalogue in flyleaf/po/*.po; do
     [ -e "$catalogue" ] || continue
     msgmerge --update --backup=none --previous "$catalogue" "$pot"
     # Syntax is caught here, before a commit, because `potext` cannot report it

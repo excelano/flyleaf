@@ -25,10 +25,10 @@
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-cd "$here/.."
+cd "$here/../.."
 
-pot=po/flyleaf.pot
-out=po/en-x-pseudo.po
+pot=flyleaf/po/flyleaf.pot
+out=flyleaf/po/en-x-pseudo.po
 
 # `msgen` fills every msgstr with its own msgid, which is the English
 # catalogue; `msgfilter` then pipes each one through the transform below.
