@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 Guidance for Claude Code working in `flyleaf`. Read it before touching
-anything. It is short because `PLAN.md` is where the plan and the reasoning
-live, and it is written from slipcase-desktop's `CLAUDE.md`, whose rules this
-repository inherits rather than restates.
+anything. It is short because `DESIGN.md` is where the reasoning lives, and it
+is written from slipcase-desktop's `CLAUDE.md`, whose rules this repository
+inherits rather than restates.
 
 ---
 
@@ -20,13 +20,14 @@ It was extracted from the metadata editor in `excelano/slipcase-desktop`
 (working copy `~/slipcase/slipcase-desktop`), and that application still uses
 it: one editor across the excelano applications, not two that drift. Until the
 extraction is complete, every change here is checked against slipcase-desktop
-behaving as before; `PLAN.md` lays out the slices and what each one's check
-is, and slipcase-desktop's `tests/golden/` is the record it is checked against.
+behaving as before, and slipcase-desktop's `tests/golden/` is the record that
+is checked against.
 
-**`PLAN.md` is the plan and it is alive.** When a decision changes, edit the
-relevant section there in the same change. It is not a specification, and
-where building contradicts it, amend it in place, marked **Amended**, saying
-what was measured. Do not smooth an amendment away.
+**`DESIGN.md` is the authority on this application and it is alive.** When a
+decision changes, edit the relevant section there in the same change. Where
+building contradicts it, amend it in place, marked **Amended**, saying what was
+measured. Do not smooth an amendment away: a design document that quietly
+rewrites itself to match the code is worth nothing as a record.
 
 ---
 
@@ -214,6 +215,6 @@ against what it replaced is too big.
     packaging/debian/       control.in, the changelog, the manual page and
                             build-deb.sh; version.sh beside them reads the
                             one version in Cargo.toml in every spelling
-    PLAN.md               the plan, alive
+    DESIGN.md             what this is and why, alive
     UPSTREAM.md             what toml_edit does to a document, each finding's
                             reproduction, and whether it is filed

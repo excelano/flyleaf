@@ -2,7 +2,7 @@
 
 A structure-aware TOML editor: a desktop application that shows a document as a tree, edits values by type, and keeps comments, key order and formatting when it saves. Rust, egui.
 
-The editor widget is shared with [Slipcase Desktop](https://github.com/excelano/slipcase-desktop), which it was extracted from. `PLAN.md` is the living plan.
+The editor widget is shared with [Slipcase Desktop](https://github.com/excelano/slipcase-desktop), which it was extracted from. `DESIGN.md` is the living plan.
 
     cargo run -- path/to/file.toml
 

@@ -3,7 +3,7 @@
 `flyleaf-core/tests/roundtrip.rs` holds every valid TOML 1.1.0 case in
 toml-test to a byte-identical round trip. Where `toml_edit` itself changes a
 document, the fix belongs upstream rather than here: that is the commitment in
-`PLAN.md`, and this file is the record of each finding, its reproduction,
+`DESIGN.md`, and this file is the record of each finding, its reproduction,
 and where it stands. Measured against `toml_edit` 0.25.13 on 2026-09-07.
 
 Each reproduction below is the smallest that shows the behaviour, verified by

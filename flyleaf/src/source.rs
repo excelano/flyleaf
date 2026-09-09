@@ -5,7 +5,7 @@
 //! come to, and the tree hides what a person who hand-edits TOML cares
 //! about: an inline table against a `[header]`, a quoting style, where a
 //! comment went. This is where those are visible. Read-only on purpose;
-//! `PLAN.md` records why an editable pane is a different product.
+//! `DESIGN.md` §6 records why an editable pane is a different product.
 //!
 //! Drawn as one label per line inside a `ScrollArea` that lays out only the
 //! visible rows, which every line being the same monospace height allows.

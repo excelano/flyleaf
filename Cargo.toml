@@ -35,7 +35,7 @@ toml_edit = "0.25"
 # and fat LTO with one codegen unit, so that egui's unused arms are dropped
 # across crates, and `panic = "abort"`, since wasm has no unwinding to keep
 # the landing pads for. Trunk.toml names this profile; the native binary
-# keeps `release`. Measured in PLAN.md's Phase 3 note against the 7.5 MB
+# keeps `release`. Measured in DESIGN.md §8 against the 7.5 MB
 # the default release profile produced after wasm-opt.
 [profile.web]
 inherits = "release"

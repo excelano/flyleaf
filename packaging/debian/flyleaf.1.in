@@ -71,6 +71,6 @@ The desktop entry, naming application/toml.
 .BR update\-desktop\-database (1)
 .PP
 The TOML specification is at https://toml.io. The plan and the design
-decisions behind this application are in PLAN.md in its repository.
+decisions behind this application are in DESIGN.md in its repository.
 .SH AUTHOR
 David M. Anderson

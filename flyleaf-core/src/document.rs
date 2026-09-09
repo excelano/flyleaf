@@ -151,7 +151,7 @@ impl Document {
     /// The rename is what makes it one step, and it needs the two on one
     /// file system, which a sibling is. A platform whose sandbox refuses a
     /// sibling, which macOS's does for a file a dialog granted, needs its
-    /// own arm here; `PLAN.md` carries that under Phase 3.
+    /// own arm here; `DESIGN.md` §7 carries it.
     ///
     /// A rename needs only the directory to be writable, so two things an
     /// in-place write would do for free are done here on purpose: a file
