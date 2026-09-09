@@ -1,0 +1,190 @@
+# Build the Linux packages and put them under the checks a machine can run:
+# ownership and modes, md5sums, lintian, the desktop entry, and that the
+# package installs and the executable it installs will load.
+#
+# On a push this is a check. On a published release it is also where the
+# packages come from: both architectures are built here and attached to the
+# release. Until 2026-09-09 the package was built by hand on whichever machine
+# cut the release, which is an amd64 one, so every Flyleaf release shipped
+# amd64 alone and the arm64 half of the apt repository has nothing in it.
+#
+# These steps were in `ci.yml`'s suite job, on one architecture, and they are
+# moved rather than copied: the suite, clippy, the formatting rule, the web
+# build and the floor stay there, and this file is the package.
+#
+# The shape is segler's `linux.yml`, which is comma's loop.
+#
+# Author: David M. Anderson
+# Built with AI assistance (Claude, Anthropic)
+
+name: linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Fires when a person publishes the release, which on this loop is what
+  # happens: nothing else creates it. A release created by a workflow using
+  # the default GITHUB_TOKEN fires no event at all, so the dispatch below is
+  # the fallback for that case.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build packages for (e.g. v0.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    # Each architecture on a runner of that architecture rather than
+    # cross-compiled, which is what lets the checks below mean something about
+    # the package they actually produced.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: What is installed
+        run: rustc -V && cargo -V && dpkg-deb --version | head -1
+
+      - name: Build the package
+        run: |
+          cargo build --release
+          ./packaging/debian/build-deb.sh
+
+      # Cheap, and the one thing that goes wrong silently when a package is
+      # built somewhere other than where it was compiled: a package labelled
+      # arm64 carrying an x86-64 executable installs perfectly and then does
+      # not run.
+      - name: The package is the architecture it claims
+        run: |
+          deb=$(ls dist/*.deb)
+          test "$(dpkg-deb -f "$deb" Architecture)" = "${{ matrix.arch }}"
+
+      - name: The package holds up
+        run: |
+          deb=$(ls dist/*.deb)
+          echo "checking ${deb}"
+          strange=$(dpkg-deb --contents "$deb" | awk '$2 != "root/root"')
+          [ -z "$strange" ] || { echo "not root/root:"; echo "$strange"; exit 1; }
+          strange=$(dpkg-deb --contents "$deb" |
+              awk '$1 !~ /^drwxr-xr-x/ && $1 !~ /^-rw-r--r--/ && $1 !~ /^-rwxr-xr-x/')
+          [ -z "$strange" ] || { echo "unexpected modes:"; echo "$strange"; exit 1; }
+          dpkg-deb --ctrl-tarfile "$deb" | tar t | grep -qx './md5sums' ||
+              { echo "the package ships no md5sums" >&2; exit 1; }
+          tree="${RUNNER_TEMP}/tree"
+          dpkg-deb -x "$deb" "$tree"
+          dpkg-deb -e "$deb" "${tree}/DEBIAN"
+          ( cd "$tree" && md5sum -c DEBIAN/md5sums --quiet )
+
+      - name: What lintian says
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lintian
+          lintian --info --tag-display-limit 0 --fail-on error,warning dist/*.deb
+
+      # The library check needs a display and runs by hand; `CLAUDE.md` says
+      # when. What can run here is the half that needs none: the entry the
+      # package installs is a valid desktop entry naming the type.
+      - name: The desktop entry is valid
+        run: |
+          sudo apt-get install -y -qq desktop-file-utils
+          desktop-file-validate packaging/linux/flyleaf.desktop
+
+      # **This is weaker than segler's, and deliberately so.** Segler ships a
+      # command-line binary that answers `--version` in a terminal, so its
+      # workflow can install the package and run what it installed. Flyleaf
+      # ships one executable, it is the application, and it opens a window
+      # from `main` with no argument that would make it do anything else — so
+      # there is nothing here to run to completion.
+      #
+      # What is still worth asking on a machine of this architecture is
+      # whether the loader will take the executable at all: whether it is the
+      # right machine type, and whether everything it links resolves once the
+      # package's dependencies are installed. Both are the failures a
+      # cross-built or under-declared arm64 package produces, and neither
+      # needs a display. Running it and reading how it fails is what separates
+      # them: a binary that gets as far as complaining about a display has
+      # been loaded, and one that cannot be loaded says so in the words below.
+      #
+      # It does not reach a window. `packaging/linux/check-libraries.sh` is
+      # what does that, on a machine with a display, and it is what catches a
+      # library opened by name at run time — which `ldd` cannot see and this
+      # cannot either.
+      - name: It installs, and the executable loads
+        run: |
+          set -eu
+          deb=$(ls dist/*.deb)
+          sudo apt-get install -y "./${deb#./}"
+
+          command -v flyleaf
+          file -L "$(command -v flyleaf)"
+
+          missing=$(ldd "$(command -v flyleaf)" | grep 'not found' || true)
+          [ -z "$missing" ] || { echo "the package installed but does not resolve:"; echo "$missing"; exit 1; }
+
+          # No display here, so it will not start. The question is which way
+          # it fails.
+          out=$(timeout 20 flyleaf 2>&1 || true)
+          printf '%s\n' "$out" | sed 's/^/  /'
+          case "$out" in
+              *'error while loading shared libraries'*)
+                  echo "the loader refused the executable" >&2; exit 1 ;;
+              *'cannot execute binary file'*|*'Exec format error'*)
+                  echo "the executable is not this machine's architecture" >&2; exit 1 ;;
+          esac
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb-${{ matrix.arch }}
+          path: dist/*.deb
+
+  # Only on a release. A push builds the packages to check them and then
+  # throws them away, which is the point of building them on a push.
+  attach:
+    needs: package
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: packages
+          merge-multiple: true
+
+      - name: Attach the packages to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          ls -l packages
+          gh release upload \
+            "${{ github.event.release.tag_name || inputs.tag }}" \
+            packages/*.deb --clobber

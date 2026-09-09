@@ -1,5 +1,7 @@
 # The suite, the clippy rule, the floor, and the rule against compiling C, on
-# every push. Linux only, and that is enough for now: the widget has no
+# every push. The Debian package and its checks were here and are now
+# `linux.yml`, which builds both architectures and attaches them to a release;
+# they were amd64-only while they lived in this job. Linux only, and that is enough for now: the widget has no
 # platform arms, and slipcase-desktop's three workflows build it on Windows and
 # Apple silicon through the dependency. When the application binary lands, the
 # other two platforms get a file each here, as they have there.
@@ -65,40 +67,6 @@ jobs:
       # and agreeing with the files, and lintian gating on errors and
       # warnings. Info and pedantic are Debian's suggestions rather than its
       # rules, and a build should not fail on a suggestion nobody has read.
-      - name: Build the package
-        run: |
-          cargo build --release
-          ./packaging/debian/build-deb.sh
-
-      - name: The package holds up
-        run: |
-          deb=$(ls dist/*.deb)
-          echo "checking ${deb}"
-          strange=$(dpkg-deb --contents "$deb" | awk '$2 != "root/root"')
-          [ -z "$strange" ] || { echo "not root/root:"; echo "$strange"; exit 1; }
-          strange=$(dpkg-deb --contents "$deb" |
-              awk '$1 !~ /^drwxr-xr-x/ && $1 !~ /^-rw-r--r--/ && $1 !~ /^-rwxr-xr-x/')
-          [ -z "$strange" ] || { echo "unexpected modes:"; echo "$strange"; exit 1; }
-          dpkg-deb --ctrl-tarfile "$deb" | tar t | grep -qx './md5sums' ||
-              { echo "the package ships no md5sums" >&2; exit 1; }
-          tree="${RUNNER_TEMP}/tree"
-          dpkg-deb -x "$deb" "$tree"
-          dpkg-deb -e "$deb" "${tree}/DEBIAN"
-          ( cd "$tree" && md5sum -c DEBIAN/md5sums --quiet )
-
-      - name: What lintian says
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq lintian
-          lintian --info --tag-display-limit 0 --fail-on error,warning dist/*.deb
-
-      # The library check needs a display and runs by hand; `CLAUDE.md` says
-      # when. What can run here is the half that needs none: the entry the
-      # package installs is a valid desktop entry naming the type.
-      - name: The desktop entry is valid
-        run: |
-          sudo apt-get install -y -qq desktop-file-utils
-          desktop-file-validate packaging/linux/flyleaf.desktop
 
   # The web build. Checked and linted rather than bundled: the page is built
   # with trunk by hand, and the hosted demo that will build it here is Phase

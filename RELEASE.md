@@ -12,7 +12,7 @@ command you type, and that is what starts the packaging.
 | Version lives in | `version` in the workspace `Cargo.toml` |
 | Read by | `packaging/version.sh`, and nothing else |
 | `apt-ship` argument | `flyleaf` |
-| Packages per release | one, amd64 |
+| Packages per release | two, amd64 and arm64, built by `linux.yml` |
 | crates | `flyleaf-core`, then `flyleaf` |
 | Store lanes | Microsoft Store (MSIX), App Store |
 
@@ -65,28 +65,34 @@ afterwards. So crates.io is the first channel to go live here, and a tag pushed
 without following through leaves two published crates pointing at a version
 with no release, no package, and nothing in apt. `ship flyleaf` is what says so.
 
-**The Linux package is built on the machine that releases it.**
-`packaging/debian/build-deb.sh` declares the architecture
-`dpkg-architecture` reports and refuses to package an executable that
-disagrees, so the release carries one `.deb` for whatever machine cut it, which
-is amd64. An arm64 package needs an arm64 machine; there is no `linux.yml`
-here to build one.
+**The Linux packages come from CI, not from this machine.** Publishing the
+release fires `linux.yml`, which builds amd64 and arm64 on runners of their
+own architecture, puts both through the checks a push gets, installs each one
+and asks whether the loader will take the executable, and attaches them.
+`apt-ship` reads what the release carries, so it waits for that run.
 
-**The three platform workflows test, they do not package.** `ci.yml` is Linux
-and runs the suite; `windows.yml` and `apple-silicon.yml` run it where nothing
-else can and check what only that platform can answer. None of them builds a
-release artefact. The MSIX and the `.app` come from `packaging/windows/` and
-`packaging/macos/`, run on those machines by hand.
+Until 2026-09-09 the package was built here by hand and there was only ever
+one of it, which is why the arm64 half of the apt repository has nothing in it
+for Flyleaf and will stay that way until the next release. `build-deb.sh`
+still works and is what the workflow calls; running it locally is for looking
+at a package, not for shipping one.
+
+**`windows.yml` and `apple-silicon.yml` test, they do not package.** They run
+the suite where nothing else can and check what only that platform can answer.
+The MSIX and the `.app` come from `packaging/windows/` and `packaging/macos/`,
+run on those machines by hand. `linux.yml` is the exception and the only
+workflow that produces something a person installs.
 
 ## The steps
 
     ./packaging/version.sh                      # confirm the number
     cargo test --workspace
-    ./packaging/linux/check-libraries.sh        # nothing compiled C
-    ./packaging/debian/build-deb.sh
+    ./packaging/linux/check-libraries.sh        # needs a display; run it
 
     git tag v0.2.2 && git push origin main --tags
     gh release create v0.2.2 --title 'Flyleaf 0.2.2' --notes-file <file>
+    # linux.yml attaches both .deb packages; wait for it
+    gh run watch "$(gh run list --workflow=linux.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
     apt-ship flyleaf v0.2.2
 
 Create the release yourself rather than from a workflow: a release created with
