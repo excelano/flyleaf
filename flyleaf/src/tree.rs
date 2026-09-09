@@ -21,6 +21,12 @@
 use std::borrow::Cow;
 
 use egui::{self, Ui};
+
+// `tr` rather than the `t` every other file in the fleet imports: this one has
+// called a table `t` since it was written, in a dozen bindings and two function
+// signatures, and renaming those to win a single letter would churn a widget
+// that is held to golden files byte for byte. The lookup is the same function.
+use crate::i18n::t as tr;
 use flyleaf_core::toml_edit::{
     Array, Datetime, Decor, DocumentMut, InlineTable, Item, Table, Value,
 };
@@ -218,7 +224,7 @@ pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) -> Option
     comments_field(ui, &path, "trailing", &trailing, |lines| {
         set_trailing_comments(doc, lines);
     });
-    if ui.small_button("add a comment at the end").clicked() {
+    if ui.small_button(tr("add a comment at the end")).clicked() {
         let mut lines = trailing;
         lines.push(String::new());
         set_trailing_comments(doc, &lines);
@@ -229,6 +235,35 @@ pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) -> Option
 }
 
 /// Every entry of a table, in the order the document wrote them.
+/// What a kind is called in the language the tree is drawn in.
+///
+/// `flyleaf_core::Kind::label` stays the canonical English and is not touched:
+/// it is the model's name for a kind, `tests/golden.rs` builds golden filenames
+/// out of it, and a model crate that knew about translation would be the wrong
+/// crate knowing it. This is the drawing's copy, and it is a `match` rather
+/// than a table so that a kind added to the model fails to compile here until
+/// somebody has written its word.
+///
+/// The words are the editor's own rather than TOML's — TOML says *string* and
+/// this says *text* — so they are translated like any other label a person
+/// reads. Only the format's own syntax would stay in English, and none of it
+/// is drawn.
+fn kind_label(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Text => tr("text"),
+        Kind::Integer => tr("integer"),
+        Kind::Float => tr("float"),
+        Kind::Boolean => tr("boolean"),
+        Kind::OffsetDateTime => tr("offset date-time"),
+        Kind::LocalDateTime => tr("local date-time"),
+        Kind::LocalDate => tr("local date"),
+        Kind::LocalTime => tr("local time"),
+        Kind::Array => tr("array"),
+        Kind::InlineTable => tr("inline table"),
+        Kind::Table => tr("table"),
+    }
+}
+
 fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
     // Taken before the loop borrows the table, so a row can say whether the
     // name being typed into it is one of its own siblings.
@@ -278,7 +313,7 @@ fn entry(
             // other thing it can be.
             let becomes = |k: Kind| k == Kind::InlineTable;
             let menu = Menu {
-                label: "table",
+                label: tr("table"),
                 current: Some(Kind::Table),
                 becomes: &becomes,
             };
@@ -297,7 +332,7 @@ fn entry(
             comments_above(ui, path, "above", above);
             let becomes = |_: Kind| false;
             let menu = Menu {
-                label: "array of tables",
+                label: tr("array of tables"),
                 current: None,
                 becomes: &becomes,
             };
@@ -355,13 +390,13 @@ fn value(
             let (label, current, becomes): (&str, Option<Kind>, Becomes) =
                 if matches!(v, Value::InlineTable(_)) {
                     (
-                        "inline table",
+                        tr("inline table"),
                         Some(Kind::InlineTable),
                         Box::new(move |k: Kind| k == Kind::Table && holds_tables),
                     )
                 } else {
                     (
-                        "array",
+                        tr("array"),
                         Some(Kind::Array),
                         Box::new(move |k: Kind| {
                             single
@@ -409,15 +444,18 @@ fn array(ui: &mut Ui, a: &mut Array, path: &mut Vec<String>, tree: &Tree<'_>) {
     ui.horizontal(|ui| {
         ui.add_space(KEY_WIDTH);
         egui::ComboBox::from_id_salt(id.with("kind picker"))
-            .selected_text(kind.label())
+            .selected_text(kind_label(kind))
             .show_ui(ui, |ui| {
                 for one in Kind::VALUES {
-                    if ui.selectable_value(&mut kind, one, one.label()).clicked() {
+                    if ui
+                        .selectable_value(&mut kind, one, kind_label(one))
+                        .clicked()
+                    {
                         ui.data_mut(|d| d.insert_temp(id.with("kind"), one));
                     }
                 }
             });
-        if ui.button("Add").clicked() {
+        if ui.button(tr("Add")).clicked() {
             change = Some(ArrayChange::Push(kind));
         }
     });
@@ -454,7 +492,7 @@ fn element(
     let remove = |ui: &mut Ui| {
         removed = ui
             .small_button(REMOVE)
-            .on_hover_text("Remove this element")
+            .on_hover_text(tr("Remove this element"))
             .clicked();
     };
 
@@ -463,10 +501,14 @@ fn element(
             beside_as_line(ui, path, v);
             let (label, current, becomes): (&str, Option<Kind>, Becomes) =
                 if matches!(v, Value::InlineTable(_)) {
-                    ("inline table", Some(Kind::InlineTable), Box::new(|_| false))
+                    (
+                        tr("inline table"),
+                        Some(Kind::InlineTable),
+                        Box::new(|_| false),
+                    )
                 } else {
                     (
-                        "array",
+                        tr("array"),
                         Some(Kind::Array),
                         Box::new(move |k: Kind| {
                             single.as_ref().is_some_and(|e| convert(e, k).is_some())
@@ -718,7 +760,7 @@ fn row_menu(ui: &mut Ui, menu: &Menu<'_>, options: &[Kind], slots: Slots) -> Opt
     ui.menu_button(egui::RichText::new(menu.label).weak().small(), |ui| {
         for kind in options.iter().copied().filter(|k| Some(*k) != menu.current) {
             if ui
-                .add_enabled((menu.becomes)(kind), egui::Button::new(kind.label()))
+                .add_enabled((menu.becomes)(kind), egui::Button::new(kind_label(kind)))
                 .clicked()
             {
                 chosen = Some(Asked::Become(kind));
@@ -728,11 +770,11 @@ fn row_menu(ui: &mut Ui, menu: &Menu<'_>, options: &[Kind], slots: Slots) -> Opt
         if slots.above || slots.beside {
             ui.separator();
         }
-        if slots.above && ui.button("Add comment above").clicked() {
+        if slots.above && ui.button(tr("Add comment above")).clicked() {
             chosen = Some(Asked::CommentAbove);
             ui.close();
         }
-        if slots.beside && ui.button("Add comment beside").clicked() {
+        if slots.beside && ui.button(tr("Add comment beside")).clicked() {
             chosen = Some(Asked::CommentBeside);
             ui.close();
         }
@@ -815,7 +857,7 @@ fn scalar(
                 // `09:00:00` is, which is not a difference anybody guesses at.
                 None => {
                     ui.label(
-                        egui::RichText::new("not a date or time; not saved")
+                        egui::RichText::new(tr("not a date or time; not saved"))
                             .color(ui.visuals().error_fg_color),
                     );
                     None
@@ -834,7 +876,7 @@ fn scalar(
     let asked = if editable {
         let becomes = |k: Kind| convert(v, k).is_some();
         let menu = Menu {
-            label: Kind::of_value(v).label(),
+            label: kind_label(Kind::of_value(v)),
             current: Some(Kind::of_value(v)),
             becomes: &becomes,
         };
@@ -1120,7 +1162,7 @@ fn key_name(
     if focused {
         if let Some(t) = &typed {
             if t.is_empty() || (t != name && siblings.names.iter().any(|s| s == t)) {
-                ui.label(egui::RichText::new("name taken").italics().weak());
+                ui.label(egui::RichText::new(tr("name taken")).italics().weak());
             }
         }
     }
@@ -1187,7 +1229,7 @@ fn delete_button(ui: &mut Ui, protected: bool) -> bool {
     // One press, and nothing reaches the file until Save. Writing is
     // explicit, and this keeps the removing that way too.
     ui.small_button(REMOVE)
-        .on_hover_text("Remove this key")
+        .on_hover_text(tr("Remove this key"))
         .clicked()
 }
 
@@ -1211,7 +1253,7 @@ fn add_row(
             ui.set_min_width(KEY_WIDTH);
             let field = egui::TextEdit::singleline(&mut name)
                 .id(id.with("name"))
-                .hint_text("add a key")
+                .hint_text(tr("add a key"))
                 .desired_width(KEY_WIDTH - 28.0);
             if ui.add(field).changed() {
                 set_typed(ui, id, name.clone());
@@ -1219,10 +1261,13 @@ fn add_row(
         });
 
         egui::ComboBox::from_id_salt(id.with("kind picker"))
-            .selected_text(kind.label())
+            .selected_text(kind_label(kind))
             .show_ui(ui, |ui| {
                 for one in kinds.iter().copied() {
-                    if ui.selectable_value(&mut kind, one, one.label()).clicked() {
+                    if ui
+                        .selectable_value(&mut kind, one, kind_label(one))
+                        .clicked()
+                    {
                         ui.data_mut(|d| d.insert_temp(id.with("kind"), one));
                     }
                 }
@@ -1230,14 +1275,14 @@ fn add_row(
 
         let taken = siblings.contains(&name);
         if ui
-            .add_enabled(!name.is_empty() && !taken, egui::Button::new("Add"))
+            .add_enabled(!name.is_empty() && !taken, egui::Button::new(tr("Add")))
             .clicked()
         {
             *change = Some(Change::Add(name.clone(), kind));
             set_typed(ui, id, String::new());
         }
         if taken {
-            ui.label(egui::RichText::new("name taken").italics().weak());
+            ui.label(egui::RichText::new(tr("name taken")).italics().weak());
         }
     });
 }

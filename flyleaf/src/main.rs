@@ -271,7 +271,7 @@ impl App {
         std::thread::spawn(move || {
             let mut dialog = rfd::FileDialog::new()
                 .add_filter("TOML", &["toml"])
-                .add_filter("All files", &["*"]);
+                .add_filter(t("All files"), &["*"]);
             if let Some(dir) = current.as_ref().and_then(|p| p.parent()) {
                 if !dir.as_os_str().is_empty() {
                     dialog = dialog.set_directory(dir);
@@ -279,7 +279,7 @@ impl App {
             }
             let chosen = match what {
                 Ask::Open => dialog
-                    .set_title("Open a TOML file")
+                    .set_title(t("Open a TOML file"))
                     .pick_file()
                     .map_or(Answer::Nothing, |p| Answer::Open(p, None)),
                 Ask::SaveAs => {
@@ -287,7 +287,7 @@ impl App {
                         dialog = dialog.set_file_name(name.to_string_lossy());
                     }
                     dialog
-                        .set_title("Save as")
+                        .set_title(t("Save as"))
                         .save_file()
                         .map_or(Answer::Nothing, Answer::SavedAs)
                 }
@@ -459,11 +459,14 @@ impl App {
         let mut answer = None;
         egui::Modal::new(egui::Id::new("unsaved")).show(ctx, |ui| {
             ui.set_width(360.0);
-            ui.heading(format!("Save changes to {name}?"));
+            ui.heading(potext::fill(
+                t("Save changes to {file}?"),
+                &[("file", &name)],
+            ));
             ui.label(match then {
-                Then::Close => "The window is closing. Unsaved changes will be lost.",
+                Then::Close => t("The window is closing. Unsaved changes will be lost."),
                 Then::Open | Then::Show(_) => {
-                    "Another file is opening. Unsaved changes will be lost."
+                    t("Another file is opening. Unsaved changes will be lost.")
                 }
             });
             if let Some(said) = &self.said {
@@ -471,13 +474,13 @@ impl App {
             }
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                if ui.button("Save").clicked() {
+                if ui.button(t("Save")).clicked() {
                     answer = Some(Some(true));
                 }
-                if ui.button("Don't save").clicked() {
+                if ui.button(t("Don't save")).clicked() {
                     answer = Some(Some(false));
                 }
-                if ui.button("Cancel").clicked() {
+                if ui.button(t("Cancel")).clicked() {
                     answer = Some(None);
                 }
             });
@@ -559,34 +562,34 @@ impl App {
             }
         };
         ui.horizontal(|ui| {
-            press(ui, !busy, "Open\u{2026}", Action::Open);
+            press(ui, !busy, t("Open…"), Action::Open);
             if let Shown::Document { at, doc } = &self.shown {
-                press(ui, !busy && doc.edited(), "Save", Action::Save);
-                press(ui, !busy, "Save as\u{2026}", Action::SaveAs);
+                press(ui, !busy && doc.edited(), t("Save"), Action::Save);
+                press(ui, !busy, t("Save as…"), Action::SaveAs);
                 ui.separator();
-                press(ui, doc.can_undo(), "Undo", Action::Undo);
-                press(ui, doc.can_redo(), "Redo", Action::Redo);
-                if ui.small_button("Expand all").clicked() {
+                press(ui, doc.can_undo(), t("Undo"), Action::Undo);
+                press(ui, doc.can_redo(), t("Redo"), Action::Redo);
+                if ui.small_button(t("Expand all")).clicked() {
                     flyleaf::open_all(ui.ctx(), true);
                 }
-                if ui.small_button("Collapse all").clicked() {
+                if ui.small_button(t("Collapse all")).clicked() {
                     flyleaf::open_all(ui.ctx(), false);
                 }
-                ui.toggle_value(&mut self.show_source, "Source");
+                ui.toggle_value(&mut self.show_source, t("Source"));
                 ui.separator();
                 ui.label(shown_at(at));
                 if let Some(selected) = &self.selected {
                     ui.label(egui::RichText::new(selected.join(".")).monospace().weak());
                 }
                 if doc.edited() {
-                    ui.label(egui::RichText::new("edited").italics().weak());
+                    ui.label(egui::RichText::new(t("edited")).italics().weak());
                 }
             }
             if let Some(said) = &self.said {
                 ui.label(egui::RichText::new(said.as_str()).color(ui.visuals().error_fg_color));
             }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.small_button("About").clicked() {
+                if ui.small_button(t("About")).clicked() {
                     self.about = true;
                 }
             });
@@ -611,18 +614,9 @@ impl App {
                 });
             });
             ui.add_space(8.0);
-            ui.label(
-                "A TOML editor that shows the file as a tree and edits every value by \
-                 its kind, then saves a file with the comments, key order, whitespace \
-                 and quoting untouched everywhere you did not edit.",
-            );
+            ui.label(t("A TOML editor that shows the file as a tree and edits every value by its kind, then saves a file with the comments, key order, whitespace and quoting untouched everywhere you did not edit."));
             ui.add_space(6.0);
-            ui.label(
-                "Named for a bookbinder's apprentice. The flyleaf is the blank page \
-                 inside a book's cover, the one place in a bound book meant for \
-                 someone to write on later. The book is somebody else's; write on \
-                 the page provided, and leave the rest as it was bound.",
-            );
+            ui.label(t("Named for a bookbinder's apprentice. The flyleaf is the blank page inside a book's cover, the one place in a bound book meant for someone to write on later. The book is somebody else's; write on the page provided, and leave the rest as it was bound."));
             ui.add_space(6.0);
             ui.hyperlink_to("excelano.com/flyleaf", "https://excelano.com/flyleaf/");
             ui.hyperlink_to(
@@ -638,7 +632,7 @@ impl App {
                 .weak(),
             );
             ui.add_space(8.0);
-            if ui.button("Close").clicked() {
+            if ui.button(t("Close")).clicked() {
                 self.about = false;
             }
         });
@@ -652,7 +646,9 @@ impl App {
         ui.add_space(8.0);
         let doc = match &mut self.shown {
             Shown::Nothing => {
-                ui.label("Open a file, or start with one: flyleaf path/to/file.toml");
+                ui.label(t(
+                    "Open a file, or start with one: flyleaf path/to/file.toml",
+                ));
                 return;
             }
             Shown::Failed { at, why } => {
@@ -818,8 +814,50 @@ fn opened(at: Place, bytes: Option<Vec<u8>>) -> Shown {
     parsed(at, Ok(bytes.unwrap_or_default()))
 }
 
+/// The window's own messages, which are not the widget's.
+///
+/// The tree inside this window is the `flyleaf` library, a separate crate with
+/// its own catalogue, told which language to use through
+/// `flyleaf::set_language`. Both read the same `po/de.po` — one product, one
+/// catalogue for a translator to work on — and each holds its own copy of it,
+/// because a catalogue that crossed the boundary would be a type and two
+/// versions of it would be two types.
+mod i18n {
+    potext::catalog!();
+}
+use i18n::t;
+
+/// Every language this application is translated into.
+const CATALOGUES: &[(&str, &str)] = &[
+    ("de", include_str!("../../po/de.po")),
+    // Debug builds alone; `po/pseudo.sh` says what it finds and why it is run
+    // before any German rather than after.
+    #[cfg(debug_assertions)]
+    ("en-x-pseudo", include_str!("../../po/en-x-pseudo.po")),
+];
+
+/// Put the platform's language in force, in this window and in the tree.
+///
+/// One reading of the platform handed to both, rather than each asking: a tree
+/// in a different language from the window around it would be worse than an
+/// English one.
+fn follow_the_platform(tag: Option<String>) {
+    let Some(tag) = tag else {
+        return;
+    };
+    // Both answers are discarded on purpose: they say which catalogue matched,
+    // and nothing here does anything differently for the answer — a language
+    // with no catalogue is a window in English, which is the fallback anyway.
+    let _ = i18n::set_language(&tag, CATALOGUES);
+    let _ = flyleaf::set_language(&tag);
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    // Before the window, and before the file named on the command line is read
+    // and possibly refused in a sentence somebody has to read.
+    follow_the_platform(potext::preferred());
+
     let shown = shown(std::env::args_os().nth(1).map(PathBuf::from));
     let viewport = egui::ViewportBuilder::default()
         .with_title(title(&shown))
@@ -865,6 +903,16 @@ fn main() -> eframe::Result {
 #[cfg(target_arch = "wasm32")]
 fn main() {
     use web_sys::wasm_bindgen::JsCast as _;
+
+    // `potext` asks the operating system, and a page has none: no environment,
+    // no `NSLocale`, no registry. The browser's answer is `navigator.language`,
+    // the first of `navigator.languages` and already a BCP-47 tag — `de-DE`,
+    // `en-US` — which is one of the spellings `set_language` normalises. Asked
+    // here rather than inside the crate so that `potext` carries no `web-sys`
+    // for the sake of one line, and so that this build's answer arrives by the
+    // same door a host application's would.
+    follow_the_platform(web_sys::window().and_then(|w| w.navigator().language()));
+
     let sample = parsed(
         "sample.toml".to_owned(),
         Ok(include_bytes!("../../packaging/sample.toml").to_vec()),

@@ -30,10 +30,41 @@ what was measured. Do not smooth an amendment away.
 
 ---
 
+## The language it draws in
+
+German, since 2026-09-09, through [`potext`](https://crates.io/crates/potext) —
+the reader written in slipcase-desktop and made a crate so that this repository
+could use it. `po/` holds the catalogues and the two commands that keep them
+current.
+
+**The widget does not ask what language it is in; it is told.**
+`flyleaf::set_language` is what a host application calls, and the application
+binary calls it too after asking the platform itself. An application has
+already decided what language it is in, and a tree that disagreed with the
+window around it would be worse than an English one. Only a language tag ever
+crosses a crate boundary — never a catalogue, which would be a type, and two
+versions of this crate in one graph would make it two.
+
+**`tree.rs` imports the lookup as `tr` and every other file uses `t`.** That
+file has called a table `t` since it was written, in a dozen bindings and two
+signatures. `po/update-po.sh` lists both spellings as keywords, and leaving the
+alias out of that list silently dropped every message in the tree from a
+catalogue that still looked healthy.
+
+**Run `po/pseudo.sh` before writing a translation, not after.** It found three
+things here that the German pass had missed: an `Add` button and a placeholder
+that never went through the lookup, and two kind badges too wide for the pane.
+`flyleaf-core::Kind::label` stays the canonical English — the golden filenames
+are built from it — and `tree.rs` translates a kind where it draws one.
+
+---
+
 ## Commands
 
     cargo build --all-targets
     cargo test
+    ./po/update-po.sh                             # after changing any sentence a person reads
+    ./po/pseudo.sh                                # then run a debug build with POTEXT_LANG=en-x-pseudo
     cargo clippy --all-targets -- -D warnings    # must be silent
     cargo fmt --check
     cargo +1.95 build --all-targets               # the floor, measured

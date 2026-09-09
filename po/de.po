@@ -1,0 +1,209 @@
+# German translation for Tommy Flyleaf.
+# Copyright (C) 2026 David M. Anderson
+# This file is distributed under the same licence as the flyleaf package.
+# David M. Anderson <david.anderson@excelano.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: flyleaf\n"
+"Report-Msgid-Bugs-To: https://github.com/excelano/flyleaf/issues\n"
+"POT-Creation-Date: 2026-09-09 09:14-0500\n"
+"PO-Revision-Date: 2026-09-09 09:06-0500\n"
+"Last-Translator: David M. Anderson <david.anderson@excelano.com>\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: flyleaf/src/main.rs:274
+msgid "All files"
+msgstr "Alle Dateien"
+
+#: flyleaf/src/main.rs:282
+msgid "Open a TOML file"
+msgstr "Eine TOML-Datei öffnen"
+
+#: flyleaf/src/main.rs:290
+msgid "Save as"
+msgstr "Speichern unter"
+
+#: flyleaf/src/main.rs:463
+msgid "Save changes to {file}?"
+msgstr "Änderungen an {file} speichern?"
+
+#: flyleaf/src/main.rs:467
+msgid "The window is closing. Unsaved changes will be lost."
+msgstr ""
+"Das Fenster wird geschlossen. Nicht gespeicherte Änderungen gehen verloren."
+
+#: flyleaf/src/main.rs:469
+msgid "Another file is opening. Unsaved changes will be lost."
+msgstr ""
+"Eine andere Datei wird geöffnet. Nicht gespeicherte Änderungen gehen "
+"verloren."
+
+#: flyleaf/src/main.rs:477 flyleaf/src/main.rs:567
+msgid "Save"
+msgstr "Speichern"
+
+#: flyleaf/src/main.rs:480
+msgid "Don't save"
+msgstr "Nicht speichern"
+
+#: flyleaf/src/main.rs:483
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: flyleaf/src/main.rs:565
+msgid "Open…"
+msgstr "Öffnen …"
+
+#: flyleaf/src/main.rs:568
+msgid "Save as…"
+msgstr "Speichern unter …"
+
+#: flyleaf/src/main.rs:570
+msgid "Undo"
+msgstr "Rückgängig"
+
+#: flyleaf/src/main.rs:571
+msgid "Redo"
+msgstr "Wiederholen"
+
+#: flyleaf/src/main.rs:572
+msgid "Expand all"
+msgstr "Alle ausklappen"
+
+#: flyleaf/src/main.rs:575
+msgid "Collapse all"
+msgstr "Alle einklappen"
+
+#: flyleaf/src/main.rs:578
+msgid "Source"
+msgstr "Quelltext"
+
+#: flyleaf/src/main.rs:585
+msgid "edited"
+msgstr "geändert"
+
+#: flyleaf/src/main.rs:592
+msgid "About"
+msgstr "Über"
+
+#: flyleaf/src/main.rs:617
+msgid ""
+"A TOML editor that shows the file as a tree and edits every value by its "
+"kind, then saves a file with the comments, key order, whitespace and quoting "
+"untouched everywhere you did not edit."
+msgstr ""
+"Ein TOML-Editor, der die Datei als Baum zeigt und jeden Wert nach seiner Art "
+"bearbeitet und die Datei dann so speichert, dass Kommentare, "
+"Schlüsselreihenfolge, Leerraum und Anführungszeichen überall dort unberührt "
+"bleiben, wo nichts bearbeitet wurde."
+
+#: flyleaf/src/main.rs:619
+msgid ""
+"Named for a bookbinder's apprentice. The flyleaf is the blank page inside a "
+"book's cover, the one place in a bound book meant for someone to write on "
+"later. The book is somebody else's; write on the page provided, and leave "
+"the rest as it was bound."
+msgstr ""
+"Benannt nach einem Buchbinderlehrling. Das Vorsatzblatt ist die leere Seite "
+"hinter dem Buchdeckel, die einzige Stelle in einem gebundenen Buch, auf der "
+"später jemand schreiben soll. Das Buch gehört jemand anderem; schreiben Sie "
+"auf die vorgesehene Seite und lassen Sie den Rest so, wie er gebunden wurde."
+
+#: flyleaf/src/main.rs:635
+msgid "Close"
+msgstr "Schließen"
+
+#: flyleaf/src/main.rs:650
+msgid "Open a file, or start with one: flyleaf path/to/file.toml"
+msgstr ""
+"Eine Datei öffnen, oder mit einer beginnen: flyleaf pfad/zur/datei.toml"
+
+#: flyleaf/src/tree.rs:227
+msgid "add a comment at the end"
+msgstr "einen Kommentar am Ende hinzufügen"
+
+#: flyleaf/src/tree.rs:253
+msgid "text"
+msgstr "Text"
+
+#: flyleaf/src/tree.rs:254
+msgid "integer"
+msgstr "Ganzzahl"
+
+#: flyleaf/src/tree.rs:255
+msgid "float"
+msgstr "Kommazahl"
+
+#: flyleaf/src/tree.rs:256
+msgid "boolean"
+msgstr "Wahrheitswert"
+
+#: flyleaf/src/tree.rs:257
+msgid "offset date-time"
+msgstr "Zeit mit Zone"
+
+#: flyleaf/src/tree.rs:258
+msgid "local date-time"
+msgstr "Datum und Zeit"
+
+#: flyleaf/src/tree.rs:259
+msgid "local date"
+msgstr "Datum"
+
+#: flyleaf/src/tree.rs:260
+msgid "local time"
+msgstr "Zeit"
+
+#: flyleaf/src/tree.rs:261 flyleaf/src/tree.rs:399 flyleaf/src/tree.rs:511
+msgid "array"
+msgstr "Liste"
+
+#: flyleaf/src/tree.rs:262 flyleaf/src/tree.rs:393 flyleaf/src/tree.rs:505
+msgid "inline table"
+msgstr "Inline-Tabelle"
+
+#: flyleaf/src/tree.rs:263 flyleaf/src/tree.rs:316
+msgid "table"
+msgstr "Tabelle"
+
+#: flyleaf/src/tree.rs:335
+msgid "array of tables"
+msgstr "Liste von Tabellen"
+
+#: flyleaf/src/tree.rs:458 flyleaf/src/tree.rs:1278
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: flyleaf/src/tree.rs:495
+msgid "Remove this element"
+msgstr "Dieses Element entfernen"
+
+#: flyleaf/src/tree.rs:773
+msgid "Add comment above"
+msgstr "Kommentar darüber hinzufügen"
+
+#: flyleaf/src/tree.rs:777
+msgid "Add comment beside"
+msgstr "Kommentar daneben hinzufügen"
+
+#: flyleaf/src/tree.rs:860
+msgid "not a date or time; not saved"
+msgstr "kein Datum und keine Zeit; nicht gespeichert"
+
+#: flyleaf/src/tree.rs:1165 flyleaf/src/tree.rs:1285
+msgid "name taken"
+msgstr "Name vergeben"
+
+#: flyleaf/src/tree.rs:1232
+msgid "Remove this key"
+msgstr "Diesen Schlüssel entfernen"
+
+#: flyleaf/src/tree.rs:1256
+msgid "add a key"
+msgstr "neuer Schlüssel"

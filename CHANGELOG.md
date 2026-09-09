@@ -6,6 +6,23 @@ or the `flyleaf` widget; the reasoning is in the commits.
 
 ## Unreleased
 
+Both crates:
+
+- **German.** The editor draws in German where the desktop asks for German, and
+  in English everywhere else. The widget takes its language from the
+  application drawing it — `flyleaf::set_language("de")`, a new function and the
+  only addition to the public API — because an application has already decided
+  what language it is in, and a tree in a different language from the window
+  around it would be worse than an English one. The application binary asks the
+  platform itself, and the web build asks `navigator.language`.
+- Catalogues live in `po/`, read by [`potext`](https://crates.io/crates/potext).
+  A translation whose English has since changed is not shown: `msgmerge` marks
+  it `#, fuzzy` and the reader refuses to load one, so a message is either
+  current or plainly in English and never quietly wrong.
+- `flyleaf-core::Kind::label` is unchanged and stays the canonical English. The
+  tree translates a kind where it draws one, so nothing about the model knows
+  what language a window is in.
+
 `flyleaf`, the application:
 
 - Windows: a DPI manifest embedded through the linker, the window icon from

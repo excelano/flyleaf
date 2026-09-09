@@ -35,6 +35,16 @@ path = "src/main.rs"
 required-features = ["app"]
 
 [dependencies]
+# The language this widget's own strings are drawn in, and the reader for the
+# `.po` catalogues in `po/`. Not optional and not behind `app`: the widget is
+# the half slipcase-desktop draws, and a German window with an English tree in
+# the middle of it was the whole reason this crate got a catalogue.
+#
+# It is the crate slipcase-desktop's `potext` module became on 2026-09-09 — the
+# module could not be shared, because a published crate cannot reach into an
+# application's `src/`. Pure Rust, no build script, and its two dependencies
+# are platform-gated and already in this tree on their platforms.
+potext = "0.1"
 # The widget wants egui and not eframe: it draws into a `Ui` somebody else
 # owns a window for. slipcase-desktop reaches egui through eframe 0.36, which
 # re-exports this same crate at this same version, so the types unify.
@@ -70,7 +80,11 @@ eframe = { version = "0.36", optional = true, default-features = false, features
 # run it on, and the page's canvas for eframe to draw into. Both for the
 # binary alone; eframe and rfd carry their own.
 wasm-bindgen-futures = { version = "0.4", optional = true }
-web-sys = { version = "0.3", features = ["Document", "Window", "HtmlCanvasElement"], optional = true }
+# `Navigator` for `navigator.language`, which is the browser's answer to the
+# question `potext` asks the operating system everywhere else: a page has no
+# environment, no `NSLocale` and no registry. Read in `main`, and handed to
+# `set_language` as a tag, so nothing about the web build reaches the widget.
+web-sys = { version = "0.3", features = ["Document", "Window", "HtmlCanvasElement", "Navigator"], optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # Reading the window's icon out of the `.ico` the installer also registers.
