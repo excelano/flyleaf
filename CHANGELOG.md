@@ -4,7 +4,7 @@ The record for people who take these crates from crates.io, where the git log
 does not travel. Each entry says what changed for a consumer of `flyleaf-core`
 or the `flyleaf` widget; the reasoning is in the commits.
 
-## Unreleased
+## 0.2.2 — 2026-09-09
 
 Both crates:
 

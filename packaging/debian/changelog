@@ -1,3 +1,14 @@
+flyleaf (0.2.2) unstable; urgency=medium
+
+  * German. The editor draws in German where the desktop asks for German, and
+    in English everywhere else, with nothing to choose: it reads the language
+    the desktop already knows. A translation whose English has since changed is
+    not shown, so a message is either current or plainly in English.
+  * Windows and macOS packaging, and on macOS a document opened by
+    double-click and a save that lands through the file's own volume.
+
+ -- David M. Anderson <david.anderson@excelano.com>  Tue, 09 Sep 2026 09:45:00 -0500
+
 flyleaf (0.2.1) unstable; urgency=medium
 
   * An About box, from a button at the bar's right end: the icon, the
