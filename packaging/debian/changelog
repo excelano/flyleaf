@@ -7,7 +7,7 @@ flyleaf (0.2.2) unstable; urgency=medium
   * Windows and macOS packaging, and on macOS a document opened by
     double-click and a save that lands through the file's own volume.
 
- -- David M. Anderson <david.anderson@excelano.com>  Tue, 09 Sep 2026 09:45:00 -0500
+ -- David M. Anderson <david.anderson@excelano.com>  Wed, 09 Sep 2026 09:45:00 -0500
 
 flyleaf (0.2.1) unstable; urgency=medium
 
