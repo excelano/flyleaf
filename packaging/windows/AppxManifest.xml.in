@@ -61,12 +61,18 @@
   </Dependencies>
 
   <Resources>
-    <!-- US English, the fleet's one tag since 2026-09-06; slipcase-desktop's
-         manifest records the two spellings it went through. This is the only
-         place in the repository that names a language, and `build-msix.ps1`
-         spells the same tag a second time for `makepri`; changing one without
-         the other is the silent failure that script's comment describes. -->
+    <!-- US English and German: `en-us`, the fleet's tag since 2026-09-06, and
+         `de-de` since 2026-09-10, because the application now speaks German.
+         slipcase-desktop's manifest records the two spellings `en-us` went
+         through, and the Store adds a listing per declared language rather
+         than renaming one - measured on duckling 2026-09-09, with
+         `~/fenster/LIMITS.md` the long-form record. This is the only place in
+         the repository that names a language, and `build-msix.ps1` spells the
+         same pair a second time for `makepri`, as `en-US_de-DE`; changing one
+         without the other is the silent failure that script's comment
+         describes. -->
     <Resource Language="en-us" />
+    <Resource Language="de-de" />
   </Resources>
 
   <Applications>

@@ -27,9 +27,13 @@ was written the same day, from a Mac; its section is at the end.
 
 Tommy Flyleaf
 
-**Short description** (Microsoft Store limit 1000; this is 145)
+**Short description**
 
-Edit a TOML file as a tree, every value by its kind, and save it with the comments, key order and formatting of everything you did not edit kept.
+Under `## Short description` below, which the Microsoft Store takes verbatim.
+**The limit is 500, not the 1,000 the form accepts**: the submission API
+refuses anything longer, measured 2026-09-09 and recorded in fenster's
+`LIMITS.md`, and it measures the listing already published before it will take
+a new package. This text is 145.
 
 **Description**
 
@@ -69,6 +73,34 @@ Free, all markets, public.
 No user-generated content, no network access, no data collection, no advertising, no in-app purchases, no violence or mature content.
 
 ---
+
+## Short description (Microsoft Store, 500)
+
+Edit a TOML file as a tree, every value by its kind, and save it with the comments, key order and formatting of everything you did not edit kept.
+
+## App features (Microsoft Store, up to 20 bullets of 200 characters)
+
+    Shows the document as a tree, one renderer per TOML type, with the source beside it and the row you are working in lit up.
+    Edits values by kind — all eleven of them, the four datetime shapes told apart — and converts a value to another kind where it reads as the target.
+    Adds, renames, converts and removes keys, tables, inline tables and arrays, and edits comments wherever TOML allows one. Undo and redo, one step per row worked in.
+    A save keeps every comment, the key order, the whitespace and the quoting of everything you did not edit. TOML 1.1.0, and every valid toml-test case round-trips byte for byte.
+    Saves atomically. The new file replaces the old in one step, so an interruption leaves the old file or the new one, never half of each. A read-only file is refused rather than replaced.
+    Makes no network connection of any kind: no account, no update check, no analytics, no telemetry, no crash reporting. No configuration directory, no history, no list of recent files.
+
+**Every bullet restates something `## Description` already says**, the way
+slipcase-desktop's do: the Store shows these as a summary beside the
+description, and a feature list making a claim the description does not is a
+second listing to keep true. Each one above is the description's bullet of the
+same subject, cut to 200 characters. There is no Mac App Store equivalent of
+this field.
+
+**Written 2026-09-10, from the description and the changelog.** The 0.2.1
+submission typed six features straight into the form, so the Store carries text
+this repository never held — the drift the note at the top of this file
+forbids. What is above replaces them at the next submission rather than
+reproducing them, because nothing here records what they said. Nothing claims
+the German drawing added in 0.2.2 or the browser build: the Store serves 0.2.1,
+and a feature list is not the place to announce a version nobody can install.
 
 ## Subtitle (Mac App Store, 30)
 
@@ -134,19 +166,13 @@ asks for; it is in the description, where a reader can follow it.
 *What's new in this version* on the Microsoft Store and *What's New* on the Mac
 App Store, one version's text each, kept latest first.
 
-**The two stores are at different versions and want different text, and the one
-subsection per version below cannot say so.** The Microsoft Store serves 0.2.1,
-so its 0.2.3 text is an upgrade note — the German support, the DPI manifest and
-the window icon, which are 0.2.2's work arriving in a buildable package. The Mac
-App Store has never served this application, so its 0.2.3 is a first release and
-nobody is upgrading from anything. The subsection below carries the Mac text,
-because the Mac submission is the one waiting. The Microsoft wording, when that
-submission comes, is: *Tommy Flyleaf draws in German where the desktop asks for
-German. The window is crisp on a scaled display, and it has its own icon.*
+**The subsection below carries the Microsoft text.** The Mac App Store has
+never served this application, so when that submission comes its text is:
+*First release on the Mac App Store.*
 
 ### 0.2.3
 
-First release on the Mac App Store.
+Tommy Flyleaf draws in German where the desktop asks for German. The window is crisp on a scaled display, and it has its own icon.
 
 ### 0.2.1
 
