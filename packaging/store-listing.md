@@ -31,7 +31,54 @@ Tommy Flyleaf
 
 Edit a TOML file as a tree, every value by its kind, and save it with the comments, key order and formatting of everything you did not edit kept.
 
-**Description** (Microsoft Store limit 10000; this is 1705)
+**Description**
+
+Under `## Description` below, which both stores take verbatim. The Microsoft
+limit is 10,000 and the Mac's is 4,000, so the text is written to the smaller
+one and the same words go in both forms.
+
+**What's new in this version**
+
+Under `## Release notes` below, one subsection per version, which is where both
+lanes now read it from.
+
+The save bullet in the description said "written beside the original and renamed over it"
+when the Microsoft submission was pasted. That is how Windows and Linux do it
+and not how the sandboxed Mac build does, so the sentence now says only what is
+true everywhere; the Microsoft listing carries the older wording until its next
+submission.
+
+**Category**
+
+Developer tools > Utilities
+
+**Copyright and trademark**
+
+Copyright 2026 David M. Anderson. MIT licensed.
+
+**Additional license terms**
+
+MIT License. Full text: github.com/excelano/flyleaf/blob/main/LICENSE
+
+**Pricing and availability**
+
+Free, all markets, public.
+
+**Age rating**
+
+No user-generated content, no network access, no data collection, no advertising, no in-app purchases, no violence or mature content.
+
+---
+
+## Subtitle (Mac App Store, 30)
+
+TOML editor, one edit deep
+
+## Promotional text (Mac App Store, 170)
+
+Open a TOML file as a tree, change one value, and save. Every comment, key and line you did not touch comes back exactly as it was. Nothing leaves your Mac.
+
+## Description (both, written to 4,000)
 
 Tommy Flyleaf is a structure-aware TOML editor. It opens a file, shows it as a tree beside what a save would write, and edits every value by its kind.
 
@@ -54,50 +101,68 @@ Named for a bookbinder's apprentice. The flyleaf is the blank page inside a book
 
 Open source, MIT licensed: github.com/excelano/flyleaf
 
-**What's new in this version**
+## Keywords
+
+**Mac App Store** (100 characters, comma-separated, no spaces after commas):
+
+    TOML,editor,config,configuration,Cargo.toml,pyproject.toml,developer,settings,round-trip
+
+**Microsoft Store** (at most seven terms, each at most 30 characters):
+
+    TOML, TOML editor, config editor, configuration file, Cargo.toml, pyproject.toml, developer tools
+
+## URLs
+
+Both forms ask for the same three, and both lanes take them from here:
+
+| Field | URL |
+| --- | --- |
+| Privacy policy | https://excelano.com/legal/#flyleaf |
+| Support | https://excelano.com/flyleaf/#support |
+| Marketing / website | https://excelano.com/flyleaf/ |
+
+The page at `excelano.com/flyleaf/` is the support and marketing URL both, the
+way segler's and duckling's are; its *Support* heading is the anchor, read back
+off the served page on 2026-09-09. **Support was an email address here until
+then**, which App Store Connect will not take in that field: it wants a URL and
+the address belongs on the page behind it. The source repository is
+`github.com/excelano/flyleaf` and is not one of the three fields either form
+asks for; it is in the description, where a reader can follow it.
+
+## Release notes
+
+*What's new in this version* on the Microsoft Store and *What's New* on the Mac
+App Store, one version's text each, kept latest first.
+
+**The two stores are at different versions and want different text, and the one
+subsection per version below cannot say so.** The Microsoft Store serves 0.2.1,
+so its 0.2.3 text is an upgrade note — the German support, the DPI manifest and
+the window icon, which are 0.2.2's work arriving in a buildable package. The Mac
+App Store has never served this application, so its 0.2.3 is a first release and
+nobody is upgrading from anything. The subsection below carries the Mac text,
+because the Mac submission is the one waiting. The Microsoft wording, when that
+submission comes, is: *Tommy Flyleaf draws in German where the desktop asks for
+German. The window is crisp on a scaled display, and it has its own icon.*
+
+### 0.2.3
+
+First release on the Mac App Store.
+
+### 0.2.1
 
 First release in the Microsoft Store.
 
-The save bullet above said "written beside the original and renamed over it"
-when the Microsoft submission was pasted. That is how Windows and Linux do it
-and not how the sandboxed Mac build does, so the sentence now says only what is
-true everywhere; the Microsoft listing carries the older wording until its next
-submission.
+## App Review notes
 
-**Category**
+Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
 
-Developer tools > Utilities
+To exercise it: launch it and click Open, or drop any .toml file on the Dock icon, or choose Tommy Flyleaf from Open With on one. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file saved from TextEdit with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
 
-**Search terms** (Microsoft Store: at most 7, each at most 30 characters)
+The application declares the TOML document type and claims it at rank Alternate, not Owner: it is one editor for a format many applications open, and any application that claims .toml at a higher rank keeps double-clicks. On a Mac where nothing else claims the type, macOS will pick it, since there is no other candidate.
 
-TOML / TOML editor / config editor / configuration file / Cargo.toml / pyproject.toml / developer tools
+The App Sandbox is on with exactly two entitlements: the sandbox itself and read-write access to user-selected files. A save replaces the file the person chose, staged in the replacement directory macOS provides on the file's own volume and swapped in with one call, so it stays inside that grant. There is no network entitlement, and the application makes no network request; the About box has two links, to the product page and to the source repository, which open in the default browser.
 
-**Copyright and trademark**
-
-Copyright 2026 David M. Anderson. MIT licensed.
-
-**Additional license terms**
-
-MIT License. Full text: github.com/excelano/flyleaf/blob/main/LICENSE
-
-**Links**
-
-| Field | Value |
-| --- | --- |
-| Website | https://excelano.com/flyleaf/ |
-| Privacy policy | https://excelano.com/legal/#flyleaf |
-| Support contact | david.anderson@excelano.com |
-| Source | https://github.com/excelano/flyleaf |
-
-**Pricing and availability**
-
-Free, all markets, public.
-
-**Age rating**
-
-No user-generated content, no network access, no data collection, no advertising, no in-app purchases, no violence or mature content.
-
----
+The full privacy statement is at https://excelano.com/legal/#flyleaf and the complete source is at https://github.com/excelano/flyleaf.
 
 ## Notes for certification
 
@@ -145,9 +210,12 @@ it is a photograph of a build, and it is retaken when the interface changes.
 
 ## The Mac App Store
 
-Most of the above carries over: the name, the description, the links, the
-pricing and the age rating are the same product. What differs is Apple's own
-fields, and they are here. The Mac screenshot is taken from a development-signed
+What is left here is Apple's own, and it is short because most of this
+listing is now shared. The name, the subtitle, the promotional text, the
+description, the keywords, the URLs and the release notes are top-level
+sections above, written once and read by both lanes; the pricing and the age
+rating are the same product's and are in the Microsoft section. What could not
+move is below. The Mac screenshot is taken from a development-signed
 bundle of the same commit, because a Store-signed one cannot launch off the
 Store; `macos/screenshot.sh` refuses any size App Store Connect would. Two
 captures, the light one first: the application follows the system appearance
@@ -159,41 +227,9 @@ and back), and the light one leads because the product page is set in cream.
 
 Tommy Flyleaf
 
-**Subtitle** (limit 30; this is 26)
-
-TOML editor, one edit deep
-
-**Promotional text** (limit 170; this is 156)
-
-Open a TOML file as a tree, change one value, and save. Every comment, key and line you did not touch comes back exactly as it was. Nothing leaves your Mac.
-
-**Keywords** (limit 100 characters, one comma-separated string; this is 88)
-
-TOML,editor,config,configuration,Cargo.toml,pyproject.toml,developer,settings,round-trip
-
-**Description**
-
-The Microsoft Store description above, verbatim.
-
-**What's new in this version**
-
-First release on the Mac App Store.
-
 **Category**
 
 Developer Tools
-
-**App Review notes**
-
-Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
-
-To exercise it: launch it and click Open, or drop any .toml file on the Dock icon, or choose Tommy Flyleaf from Open With on one. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file saved from TextEdit with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
-
-The application declares the TOML document type and claims it at rank Alternate, not Owner: it is one editor for a format many applications open, and any application that claims .toml at a higher rank keeps double-clicks. On a Mac where nothing else claims the type, macOS will pick it, since there is no other candidate.
-
-The App Sandbox is on with exactly two entitlements: the sandbox itself and read-write access to user-selected files. A save replaces the file the person chose, staged in the replacement directory macOS provides on the file's own volume and swapped in with one call, so it stays inside that grant. There is no network entitlement, and the application makes no network request; the About box has two links, to the product page and to the source repository, which open in the default browser.
-
-The full privacy statement is at https://excelano.com/legal/#flyleaf and the complete source is at https://github.com/excelano/flyleaf.
 
 **Export compliance**
 
