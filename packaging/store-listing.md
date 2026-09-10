@@ -186,7 +186,16 @@ First release in the Microsoft Store.
 
 Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
 
-Sample files to test with: https://excelano.com/flyleaf/samples/ — four TOML files, each a direct download, hosted at that address permanently. Open every-kind.toml first: it carries every kind of value TOML has, so every part of the editor is on screen at once. The other three are a bindery job ticket, a Cargo manifest and a pyproject.toml.
+Sample files to test with are in the application's own public source repository, which is where they will stay: https://github.com/excelano/flyleaf/tree/main/packaging/samples
+
+Direct downloads:
+
+https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/samples/every-kind.toml
+https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/samples/cargo-manifest.toml
+https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/samples/pyproject.toml
+https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/sample.toml
+
+Open every-kind.toml first: it carries every kind of value TOML has, so every part of the editor is on screen at once. The other three are a Rust project manifest, a Python project file, and a short document with a comment in every position TOML allows one.
 
 To exercise it: launch it and click Open, then choose one of those files; or drop the file on the Dock icon; or choose Tommy Flyleaf from Open With on it. Any other .toml file works as well — a Cargo.toml from a Rust project, or a file saved from TextEdit with a line such as: title = "hello". Change a value and save, and the file comes back with that value changed and every comment, key and line you did not touch exactly as it was, which is what this application is for. On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
 
@@ -204,6 +213,13 @@ otherwise be guessed at: how to test an application that opens with nothing in
 it, why it does not take the `.toml` default, what the certification kit's one
 finding is, and why the no-network claim is checkable rather than asserted.
 
+**The notes name GitHub and not `excelano.com/flyleaf/samples/`**, although
+the page exists and says more, because the repository was serving the files the
+hour the answer was needed and a site deploy is a step in someone's day. Naming
+an address that 404s in the field a reviewer clicks is how one rejection
+becomes two. The page is the better address once it is live, and the notes can
+take it at the next submission.
+
 The empty-window paragraph is not decoration. Launched with no file this
 application shows a window with an Open button and a line of text, and a
 reviewer who does not know a `.toml` is needed can read that as an application
@@ -214,12 +230,12 @@ asks them to make one, and an address hands them four. The live Microsoft
 listing was certified without that line and carries the old text until its next
 submission.
 
-Microsoft Store limit 2000 characters; this is 1946.
+Microsoft Store limit 2000 characters; this is 1964.
 
 ```
 Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
 
-Sample files to test with: https://excelano.com/flyleaf/samples/, four TOML files hosted there permanently.
+Sample .toml files to test with, in this application's public source: github.com/excelano/flyleaf/tree/main/packaging/samples
 
 To exercise it: launch it and click Open, or right-click any .toml file and choose Tommy Flyleaf under Open With. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file typed into Notepad with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
 
