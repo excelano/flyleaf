@@ -24,10 +24,10 @@ inline table written across lines. Someone verifying that the editor does what
 its listing says should open this one: every renderer it claims is on the
 screen at once.
 
-What `every-kind.toml` does not carry is `nan`, and no float whose value the
-editor draws rounded. Not because they are exotic: because 0.2.1 gets both
-wrong, and a specimen sheet that opens already marked edited demonstrates the
-opposite of what it is for. `nan` becomes `inf` on open, and the two rounding
+What `every-kind.toml` does not carry is `nan`, or a float the editor draws as
+a different number from the one in the file. Not because either is exotic:
+because the editor gets both wrong today, and a specimen sheet that opens
+already marked edited demonstrates the opposite of what it is for. `nan` becomes `inf` on open, and the two rounding
 cases are beside it in `DESIGN.md` section 5, amended 2026-09-10 with what was
 measured. They go back into the file when the float renderer is fixed.
 
