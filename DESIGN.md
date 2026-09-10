@@ -119,6 +119,28 @@ Ctrl+Z and Ctrl+Shift+Z before the tree draws, so a focused field cannot answer
 with its own undo, and calls `flyleaf::forget_typing` first, because a key field
 commits its buffer on blur and would otherwise rename the row back.
 
+**Amended 2026-09-10: a float is drawn wrong, in two ways.** Both are
+`egui::DragValue`'s, which is what a float is edited in, and both were found by
+photographing `packaging/samples/every-kind.toml` in the built bundle rather
+than by any test. **A `nan` is rewritten to `inf` by being looked at**:
+DragValue clamps the value it is handed, NaN clamps to infinity, and it reports
+the clamp as a change, so a file holding `a = nan` opens as `a = inf`, marked
+edited, with nobody having touched it — measured on one key with no
+interaction, so a save would write the corruption. **A float is displayed
+rounded**: `3.141_592_653_59` draws as `3.142`, and `-1.6e-19` draws as `-0.0`,
+which is also what an actual `-0.0` in the next row draws as. A file only
+looked at is safe, since the document is untouched until the field is; what is
+wrong is an editor whose claim is fidelity showing a number that is not the one
+in the file, and a person who then commits that field writing the rounded one.
+Neither is in the goldens, because `tests/golden/fixtures/every-type.toml`'s
+only float is `1.5`, which survives both. One change answers both: draw a float
+as text through `buffered_text`, the way a datetime is drawn, parsed when it is
+committed and left alone otherwise, which keeps the writer's spelling of it
+until it is edited. It is not made in the same change as the finding, because
+0.2.1 build 46 was in review when the finding was made and this is the widget
+slipcase-desktop draws with. Until it is, the published specimen sheet carries
+neither case, and `packaging/samples/README.md` says why.
+
 **A field commits what was typed, not what it shows.** egui takes focus away on
 Escape at the start of a frame, so a field left that way reseeded its text
 before it could compare — a defect the key field had carried since
@@ -256,6 +278,25 @@ holds a preferences plist.
 **One blemish, seen in a store screenshot and not fixed:** a multi-line string
 shows a missing-glyph box at each line break, because the tree edits every
 string in a single-line field.
+
+**An editor of files has to hand a reviewer the files.** The Mac submission of
+0.2.1 came back on 2026-09-10 under Guideline 2.1(a), asking for sample TOML
+*hosted at a location that will remain available for future reviews*. Nothing
+in the build was at fault. The review notes said any `.toml` would do and named
+a Cargo.toml, a pyproject.toml or a line typed into TextEdit, which asks the
+reviewer to make the file the application is for; they did not, and an
+application that opens on nothing cannot be exercised by someone holding
+nothing. The answer is `excelano.com/flyleaf/samples/`, four files behind
+download links, three of them in `packaging/samples/` and the fourth
+`sample.toml` under the name the page gives it. `samples/publish.sh` copies the
+set into the site working copy in one command, so the copies cannot drift; on
+the site side they are committed rather than deployed, unlike the web bundle,
+because the address has to survive a deploy that forgets them; and
+`flyleaf-core/tests/samples.rs` holds every file in the set to a byte-identical
+render, because a published sample the editor rewrites demonstrates the
+opposite of the product. The page is written for anyone who wants something to
+open rather than for App Review alone, and the marketing page links it: a
+reviewer is no better served by a page that reads as a formality.
 
 **The stores and crates.io are separate channels and their numbers need not
 agree.** A `cargo publish` rebuilds no submission and a submission in review

@@ -17,7 +17,11 @@ Paragraphs are single lines on purpose. A store field is a web form, and text
 hard-wrapped at 80 columns pastes into one with the wraps still in it.
 
 Submitted to the Microsoft Store 2026-09-08, at 0.2.1. The Mac App Store cut
-was written the same day, from a Mac; its section is at the end.
+was written the same day, from a Mac; its section is at the end. That
+submission came back on 2026-09-10 under Guideline 2.1(a) asking for sample
+TOML at an address that stays available for future reviews, which both sets of
+notes below now lead with; `samples/README.md` says what is at the address and
+why it exists.
 
 ---
 
@@ -182,7 +186,9 @@ First release in the Microsoft Store.
 
 Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
 
-To exercise it: launch it and click Open, or drop any .toml file on the Dock icon, or choose Tommy Flyleaf from Open With on one. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file saved from TextEdit with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
+Sample files to test with: https://excelano.com/flyleaf/samples/ — four TOML files, each a direct download, hosted at that address permanently. Open every-kind.toml first: it carries every kind of value TOML has, so every part of the editor is on screen at once. The other three are a bindery job ticket, a Cargo manifest and a pyproject.toml.
+
+To exercise it: launch it and click Open, then choose one of those files; or drop the file on the Dock icon; or choose Tommy Flyleaf from Open With on it. Any other .toml file works as well — a Cargo.toml from a Rust project, or a file saved from TextEdit with a line such as: title = "hello". Change a value and save, and the file comes back with that value changed and every comment, key and line you did not touch exactly as it was, which is what this application is for. On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
 
 The application declares the TOML document type and claims it at rank Alternate, not Owner: it is one editor for a format many applications open, and any application that claims .toml at a higher rank keeps double-clicks. On a Mac where nothing else claims the type, macOS will pick it, since there is no other candidate.
 
@@ -201,12 +207,19 @@ finding is, and why the no-network claim is checkable rather than asserted.
 The empty-window paragraph is not decoration. Launched with no file this
 application shows a window with an Open button and a line of text, and a
 reviewer who does not know a `.toml` is needed can read that as an application
-that does not work.
+that does not work. Nor is the sample-files line. Apple's reviewer had these
+notes in their Mac wording, empty-window paragraph and all, and came back on
+2026-09-10 asking for files anyway: telling a reviewer that any `.toml` will do
+asks them to make one, and an address hands them four. The live Microsoft
+listing was certified without that line and carries the old text until its next
+submission.
 
-Microsoft Store limit 2000 characters; this is 1838.
+Microsoft Store limit 2000 characters; this is 1946.
 
 ```
 Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
+
+Sample files to test with: https://excelano.com/flyleaf/samples/, four TOML files hosted there permanently.
 
 To exercise it: launch it and click Open, or right-click any .toml file and choose Tommy Flyleaf under Open With. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file typed into Notepad with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
 

@@ -26,3 +26,11 @@ than in the place they are pasted into, because each is a set of claims about
 the code and the code is what moves. Edit here first. The identity a store
 assigns is the one thing that stays out: `windows/identity.psd1` holds it and
 is not committed.
+
+**And the samples the stores are pointed at.** `samples/` holds the rest of
+the files published at excelano.com/flyleaf/samples/, with `sample.toml` going
+over as the job ticket; `samples/publish.sh` is the copy and
+`samples/README.md` says why the page exists. Same rule as the three above,
+for the same reason, with one addition: `flyleaf-core/tests/samples.rs` opens
+every file in the set and asserts it comes back byte for byte, because these
+are the files a stranger judges the product by.

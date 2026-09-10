@@ -205,6 +205,9 @@ against what it replaced is too big.
                             entitlements, the install check and the window
                             probe; README says what differs
     packaging/sample.toml   the file the screenshots and the hosted demo open
+    packaging/samples/      the rest of what excelano.com/flyleaf/samples
+                            serves, publish.sh that copies the set over, and
+                            the README saying why review asked for it
     packaging/privacy-entry.html
                             the privacy statement, copied verbatim into
                             excelano.com/legal; edit here first

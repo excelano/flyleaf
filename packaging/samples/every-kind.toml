@@ -1,0 +1,111 @@
+# A specimen sheet: every kind of value TOML has, one after another, so that
+# each of Tommy Flyleaf's renderers can be seen and edited in one file.
+# Nothing here is a real configuration. The comments above, beside and below
+# the keys are the point of the file as much as the values are: a save has to
+# bring every one of them back exactly as it found it.
+
+# ---------------------------------------------------------------- strings --
+
+basic = "a basic string, with a tab \t and an escaped quote \" in it"
+literal = 'a literal string: \n is two characters here, and C:\Users\ is a path'
+
+multiline = """
+A multi-line basic string. The line above ends in a newline, and this one \
+is joined to the next by the backslash that ends it."""
+
+multiline_literal = '''
+A multi-line literal string.
+  Leading spaces, \backslashes\ and "quotes" all come through as they are.
+'''
+
+# --------------------------------------------------------------- integers --
+
+decimal = 1_048_576   # underscores are the writer's, and are kept
+hexadecimal = 0xdead_beef
+octal = 0o755
+binary = 0b1010_0110
+negative = -17
+
+# ----------------------------------------------------------------- floats --
+
+fractional = 1_234.5   # underscores are the writer's in a float too
+exponent = 6.022e23    # written in exponent notation, and stays in it
+small = -0.001
+infinite = inf         # inf, +inf and -inf are all floats
+
+# --------------------------------------------------------------- booleans --
+
+yes = true
+no = false
+
+# -------------------------------------------------------------- datetimes --
+# All four shapes, which TOML tells apart and so does this editor.
+
+offset = 2026-09-10T14:30:00-05:00   # a moment, with the offset it was written in
+utc = 2026-09-10T19:30:00Z
+local_datetime = 2026-09-10T14:30:00   # a wall clock, with no offset
+local_date = 2026-09-10
+local_time = 14:30:00.250
+
+# ----------------------------------------------------------------- arrays --
+
+primes = [2, 3, 5, 7, 11, 13]
+mixed = ["a string", 42, true, 1979-05-27]
+nested = [[1, 2], [3, 4, 5], []]
+
+# An array written over several lines stays written over several lines,
+# trailing comma and inline comments and all.
+hosts = [
+    "alpha",   # the one that answers
+    "beta",    # the one that listens
+    "gamma",
+]
+
+# ---------------------------------------------------------- inline tables --
+
+point = { x = 3, y = 4 }
+box = { corner = { x = 0, y = 0 }, width = 640, height = 480 }
+
+# ----------------------------------------------------------- dotted  keys --
+
+server.host = "localhost"
+server.port = 8080
+"quoted key" = "a key that needs quoting"
+'literal key' = "and one quoted the other way"
+
+# ----------------------------------------------------------------- tables --
+
+# A comment above a table header belongs to the table.
+[owner]
+name = "Tommy Flyleaf"
+trade = "bookbinder's apprentice"
+since = 2026-01-04
+
+[owner.address]   # a comment beside a table header
+street = "12 Quire Lane"
+town = "Gathering"
+
+# --------------------------------------------------------- inline  layout --
+
+[layout]
+# An inline table written across lines is TOML 1.1's, and it comes back the
+# way it was written rather than folded onto one line.
+margins = {
+    top = 18,
+    outer = 24,
+    bottom = 30,
+    gutter = 15,
+}
+
+# -------------------------------------------------------- array of tables --
+
+[[shelf]]
+label = "A"
+depth = 320
+
+[[shelf]]
+label = "B"
+depth = 280
+# A comment inside the last table of an array, with nothing after it.
+
+# A trailing comment, at the end of the file, where TOML also allows one.

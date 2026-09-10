@@ -1,0 +1,94 @@
+# A Python project's pyproject.toml, the other configuration file a developer
+# meets daily. Several tools share it, each under its own table, which is why
+# it is a good file for seeing what a deep tree looks like in this editor.
+# It describes a project that does not exist.
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "signature-folder"
+version = "0.6.2"
+description = "Folds a page range into printer's signatures and imposes them"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["bookbinding", "imposition", "pdf"]
+authors = [
+    { name = "A. Binder", email = "binder@example.org" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Printing",
+]
+dependencies = [
+    "pypdf>=5.0",
+    "click>=8.1",
+    "rich>=13.7",
+]
+
+# Extras a user asks for by name: pip install signature-folder[preview]
+[project.optional-dependencies]
+preview = ["pillow>=10.4"]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[project.urls]
+Homepage = "https://example.org/signature-folder"
+Source = "https://github.com/example/signature-folder"
+Issues = "https://github.com/example/signature-folder/issues"
+
+[project.scripts]
+fold = "signature_folder.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/signature_folder"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# The default set plus imports, bugbears and comprehensions. E501 is off
+# because the formatter owns line length and the two disagree at the margin.
+select = ["E", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+# The PDF library ships no stubs, and writing them is not this project's job.
+[[tool.mypy.overrides]]
+module = ["pypdf.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers --cov=signature_folder"
+testpaths = ["tests"]
+markers = [
+    "slow: takes more than a second, and is skipped by default",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/signature_folder"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]

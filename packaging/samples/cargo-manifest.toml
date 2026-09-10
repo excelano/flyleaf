@@ -1,0 +1,74 @@
+# A Rust crate's manifest, of the kind a developer opens this editor on most
+# days. It is a plausible crate rather than a real one, but every construct in
+# it is one Cargo actually uses: dotted keys, inline tables, arrays of tables,
+# a feature table whose order is meaningful to the person reading it, and
+# comments explaining choices that the keys themselves cannot.
+#
+# Rename it to Cargo.toml if you want to hand it to Cargo; nothing in this
+# file needs the name to be edited.
+
+[package]
+name = "quire"
+version = "1.4.0"
+edition = "2021"
+# The floor is measured against the oldest toolchain in the fleet, not
+# guessed. Raise it and the CI job that builds at it moves with it.
+rust-version = "1.82"
+authors = ["A. Binder <binder@example.org>"]
+license = "MIT OR Apache-2.0"
+description = "Gathers pages into signatures and counts what a binding will cost"
+repository = "https://github.com/example/quire"
+keywords = ["bookbinding", "imposition", "signatures"]
+categories = ["command-line-utilities"]
+exclude = ["/fixtures", "/.github"]
+
+[features]
+default = ["cli"]
+cli = ["dep:clap"]
+# Off by default: it pulls a second parser, and a library consumer that only
+# folds signatures should not carry one.
+estimate = ["dep:rust_decimal"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"], optional = true }
+rust_decimal = { version = "1.36", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+
+[dependencies.toml_edit]
+version = "0.25"
+# One toml_edit across the workspace, or the document type becomes two types
+# and the consumers stop compiling.
+default-features = false
+features = ["parse", "display"]
+
+[dev-dependencies]
+insta = "1.40"
+tempfile = "3.12"
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "0.38", features = ["fs"] }
+
+[[bin]]
+name = "quire"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[[bench]]
+name = "imposition"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+# Size over speed for the WebAssembly build; measured at 1.9 MB gzipped.
+[profile.web]
+inherits = "release"
+opt-level = "z"
+panic = "abort"
+
+[workspace]
+members = ["quire-core", "quire-cli"]
