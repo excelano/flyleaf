@@ -31,7 +31,14 @@ tempfile = { version = "3.27", optional = true }
 # Every call `save_to` makes into this is a safe function, so the crate keeps
 # `forbid(unsafe_code)`; the unsafe is carried on our behalf, as `tempfile`'s
 # is. slipcase-desktop's `staging.rs` is where both calls were measured.
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSFileManager", "NSPathUtilities", "NSError"], optional = true }
+# `NSArray` and `NSEnumerator` are not types this crate names: they are what
+# `NSError::underlyingErrors` returns and what iterating it needs, and
+# `objc2-foundation` gates a method on the features of every type in its
+# signature. Without them the crate does not compile on a Mac at all — measured
+# 2026-09-10, when `cargo package -p flyleaf-core` failed here while the
+# workspace built, because `flyleaf`'s own feature list unifies both in and hid
+# it. `cargo check -p flyleaf-core` is the check that sees it.
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSFileManager", "NSPathUtilities", "NSError", "NSArray", "NSEnumerator"], optional = true }
 # `Retained`, which the calls above return and the crate above does not
 # re-export.
 objc2 = { version = "0.6", default-features = false, features = ["std"], optional = true }
