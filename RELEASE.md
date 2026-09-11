@@ -9,12 +9,12 @@ command you type, and that is what starts the packaging.
 | | |
 |---|---|
 | Loop | hand-cut |
-| Version lives in | `version` in the workspace `Cargo.toml` |
-| Read by | `packaging/version.sh`, and nothing else |
+| Version lives in | `Cargo.toml` |
+| Version mirrored in | `packaging/windows/AppxManifest.xml.in` `packaging/macos/Info.plist.in` |
 | `apt-ship` argument | `flyleaf` |
-| Packages per release | two, amd64 and arm64, built by `linux.yml` |
-| crates | `flyleaf-core`, then `flyleaf` |
-| Store lanes | Microsoft Store (MSIX), App Store |
+| Packages per release | 2, amd64 arm64 |
+| crates | `flyleaf-core` `flyleaf` |
+| Store lanes | msix appstore |
 
 `packaging/windows/SUBMITTING.local.md` and `packaging/macos/SUBMITTING.local.md`
 are named here and not committed, because each carries an account's own
