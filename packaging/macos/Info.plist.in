@@ -38,6 +38,19 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<!-- Without this key App Store Connect lists the application in English
+	     alone, and the per-app language picker in System Settings under
+	     Language & Region builds its list from it, so a German speaker has
+	     nothing there to choose. Translating the application does not reach
+	     here: po/de.po is the window's words and this is the package's claim
+	     about them. The array names the catalogues the code's CATALOGUES
+	     lists, less the pseudolocale, which is a debug build's and never
+	     ships. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>flyleaf</string>
 	<key>CFBundleIdentifier</key>
