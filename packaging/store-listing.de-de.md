@@ -71,7 +71,7 @@ Open Source, MIT-lizenziert: github.com/excelano/flyleaf
 Abschnitt unten trägt den Text der Mac-Einreichung, so wie im englischen
 Original, weil das die Einreichung ist, die ansteht.
 
-### 0.2.3
+### 0.2.4
 
 Tommy Flyleaf spricht Deutsch: auf einem deutsch eingestellten Rechner erscheint das Fenster auf Deutsch. Es ist auf einem skalierten Bildschirm scharf und hat ein eigenes Symbol.
 

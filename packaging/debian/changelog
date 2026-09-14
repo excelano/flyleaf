@@ -1,3 +1,17 @@
+flyleaf (0.2.4) unstable; urgency=medium
+
+  * flyleaf-core compiles on macOS on its own. Two objc2-foundation features
+    the staged save needs were not named by the dependency, so the published
+    crate did not build on a Mac unless something else in the tree pulled them
+    in. No change for a Debian user, where that table is not compiled at all.
+  * The macOS bundle declares that the application is offered in German. App
+    Store Connect listed English alone before it, and the per-app language
+    picker had nothing for a German speaker to choose.
+  * The sample TOML files App Review downloads are published at an address
+    that stays available.
+
+ -- David M. Anderson <david.anderson@excelano.com>  Mon, 14 Sep 2026 18:16:22 -0500
+
 flyleaf (0.2.3) unstable; urgency=medium
 
   * The packages 0.2.2 never got. That entry named the wrong day of the week,

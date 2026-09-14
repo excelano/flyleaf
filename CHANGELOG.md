@@ -4,6 +4,28 @@ The record for people who take these crates from crates.io, where the git log
 does not travel. Each entry says what changed for a consumer of `flyleaf-core`
 or the `flyleaf` widget; the reasoning is in the commits.
 
+## 0.2.4 — 2026-09-14
+
+**`flyleaf-core` compiles on macOS on its own.** `NSError::underlyingErrors`
+and the iteration over what it returns are gated on `objc2-foundation`'s
+`NSArray` and `NSEnumerator` features, which the dependency did not name, and
+that crate gates a method on the features of every type in its signature. So
+the published crate did not build on a Mac unless something else in the tree
+pulled those features in. Nothing here saw it: `cargo check --workspace`
+passes because the `flyleaf` crate's own dependency line unifies both in, and
+CI publishes from Linux, where the macOS dependency table is not compiled at
+all. Anyone who took `flyleaf-core` 0.2.3 by itself on a Mac met it.
+
+Nothing a person using the editor will notice has changed. The rest of this
+version is packaging. The macOS bundle declares that the application is
+offered in German, which `CFBundleDevelopmentRegion` does not do — that key
+names the language the application is written in, so App Store Connect listed
+English alone and the per-app language picker in System Settings had nothing
+for a German speaker to choose. And the sample TOML files App Review asked to
+be able to download are published at an address that stays, after the Mac
+submission of 0.2.1 came back under Guideline 2.1(a) because the notes had
+asked the reviewer to bring their own.
+
 ## 0.2.3 — 2026-09-09
 
 **The packages 0.2.2 never got.** 0.2.2 reached crates.io and stopped there:

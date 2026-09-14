@@ -174,7 +174,7 @@ App Store, one version's text each, kept latest first.
 never served this application, so when that submission comes its text is:
 *First release on the Mac App Store.*
 
-### 0.2.3
+### 0.2.4
 
 Tommy Flyleaf draws in German where the desktop asks for German. The window is crisp on a scaled display, and it has its own icon.
 
