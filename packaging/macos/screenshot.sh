@@ -3,7 +3,7 @@
 # Adapted from slipcase-desktop's; the three measurements below were made there.
 #
 # The counterpart of `packaging/windows/screenshot.ps1`, and written for the
-# same reason: `RELEASE.md` filed screenshots under *by hand, because no script
+# same reason: the release record filed screenshots under *by hand, because no script
 # can*, which was an assumption. What a script cannot do is decide which
 # file to open or whether the result is a good advertisement. What it can
 # do is every mechanical part — size the window, front it, move the pointer out
