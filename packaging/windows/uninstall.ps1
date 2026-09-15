@@ -42,7 +42,7 @@ function Remove-Key {
 # `DeleteSubKeyTree` reads the failure as the key being missing and returns
 # quietly, which is the half that hid this. Deleting the name from the parent
 # needs DELETE on the child and nothing else, which the rule beside the deny
-# allows: measured here 2026-09-08, unelevated, on the real key Explorer wrote.
+# allows, unelevated, on the real key Explorer writes.
 function Remove-Subkey {
     param([string] $Parent, [string] $Name)
     $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($Parent, $true)
@@ -87,9 +87,8 @@ Remove-Key "$classes\Applications\$exeName"
 Remove-Key 'Software\Microsoft\Windows\CurrentVersion\Uninstall\Tommy Flyleaf (script install)'
 
 # The one that is easy to miss. Choosing "always open with" writes a UserChoice
-# here, and so does opening a file through the association, measured on this
-# machine 2026-09-08; a UserChoice naming a ProgID whose executable is gone
-# kills the extension outright, measured in slipcase-desktop. Removed only when
+# here, and so does opening a file through the association; a UserChoice naming
+# a ProgID whose executable is gone kills the extension outright. Removed only when
 # it names this application, since on a shared extension it may well name
 # somebody else's, and that choice is theirs to keep.
 #

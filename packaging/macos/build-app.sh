@@ -78,9 +78,8 @@ done
 
 # One trap for everything this script makes, set before the first `mktemp` and
 # never re-armed. **A second `trap ... EXIT` replaces the first rather than
-# adding to it**, so the store temporaries were left behind by the staging
-# trap that used to be installed further down — found by looking in `$TMPDIR`
-# after a successful run rather than by reading this file.
+# adding to it**, so a second trap further down would silently leave this
+# script's earlier temporaries behind.
 stage=""
 store_plist=""
 store_ents=""
@@ -223,13 +222,10 @@ fi
 # through ApplicationServices, the public header declaring it is ColorSync's,
 # and in every SDK on this Mac (14, 15.5, 26, 26.2) `ApplicationServices
 # .framework/Versions/A/Frameworks/ColorSync.framework` is a symlink up to the
-# top-level framework, which a plain `find` does not enter. Measured
-# 2026-09-08: without `-L` the umbrella yields 59 headers and no
-# `ColorSyncDevice.h`, so the check refused this application's first Mac
-# build for two symbols slipcase-desktop's accepted Store bundle carries;
-# with `-L`, 1281 headers and the declaration.
-#
-# Measured on the refused binary: two findings, both correct, in 3.5 seconds.
+# top-level framework, which a plain `find` does not enter. Without `-L` the
+# umbrella yields 59 headers and no `ColorSyncDevice.h`, so the check refuses a
+# sound bundle over two public symbols; with `-L`, 1281 headers and the
+# declaration. It runs in about three seconds either way.
 # On the patched one: none.
 private_symbols() {
     exe="$1"
@@ -522,11 +518,9 @@ ENTITLEMENTS
     # ask whether a bundle can launch before choosing it, and among copies of
     # one identifier it prefers the newer version, so a submission build sitting
     # here is a handler candidate at least as new as the installed copy and
-    # newer the moment the next version is built. Measured 2026-09-04, with the
-    # Store copy in the Trash: every double-click on a document launched
-    # the dist/ bundle and was killed before it drew anything — SIGKILL,
-    # "Taskgated Invalid Signature", five crash reports in thirty seconds and
-    # no window.
+    # newer the moment the next version is built. A double-click on a document
+    # then launches the dist/ bundle and it is killed before it draws anything:
+    # SIGKILL, "Taskgated Invalid Signature", and crash reports with no window.
     #
     # How the claim gets there, measured the same day. A fresh build is not
     # registered by itself: Spotlight indexed the bundle within a minute and

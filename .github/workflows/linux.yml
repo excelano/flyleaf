@@ -1,18 +1,8 @@
-# Build the Linux packages and put them under the checks a machine can run:
-# ownership and modes, md5sums, lintian, the desktop entry, and that the
-# package installs and the executable it installs will load.
-#
-# On a push this is a check. On a published release it is also where the
-# packages come from: both architectures are built here and attached to the
-# release. Until 2026-09-09 the package was built by hand on whichever machine
-# cut the release, which is an amd64 one, so every Flyleaf release shipped
-# amd64 alone and the arm64 half of the apt repository has nothing in it.
-#
-# These steps were in `ci.yml`'s suite job, on one architecture, and they are
-# moved rather than copied: the suite, clippy, the formatting rule, the web
-# build and the floor stay there, and this file is the package.
-#
-# The shape is segler's `linux.yml`, which is comma's loop.
+# Build the Linux packages, both architectures, and put them under the checks a
+# machine can run: ownership and modes, md5sums, lintian, the desktop entry, and
+# that the package installs and the executable it installs will load. On a push
+# this is a check; on a published release it is also where the packages come
+# from and what attaches them.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)

@@ -1,10 +1,7 @@
 # The suite, the clippy rule, the floor, and the rule against compiling C, on
-# every push. The Debian package and its checks were here and are now
-# `linux.yml`, which builds both architectures and attaches them to a release;
-# they were amd64-only while they lived in this job. Linux only, and that is enough for now: the widget has no
-# platform arms, and slipcase-desktop's three workflows build it on Windows and
-# Apple silicon through the dependency. When the application binary lands, the
-# other two platforms get a file each here, as they have there.
+# every push. Linux only: the widget has no platform arms, and windows.yml and
+# apple-silicon.yml carry the two that the binary has. The Linux packages are
+# linux.yml's.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)

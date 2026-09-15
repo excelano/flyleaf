@@ -98,13 +98,9 @@ second listing to keep true. Each one above is the description's bullet of the
 same subject, cut to 200 characters. There is no Mac App Store equivalent of
 this field.
 
-**Written 2026-09-10, from the description and the changelog.** The 0.2.1
-submission typed six features straight into the form, so the Store carries text
-this repository never held — the drift the note at the top of this file
-forbids. What is above replaces them at the next submission rather than
-reproducing them, because nothing here records what they said. Nothing claims
-the German drawing added in 0.2.2 or the browser build: the Store serves 0.2.1,
-and a feature list is not the place to announce a version nobody can install.
+The Store currently serves text typed straight into the form at 0.2.1, which
+this repository never held. What is above replaces it at the next submission.
+A feature list claims nothing the served version cannot do.
 
 ## Subtitle (Mac App Store, 30)
 

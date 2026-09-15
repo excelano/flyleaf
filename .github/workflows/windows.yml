@@ -1,13 +1,6 @@
-# Run the suite on Windows, and check the three things only a Windows machine
-# can say. Adapted from slipcase-desktop's; what it reaches and what it does
-# not is stated because a green tick invites more faith than it has earned.
-#
-# The install scripts were on the list of what this does not reach until
-# 2026-09-08, when the first run of the packaging order on the Windows machine
-# found `uninstall.ps1` reporting success and leaving a `UserChoice` naming a
-# ProgID it had just deleted — the state its own comment calls killing the
-# extension outright. `check-install.ps1` is that measurement made permanent
-# and is run below. What is still out of reach here: the window, an MSIX
+# Run the suite on Windows and check the three things only a Windows machine can
+# say: what the binary imports, that the install scripts go on and come off
+# cleanly, and the file association. Out of reach here: the window, an MSIX
 # package, and the icon at any size.
 #
 # Author: David M. Anderson

@@ -1,17 +1,7 @@
 # Tommy Flyleaf — Design Document
 
-What this application is, what it commits to, and what was measured to settle
-each of them. `git log` is the record of *when* and in what order; this is the
-record of *why*, and it is the authority on the application.
-
-**Amend it in place where building contradicts it**, marked **Amended**, saying
-what was measured. Do not smooth an amendment away: a design document that
-quietly rewrites itself to match the code is worth nothing as a record.
-
-It grew out of the kickoff prompt this repository started from on 2026-09-07,
-which had become a chronology of phases nobody needed to read in order once
-they were all done. What that file measured is here; when each phase happened
-is in `git log`.
+What this application is and what it commits to. It is the authority on the
+application: where building contradicts it, change it here in the same change.
 
 ---
 
@@ -51,9 +41,9 @@ holds a `DocumentMut` from one and hands it to the other; two versions in the
 graph make that two types and it stops compiling. Both manifests say so, and
 they move together.
 
-**One editor, not two that drift.** This is why the widget was extracted from
-slipcase-desktop rather than copied. Where the editor needs behaviour it lacks,
-the behaviour goes here and both applications get it.
+**One editor, not two that drift.** The widget lives here and slipcase-desktop
+depends on it. Where the editor needs behaviour it lacks, the behaviour goes
+here and both applications get it.
 
 ## 3. What it commits to
 
@@ -62,12 +52,10 @@ table layout survive edits made elsewhere in the document. `toml_edit`, never
 `toml`.
 
 **TOML 1.1.0**, because the Slipcase specification requires it and the editor is
-shared. Measured 2026-09-07 rather than assumed: `toml_edit` 0.25.13 carries
-`+spec-1.1.0` and round-trips every 1.1 feature tried byte-identically — `\e`
-and `\x` escapes, multi-line inline tables, trailing commas, comments inside
-inline tables, optional seconds. It refuses non-ASCII bare keys, which is
-correct; 1.1.0 final kept bare keys ASCII. Where the corpus finds a real gap the
-path is upstream, not a fork and not a downgrade.
+shared. `toml_edit` carries `+spec-1.1.0` and round-trips every 1.1 feature
+byte-identically. It refuses non-ASCII bare keys, which is correct; 1.1.0 final
+kept bare keys ASCII. Where the corpus finds a real gap the path is upstream,
+not a fork and not a downgrade.
 
 **Structure-aware, not a text editor.** The tree is the primary view.
 
@@ -85,18 +73,13 @@ Every row of the document is drawn: tables, arrays of tables, inline tables,
 key/value pairs, with expand and collapse, and selection as the row holding
 keyboard focus, returned from `render` as its path.
 
-**Collapsed by default above two hundred entries**, and the threshold is a
-reading decision rather than a memory one. Measured 2026-09-07: the window alone
-is 140 MB resident; a `Cargo.lock` of 436 packages adds 25 MB with every section
-open and under 1 MB with them closed; one five times larger adds 93 MB open.
-About 10 KB per row egui has shown. Memory is tolerable either way, so what
-decides is that a thousand open rows cannot be read. `flyleaf::open_all` opens
-or closes everything on request. Virtualisation stays deferred until a
-measurement says collapsing is not enough.
+**Collapsed by default above two hundred entries**, because a thousand open rows
+cannot be read; memory is tolerable either way, at about 10 KB a row.
+`flyleaf::open_all` opens or closes everything on request. Virtualisation stays
+deferred until a measurement says collapsing is not enough.
 
 **The widget knows nothing about Slipcase.** Which keys are protected, and how a
-protected string is displayed, come in as a policy the host supplies. That
-reshaping is the one thing the extraction changed rather than moved.
+protected string is displayed, come in as a policy the host supplies.
 
 ## 5. Editing: kinds, conversion, undo
 
@@ -119,32 +102,15 @@ Ctrl+Z and Ctrl+Shift+Z before the tree draws, so a focused field cannot answer
 with its own undo, and calls `flyleaf::forget_typing` first, because a key field
 commits its buffer on blur and would otherwise rename the row back.
 
-**Amended 2026-09-10: a float is drawn wrong, in two ways.** Both are
-`egui::DragValue`'s, which is what a float is edited in, and both were found by
-photographing `packaging/samples/every-kind.toml` in the built bundle rather
-than by any test. **A `nan` is rewritten to `inf` by being looked at**:
-DragValue clamps the value it is handed, NaN clamps to infinity, and it reports
-the clamp as a change, so a file holding `a = nan` opens as `a = inf`, marked
-edited, with nobody having touched it — measured on one key with no
-interaction, so a save would write the corruption. **A float is displayed
-rounded**: `3.141_592_653_59` draws as `3.142`, and `-1.6e-19` draws as `-0.0`,
-which is also what an actual `-0.0` in the next row draws as. A file only
-looked at is safe, since the document is untouched until the field is; what is
-wrong is an editor whose claim is fidelity showing a number that is not the one
-in the file, and a person who then commits that field writing the rounded one.
-Neither is in the goldens, because `tests/golden/fixtures/every-type.toml`'s
-only float is `1.5`, which survives both. One change answers both: draw a float
-as text through `buffered_text`, the way a datetime is drawn, parsed when it is
-committed and left alone otherwise, which keeps the writer's spelling of it
-until it is edited. It is not made in the same change as the finding, because
-0.2.1 build 46 was in review when the finding was made and this is the widget
-slipcase-desktop draws with. Until it is, the published specimen sheet carries
-neither case, and `packaging/samples/README.md` says why.
+**A float is drawn as text through `buffered_text`**, the way a datetime is,
+parsed when it is committed and left alone otherwise, so the writer's spelling
+of it survives until it is edited. `egui::DragValue` cannot draw one: it clamps
+what it is handed, which turns a `nan` into an `inf` and reports the clamp as an
+edit, and it rounds what it shows, which an editor claiming fidelity cannot do.
 
-**A field commits what was typed, not what it shows.** egui takes focus away on
-Escape at the start of a frame, so a field left that way reseeded its text
-before it could compare — a defect the key field had carried since
-slipcase-desktop, found while building the comment slots.
+**A field commits what was typed, not what it shows**, because egui takes focus
+away on Escape at the start of a frame and a field left that way would reseed
+its text before it could compare.
 
 **Comments are edited in every place TOML allows one.** Core reads and writes
 each slot on `toml_edit`'s decor, keeping the blank lines around a comment block
@@ -175,18 +141,17 @@ selection changes, and left alone after.
 feature. **A save is written to a sibling and renamed over the file**, so a
 failure anywhere leaves the original whole.
 
-The dialog runs on its own thread and is polled once a frame — the pattern
-slipcase-desktop settled on after a blocking dialog froze its window. A close or
-an open with unsaved changes is refused for the frame and asked about, with
-Save, Don't save and Cancel; a save that fails keeps the prompt up with the
-reason in it.
+The dialog runs on its own thread and is polled once a frame, since a blocking
+dialog freezes the window. A close or an open with unsaved changes is refused
+for the frame and asked about, with Save, Don't save and Cancel; a save that
+fails keeps the prompt up with the reason in it.
 
 **The sibling rename is what the macOS App Sandbox refuses.** A grant covers the
 file a person chose and not the directory holding it, so the rewrite has to wait
 in `NSItemReplacementDirectory`, asked for with the target's URL so it lands on
 the target's volume, and land through `replaceItemAtURL:`. Under `TMPDIR` it
 fails with `EXDEV` for any file off the boot volume. That arm is in core's
-`save_to`; slipcase-desktop's `staging.rs` is the same measurement made twice.
+`save_to`.
 
 **A round-trip corpus holds all of this.** The TOML 1.1.0 cases of `toml-test`
 are vendored under `flyleaf-core/tests/toml-test/` — 220 valid, 494 invalid —
@@ -199,9 +164,7 @@ the parser, each named in the test with its reason, and the test asserts they
 shapes, both upstream candidates against `toml-rs/toml`: a non-leaf dotted-key
 or table-header segment rendered from the key's first definition rather than
 each occurrence, losing its quoting and the whitespace before its dot; and
-dotted keys interleaving two implicit tables being regrouped by table. The
-corpus also caught the first `Document` accepting a file with two byte order
-marks, stripping one itself and letting `toml_edit` strip the other.
+dotted keys interleaving two implicit tables being regrouped by table.
 
 ## 8. The web arm
 
@@ -216,14 +179,11 @@ Two things a browser cannot do and the shell does not pretend to: a close
 request, so the unsaved prompt appears only before an open there; and waiting
 for a download to land, so Save on the web starts the download and goes on.
 
-**The size work, each step measured on one commit** after trunk's `wasm-opt
--Oz`: the default release profile gave 7.5 MB; a `web` profile with
-`opt-level = "z"`, fat LTO, one codegen unit and `panic = "abort"` gave 6.4 MB;
-eframe without its default `wgpu` renderer and with `glow` instead, on the wasm
-target alone, gave 4.8 MB — 1.9 MB gzipped — and took wgpu-core and naga out of
-the page. Dropping eframe's `accesskit` feature on wasm saved nothing, measured,
-so it stays. What remains is egui, its default fonts and the editor, which is
-the product.
+**The bundle is built for size**: a `web` profile with `opt-level = "z"`, fat
+LTO, one codegen unit and `panic = "abort"`, and eframe with `glow` rather than
+its default `wgpu` renderer on the wasm target alone, which keeps wgpu-core and
+naga out of the page. That is 4.8 MB, 1.9 MB gzipped. What remains is egui, its
+default fonts and the editor, which is the product.
 
 The host serves `.wasm` as `application/wasm` unasked but compresses only text
 types, so a `.gz` and a `.br` are written beside the wasm and a committed
@@ -234,81 +194,50 @@ checked against the original by hash.
 
 Debian for the Excelano apt repository, MSIX for the Microsoft Store, a signed
 sandboxed bundle for the Mac App Store, crates.io, and a hosted WASM demo.
-`packaging/` holds one directory per platform, cloned from slipcase-desktop's,
-where most of these decisions were measured the first time; what follows is what
-this repository learned that that one had not.
+`packaging/` holds one directory per platform.
 
-**Windows.** `AppxManifest.xml.in` was not valid XML: its opening comment spelled
-a flag with two hyphens, which XML forbids inside a comment, and `makepri`
-refused the substituted manifest with *Incorrect syntax was used in a comment*.
-Nothing in the fleet parses that file until a Windows machine builds a package,
-which is how a template written and reviewed on Linux got that far.
+**Windows.** `uninstall.ps1` deletes a `UserChoice` by name from its parent key,
+which needs only DELETE and works unelevated, reads every delete back, and
+refuses if a key survives: Explorer writes a *Deny SetValue* rule on that key,
+so a delete that opens it for writing fails, and .NET's `DeleteSubKeyTree` reads
+that failure as the key being missing and returns quietly. `check-install.ps1`
+installs, plants a `UserChoice` the way Explorer writes one, deny rule and all,
+uninstalls, and reads back that everything is gone. `AppxManifest.xml.in` is
+XML, comments included, and `makepri` refuses the substituted manifest if it is
+not. `screenshot.ps1` waits long enough for a cold start, where a 15 MB binary
+the disk has never read is slower than the association is.
 
-`uninstall.ps1` reported success and left the `UserChoice` behind, naming a
-ProgID it had just deleted — the state its own comment calls killing the
-extension outright. Explorer writes a *Deny SetValue* rule on that key so no
-application can quietly take an extension over, and every delete that opens the
-key for writing fails on it: `reg delete` says *Access is denied*, and .NET's
-`DeleteSubKeyTree` reads the same failure as the key being missing and returns
-quietly. It now deletes the name from the parent, which needs only DELETE and
-works unelevated, reads every delete back, and refuses if a key survives.
-`check-install.ps1` is the check that would have caught it: it installs, plants
-a `UserChoice` the way Explorer writes one, deny rule and all, uninstalls, and
-reads back that everything is gone. **slipcase-desktop's `uninstall.ps1` still
-has the call this replaced and leaves the key behind on the same machine.**
-
-`screenshot.ps1`'s six-second wait was too short on a cold start and blamed the
-association rather than the clock: a 15 MB binary the disk has never read takes
-longer than that to put up a window, and the same run a minute later took under
-two seconds.
-
-**macOS.** The private-symbol check refused the first bundle over two *public*
-symbols — `CGDisplayCreateUUIDFromDisplayID` and its inverse, which winit links
-through ApplicationServices and ColorSync's public headers — so the check reads
-the headers rather than a list of names.
-
-Rank Alternate is a tie-break and not a refusal: before the bundle was
-registered `.toml` had no default handler on that Mac, and after it this
-application was the default, because the alternatives declined to claim it.
-
-The sandbox container is not empty and the privacy statement had to say so:
-after one open through the panel, `~/Library/Containers/com.excelano.flyleaf`
-holds a preferences plist.
+**macOS.** The private-symbol check reads the public headers rather than a list
+of names, so that the public symbols winit links through ApplicationServices and
+ColorSync are not refused. Rank Alternate is a tie-break and not a refusal. The
+sandbox container is not empty and the privacy statement says so: after one open
+through the panel, `~/Library/Containers/com.excelano.flyleaf` holds a
+preferences plist.
 
 **One blemish, seen in a store screenshot and not fixed:** a multi-line string
 shows a missing-glyph box at each line break, because the tree edits every
 string in a single-line field.
 
-**An editor of files has to hand a reviewer the files.** The Mac submission of
-0.2.1 came back on 2026-09-10 under Guideline 2.1(a), asking for sample TOML
-*hosted at a location that will remain available for future reviews*. Nothing
-in the build was at fault. The review notes said any `.toml` would do and named
-a Cargo.toml, a pyproject.toml or a line typed into TextEdit, which asks the
-reviewer to make the file the application is for; they did not, and an
-application that opens on nothing cannot be exercised by someone holding
-nothing. The answer is `excelano.com/flyleaf/samples/`, four files behind
-download links, three of them in `packaging/samples/` and the fourth
-`sample.toml` under the name the page gives it. `samples/publish.sh` copies the
-set into the site working copy in one command, so the copies cannot drift; on
-the site side they are committed rather than deployed, unlike the web bundle,
-because the address has to survive a deploy that forgets them; and
-`flyleaf-core/tests/samples.rs` holds every file in the set to a byte-identical
-render, because a published sample the editor rewrites demonstrates the
-opposite of the product. The page is written for anyone who wants something to
-open rather than for App Review alone, and the marketing page links it: a
-reviewer is no better served by a page that reads as a formality.
+**An editor of files hands a reviewer the files.** `excelano.com/flyleaf/samples/`
+serves four `.toml` files behind download links, three of them in
+`packaging/samples/` and the fourth `sample.toml` under the name the page gives
+it. `samples/publish.sh` copies the set into the site working copy in one
+command, so the copies cannot drift; on the site side they are committed rather
+than deployed, unlike the web bundle, because the address has to survive a
+deploy that forgets them; and `flyleaf-core/tests/samples.rs` holds every file in
+the set to a byte-identical render, because a published sample the editor
+rewrites demonstrates the opposite of the product. The page is written for
+anyone who wants something to open rather than for App Review alone.
 
 **The stores and crates.io are separate channels and their numbers need not
 agree.** A `cargo publish` rebuilds no submission and a submission in review
 holds no crate. What version the next release carries is decided when there is a
-release to cut — a number written down in advance is a decision made before the
-facts, and the one this document used to carry was wrong within two days.
+release to cut.
 
 **A catalogue is packaged only if it sits under the crate that reads it.**
 `include_str!` reaching above a crate's own directory compiles locally and fails
 in `cargo package`, which copies only what is under the crate root: the tarball
 carries no catalogue and the publish dies verifying a build that cannot compile.
-0.2.2's first tag was withdrawn for exactly that, before anything was published.
 The check is `cargo package -p <crate> --list`.
 
 ## 10. The language a person reads
@@ -340,6 +269,10 @@ translates a kind where it draws one. The kind names *are* translated — the
 editor says *text* where TOML says *string*, which is the tell that they are the
 window's words and not the format's.
 
+`tree.rs` imports the lookup as `tr`, where every other file uses `t`; both
+spellings are keywords in `flyleaf/po/update-po.sh`, and a catalogue built
+without the alias listed looks healthy with every message in the tree missing.
+
 ## 11. Non-goals, and what would reopen each
 
 **Schema-aware validation and completion**, the JSON Schema documents Taplo and
@@ -347,13 +280,11 @@ Tombi pull from SchemaStore. A real future feature and not a first one.
 
 **A command-line tool.** What it would be: a typed `get`/`set` that writes the
 file in place and leaves every other byte alone, for scripts and coding agents.
-Surveyed 2026-09-07: `toml-cli` is the nearest thing and is self-described
-experimental, sets strings only, and prints rather than writes; `tomlq` is
-read-only; `tomlpipe` says nothing about preserving comments. The gap is real
-and narrow. The test for building it: if a CLI over core's operation set is
-small, build it; if core's API turns out shaped around a widget rather than
-around paths, skip it. Either way a separate crate, and never a second parser or
-a second policy.
+The nearest existing things are experimental, read-only, or silent about
+comments, so the gap is real and narrow. The test for building it: if a CLI over
+core's operation set is small, build it; if core's API turns out shaped around a
+widget rather than around paths, skip it. Either way a separate crate, and never
+a second parser or a second policy.
 
 **Multi-file or project views.**
 

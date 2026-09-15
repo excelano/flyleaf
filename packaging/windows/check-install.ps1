@@ -5,17 +5,14 @@
 
 .DESCRIPTION
     `check-imports.ps1` beside this checks the artefact the Store distributes.
-    This checks the other half a green tick used to invite faith in: nothing in
-    `windows.yml` reached `install.ps1` or `uninstall.ps1` at all, and the
-    defect that found is the one this exists for.
+    This checks the other half: that the install scripts themselves go on and
+    come off cleanly, which nothing else reaches.
 
-    Measured on the Windows machine 2026-09-08. `uninstall.ps1` reported success
-    and left a `UserChoice` naming a ProgID it had just deleted, which is the
-    state its own comment calls killing the extension outright. Two things
-    together did it: Explorer writes a *Deny SetValue* rule on that key so no
-    application can quietly take an extension over, which makes every delete
-    that opens the key for writing fail; and `Remove-Key` caught every
-    exception, so the failure and the key never having existed looked the same.
+    The state it guards against is a `UserChoice` left behind naming a ProgID
+    that has just been deleted, which kills the extension outright. Explorer
+    writes a *Deny SetValue* rule on that key, so every delete that opens it for
+    writing fails, and an exception caught wholesale makes that failure look
+    exactly like the key never having existed.
 
     What is checked, in the order a person would look:
 

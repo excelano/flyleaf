@@ -1,9 +1,9 @@
 //! A document as a file: the parsed tree, the three things about its bytes
 //! that `toml_edit` reads past and does not write back, and its history.
 //!
-//! Measured on 2026-09-07 against every valid TOML 1.1.0 case in toml-test:
-//! a leading byte order mark is dropped, CRLF line endings come back as LF,
-//! and a file without a final newline gains one. Each is a fact about the
+//! Across every valid TOML 1.1.0 case in toml-test, `toml_edit` drops a
+//! leading byte order mark, returns CRLF line endings as LF, and gives a file
+//! without a final newline one. Each is a fact about the
 //! file rather than about the document, so this records them at parse and
 //! puts them back at render, and `tests/roundtrip.rs` holds it to that.
 //!
@@ -156,9 +156,8 @@ impl Document {
     /// A rename needs only the directory to be writable, so two things an
     /// in-place write would do for free are done here on purpose: a file
     /// marked read-only is refused rather than replaced, and the file keeps
-    /// the permissions it had rather than the staged file's. Both were
-    /// found by hand on 2026-09-07, when a read-only fixture saved without
-    /// a word and came back mode 0600.
+    /// the permissions it had rather than the staged file's. Without both, a
+    /// read-only file saves without a word and comes back mode 0600.
     ///
     /// # Errors
     ///

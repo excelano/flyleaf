@@ -60,8 +60,8 @@ $ErrorActionPreference = 'Stop'
 # a baseline copied from another application would be a claim about a binary
 # nobody has run the kit against.
 #
-# Filled 2026-09-08, from the first run, on 0.2.1. Overall PASS, one test FAIL,
-# the one slipcase-desktop's baseline predicted:
+# From the first run, on 0.2.1: overall PASS, one test FAIL, the one
+# slipcase-desktop's baseline predicts.
 #
 #   Blocked executables
 #     File flyleaf.exe contains a reference to a "Launch Process" related API
@@ -396,9 +396,7 @@ $priConfig = Join-Path $OutDir 'priconfig.xml'
 # qualifier `en-US;de-DE`. If the two sides disagree the index has no default
 # language and the shell falls back to the literal paths, which is the failure
 # this whole step exists to remove -- and it fails silently, so it is spelled
-# once here from the manifest's values. Both said `en-GB` until 2026-08-31,
-# `en` until 2026-09-06 and `en-US` alone until 2026-09-10; the manifest says
-# why they moved, three times.
+# once here from the manifest's values, which is where the reason for them is.
 & $makepri createconfig /cf $priConfig /dq en-US_de-DE /o | Out-Null
 if ($LASTEXITCODE -ne 0) { Refuse "makepri createconfig failed ($LASTEXITCODE)" }
 

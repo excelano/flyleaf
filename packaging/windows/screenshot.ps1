@@ -66,13 +66,11 @@ Get-Process flyleaf -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 Start-Process $File
 
-# Waited for rather than slept through. This was a flat six seconds, and the
-# first run on the Windows machine 2026-09-08 refused with the message below
-# against a process that was starting perfectly well: a cold 15 MB binary off a
-# disk that has never read it takes longer than that to put a window up, and the
-# same run a minute later took under two seconds. A fixed sleep that is long
-# enough for a cold start is time paid on every warm one, and the message it
-# fails with sends the reader to the association, which was not the fault.
+# Waited for rather than slept through. A cold 15 MB binary off a disk that has
+# never read it takes tens of seconds to put a window up, where the same run a
+# minute later takes under two. A fixed sleep long enough for the cold start is
+# time paid on every warm one, and a sleep too short fails with a message that
+# sends the reader to the association, which is not the fault.
 $deadline = (Get-Date).AddSeconds(60)
 do {
     Start-Sleep -Milliseconds 500

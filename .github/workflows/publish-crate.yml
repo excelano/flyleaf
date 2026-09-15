@@ -1,28 +1,13 @@
 name: Publish to crates.io
 
-# Fires on the version tag `ship` pushes, and
-# can be run by hand. `cargo publish` compiles and uploads from source, so it is
-# independent of the `.deb` and the store packages and runs beside them; the
-# tag is pushed before the GitHub release exists, so the crates land first.
-#
-# **Every crate, published one at a time and in order.** `cargo publish
-# --workspace` is the shorter spelling and it cannot be resumed: it refuses the
-# whole run when any member's version is already on the index, so a partial
-# publish can only be finished by hand. That is not a hypothetical. odox 0.1.0
-# published its first two crates, then cargo's sixty-second wait for the index
-# expired before the rest, and the retry refused with *already exists on
-# crates.io index*. This file is odox's answer, taken unchanged: each crate is
-# asked for separately, one already on the index is skipped, and the index is
-# waited for rather than assumed.
-#
-# The order comes from `ship.conf`, which is where it already lives and is read
-# by `ship` and `fleet` too. Naming it here as well would be one fact in two
-# files.
-#
-# The step is token-gated: it skips cleanly, with no failed run, unless a
-# CRATES_IO_TOKEN secret is available. The excelano organisation carries one.
-# Versions on crates.io are immutable: a bad one is yanked, never re-published,
-# and the fix is the next number.
+# Fires on the version tag `ship` pushes, and can be run by hand. `cargo publish`
+# compiles and uploads from source, so it runs beside the package builds rather
+# than after them. Each crate is asked for separately in the order `ship.conf`
+# gives, one already on the index is skipped, and the index is waited for rather
+# than assumed: `cargo publish --workspace` refuses the whole run when any member
+# is already there, so a partial publish could only be finished by hand. The step
+# skips cleanly without a CRATES_IO_TOKEN secret. A version on crates.io is
+# immutable: a bad one is yanked and the fix is the next number.
 
 on:
   push:

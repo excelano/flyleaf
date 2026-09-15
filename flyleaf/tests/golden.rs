@@ -1,10 +1,8 @@
 //! What the tree draws and what an edit saves, held against a record.
 //!
-//! Written in slipcase-desktop, where it holds the widget to what it drew and
-//! saved before the extraction, and copied here on 2026-09-07 with the tree.
-//! There it renders under that application's policy; here under the policy
-//! with nothing to say, so every key is editable and the record differs from
-//! that one in the controls the required keys gain. The unit tests check
+//! slipcase-desktop holds the same widget to the same record under its own
+//! policy; here the policy has nothing to say, so every key is editable and the
+//! two records differ in the controls the required keys gain. The unit tests check
 //! behaviours one at a time. These two hold the whole of what the widget puts
 //! on screen and what its operations write, as a file that diffs.
 //!

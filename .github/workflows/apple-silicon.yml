@@ -1,20 +1,9 @@
-# Run the suite on Apple silicon, because nothing else here can, and open a
-# document through Launch Services to watch the one module no test reaches.
-# Adapted from slipcase-desktop's; the reasoning for asking the window server
-# rather than taking a screenshot is recorded there and in
-# `packaging/macos/window-probe.swift`.
-#
-# What this reaches: the suite, including `flyleaf-core`'s macOS save arm,
-# which calls `-[NSFileManager replaceItemAtURL:]` for real; the bundle
-# assembling; and a document opened with `open`, which delivers the Apple Event
-# a double-click delivers, so `src/opened_document.rs` runs on arm64. What it
-# cannot say is whether the document was delivered rather than the application
-# merely launched: the window's title would say so and reading titles needs
-# Screen Recording permission, which a runner does not grant. A person's
-# double-click on the Mac is where that is checked.
-#
-# What it does not reach: a sandbox, which needs a signing identity no runner
-# has; a high-density display; and the Finder icon.
+# Run the suite on Apple silicon and open a document through Launch Services, so
+# `src/opened_document.rs` receives the Apple Event a double-click delivers.
+# It does not say the document was delivered rather than the application merely
+# launched: the window title would say so, and reading titles needs Screen
+# Recording permission a runner does not grant. Out of reach here: a sandbox,
+# which needs a signing identity; a high-density display; the Finder icon.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)
