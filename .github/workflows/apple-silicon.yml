@@ -13,6 +13,19 @@ name: Apple silicon
 on:
   push:
   pull_request:
+  # The release event is what builds the binary the Mac signs. A person's
+  # token creates the release, so the event fires.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build the release binary for'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   arm64:
@@ -20,6 +33,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
 
       # A label is a promise rather than a fact: `macos-13` is Intel and
       # `macos-14` onwards is Apple silicon, which is a mapping GitHub can
@@ -104,3 +119,16 @@ jobs:
           name: arm64-window
           path: ${{ runner.temp }}/screen.png
           if-no-files-found: warn
+
+      # Built here and signed on the Mac: the Distribution certificate stays
+      # where it is, and the slow half plus the two checks that cost a review
+      # cycle happen before anybody is waiting. The steps are excelano/.github's,
+      # because every repository with this target needs the same ones.
+      - name: The binary the Store package is built from
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        uses: excelano/.github/.github/actions/mac-release-binary@main
+        with:
+          binary: flyleaf
+          package: flyleaf
+          tag: ${{ github.event.release.tag_name || inputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
