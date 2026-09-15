@@ -51,14 +51,14 @@ every double-click.
 | `flyleaf.ico`, `assets/`, `listing/` | Built by `make-ico` from `packaging/linux/icons/flyleaf.svg`, the one drawing; committed because Windows has no step that rasterizes an SVG, and checked against the generator in `windows.yml` |
 | `make-ico/` | The generator, its own package so nothing in it reaches the shipped binary |
 | `flyleaf.manifest` | The DPI declaration `build.rs` hands the linker |
-| `AppxManifest.xml.in`, `identity.psd1.example` | The Store package's manifest and the identity Partner Center assigns |
+| `AppxManifest.xml.in`, `identity.psd1` | The Store package's manifest and the identity Partner Center assigned, less the publisher, which is the `STORE_PUBLISHER` organisation variable |
 | `build-msix.ps1`, `check-imports.ps1`, `screenshot.ps1` | Build, the in-box import check, and the store screenshot |
 | `check-install.ps1` | The two scripts above run against the registry and read back: what goes on comes off, a `UserChoice` naming this application goes with it, and another application's does not. Registers the real ProgID, so it is for a runner or a machine where that does not matter |
 
 ## The order, on the Windows machine
 
-1. Reserve the name in Partner Center and copy `identity.psd1.example` to
-   `identity.psd1` with what it shows under Product identity.
+1. `$env:STORE_PUBLISHER` set to Partner Center's Package/Identity/Publisher,
+   which is the same X.500 string for every Excelano product.
 2. `cargo build --release`, then `check-imports.ps1`.
 3. `install.ps1 -Default` and look: the window icon, the taskbar, Open With on
    a `.toml`, a double-click.

@@ -15,10 +15,7 @@
 # root-anchored rule above does not reach it.
 /packaging/windows/make-ico/target/
 
-# The two store walkthroughs and the Windows identity Partner Center assigned:
-# an account's identifiers, kept off a public record, as slipcase-desktop's
-# .gitignore records. `identity.psd1.example` beside the last is committed
-# and says what goes in.
+# The two store walkthroughs: an account's identifiers, kept off a public
+# record.
 /packaging/macos/SUBMITTING.local.md
 /packaging/windows/SUBMITTING.local.md
-/packaging/windows/identity.psd1
