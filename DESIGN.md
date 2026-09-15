@@ -204,8 +204,9 @@ that failure as the key being missing and returns quietly. `check-install.ps1`
 installs, plants a `UserChoice` the way Explorer writes one, deny rule and all,
 uninstalls, and reads back that everything is gone. `AppxManifest.xml.in` is
 XML, comments included, and `makepri` refuses the substituted manifest if it is
-not. `screenshot.ps1` waits long enough for a cold start, where a 15 MB binary
-the disk has never read is slower than the association is.
+not. `screenshot.ps1` waits for a window rather than for a number of
+seconds, because a cold start here reads a 15 MB binary the disk has never read
+and is slower than the association is.
 
 **macOS.** The private-symbol check reads the public headers rather than a list
 of names, so that the public symbols winit links through ApplicationServices and

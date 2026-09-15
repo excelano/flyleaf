@@ -248,15 +248,16 @@ The application makes no network request. Its import table names nineteen librar
 
 | What | Where | Built by |
 | --- | --- | --- |
-| Screenshot, 1366x768 | `dist/store/01-window.png` | `windows/screenshot.ps1 -File packaging/sample.toml` |
+| Screenshot, 1366x768 | `dist/store/01-window.png` | `windows/shots.ps1` |
 | Mac screenshot, light, 1440x900 | `dist/store/mac-01-window-light.png` | `macos/screenshot.sh --app "dist-universal/Tommy Flyleaf.app" --file packaging/sample.toml --out dist/store/mac-01-window-light.png`, with the Mac in Light |
 | Mac screenshot, dark, 1440x900 | `dist/store/mac-01-window.png` | the same, with the Mac in Dark |
 | Store logo, 1080x1080 | `windows/listing/store-logo-1080.png` | `windows/make-ico` |
 | Store logo, 2160x2160 | `windows/listing/store-logo-2160.png` | `windows/make-ico` |
 
 The screenshot is taken from the running application on the sample file, at the
-Store's minimum size, by a script that refuses anything else; `screenshot.ps1`
-says what it measured about window borders to get there. It is not committed —
+Store's minimum size, by a script that refuses anything else; `shots.ps1` says
+which file and which frame, and `screenshot.ps1` under it says what it measured
+about window borders to get there. It is not committed —
 it is a photograph of a build, and it is retaken when the interface changes.
 
 ---
