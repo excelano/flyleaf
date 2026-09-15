@@ -53,7 +53,7 @@ every double-click.
 | `flyleaf.manifest` | The DPI declaration `build.rs` hands the linker |
 | `AppxManifest.xml.in`, `identity.psd1` | The Store package's manifest and the identity Partner Center assigned, less the publisher, which is the `STORE_PUBLISHER` organisation secret |
 | `build-msix.ps1`, `check-imports.ps1`, `screenshot.ps1` | Build, the in-box import check, and the store screenshot |
-| `check-install.ps1` | The two scripts above run against the registry and read back: what goes on comes off, a `UserChoice` naming this application goes with it, and another application's does not. Registers the real ProgID, so it is for a runner or a machine where that does not matter |
+| the install check | `windows.yml` runs `excelano/.github`'s `windows-install-check`, which puts the two scripts above through the registry and reads back: what goes on comes off, a `UserChoice` naming this application goes with it, and another application's does not. It registers the real ProgID, so it is a runner's job |
 
 ## The order, on the Windows machine
 

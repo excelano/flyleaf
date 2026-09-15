@@ -69,11 +69,16 @@ jobs:
           cargo build --release
           powershell -ExecutionPolicy Bypass -File packaging/windows/check-imports.ps1
 
-      # The registry half of what a person installs. It registers the real
-      # ProgID under HKCU and takes it away again, which is why it belongs on a
-      # runner rather than in the middle of somebody's day.
+      # The install scripts against the registry, read back. The steps are
+      # excelano/.github's: it was the same script in three repositories and
+      # absent from three more, and the absent ones included the repository
+      # whose uninstall reported success while leaving the association dead.
       - name: The integration goes on and comes off cleanly
-        run: powershell -ExecutionPolicy Bypass -File packaging/windows/check-install.ps1
+        uses: excelano/.github/.github/actions/windows-install-check@main
+        with:
+          associations: '[{"extension": ".toml", "progId": "Excelano.Flyleaf", "contentType": "application/toml"}]'
+          owns-extension: 'true'
+          install-args: '-Default -NoBinary'
 
       # The `.ico` and the Store assets are committed artifacts, because
       # nothing on Windows rasterizes an SVG and `rc.exe` is a tool the build
