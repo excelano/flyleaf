@@ -19,10 +19,22 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
+      # Optional, because a screenshots run has no tag to give. With one the
+      # package is attached to that release; without one it is built and kept
+      # as an artefact.
       tag:
         description: 'Tag to package for (e.g. v0.2.3)'
-        required: true
+        required: false
         type: string
+      # A choice rather than a boolean, because there is a third thing to ask
+      # for: `reference` takes the one plain frame a coordinate gets measured
+      # off, and `full` takes the set.
+      screenshots:
+        description: 'Store screenshots'
+        required: false
+        default: 'no'
+        type: choice
+        options: ['no', 'reference', 'full']
 
 permissions:
   contents: write
@@ -32,7 +44,7 @@ concurrency:
   # so the two never share a group. `github.ref` is refs/heads/main for a
   # workflow_dispatch as much as for a push, which is how a push to main
   # cancelled the dispatched run building flyleaf 0.2.2's Linux packages.
-  group: windows-${{ github.event.release.tag_name || inputs.tag || github.ref }}
+  group: windows-${{ github.event.release.tag_name || inputs.tag || format('{0}-{1}', github.event_name, github.ref) }}
   # A superseded check is worth cancelling; a half-built release is not.
   cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
@@ -113,3 +125,22 @@ jobs:
           publisher: ${{ secrets.STORE_PUBLISHER }}
           tag: ${{ github.event.release.tag_name || inputs.tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Off unless asked for. A bug fix should not pay for a set of Store
+      # screenshots, and a set nobody asked for is a set nobody looks at.
+      # `shots.ps1` carries the recipe and is the same command that retakes it
+      # by hand on the Windows machine.
+      #
+      # The file is opened through the shell, so the association has to exist
+      # and has to be this application's: `-Default` writes the extension's
+      # default value, which the install check above deliberately does not.
+      - name: Claim .toml so the shell opens it here
+        if: inputs.screenshots && inputs.screenshots != 'no'
+        run: powershell -ExecutionPolicy Bypass -File packaging/windows/install.ps1 -Default
+
+      - name: The Store screenshot
+        if: inputs.screenshots && inputs.screenshots != 'no'
+        uses: excelano/.github/.github/actions/store-screenshots@main
+        with:
+          mode: ${{ inputs.screenshots }}
+          out: dist/store
