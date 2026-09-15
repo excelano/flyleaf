@@ -481,7 +481,7 @@ if ($SelfSign) {
     # Deployment reads LocalMachine\TrustedPeople and not the per-user store:
     # importing into CurrentUser\TrustedPeople leaves Add-AppxPackage failing
     # 0x800B0109 just the same. Measured on 2026-08-26 and recorded in
-    # CHECKLIST.md. That import is the one administrator action in this whole
+    # by hand. That import is the one administrator action in this whole
     # path, so it is printed rather than attempted.
     $trusted = Get-ChildItem Cert:\LocalMachine\TrustedPeople -ErrorAction SilentlyContinue |
         Where-Object { $_.Thumbprint -eq $cert.Thumbprint }

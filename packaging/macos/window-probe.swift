@@ -11,8 +11,8 @@
 // slipcase-desktop, where the screenshot finding below was made.
 //
 // **A screenshot is the wrong assertion and this repository already knows it.**
-// `CHECKLIST.md` records `screencapture` returning the desktop and the menu bar
-// with every window omitted, reporting no error while doing it, and two
+// `screencapture` has been seen returning the desktop and the menu bar with
+// every window omitted, reporting no error while doing it, with two
 // byte-identical empty captures as the only tell. A job asserting on pixels
 // would have gone green against that. So this asks the window server directly.
 //
