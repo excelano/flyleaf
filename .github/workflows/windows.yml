@@ -76,7 +76,10 @@ jobs:
       - name: The integration goes on and comes off cleanly
         uses: excelano/.github/.github/actions/windows-install-check@main
         with:
-          associations: '[{"extension": ".toml", "progId": "Excelano.Flyleaf", "contentType": "application/toml"}]'
+          # No contentType: this installer writes `Content Type` on the
+          # extension and no MIME database entry, and asserting one it never
+          # claimed is the check being wrong rather than the installer.
+          associations: '[{"extension": ".toml", "progId": "Excelano.Flyleaf"}]'
           owns-extension: 'true'
           install-args: '-Default -NoBinary'
 
