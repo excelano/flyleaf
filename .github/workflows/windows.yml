@@ -1,7 +1,8 @@
-# Run the suite on Windows and check the three things only a Windows machine can
-# say: what the binary imports, that the install scripts go on and come off
-# cleanly, and the file association. Out of reach here: the window, an MSIX
-# package, and the icon at any size.
+# Run the suite on Windows, check the things only a Windows machine can say —
+# what the binary imports, that the install scripts go on and come off cleanly,
+# that the committed icons match their generator — and assemble the Store
+# package, attaching it to a published release. Out of reach here: the window,
+# the certification kit, and the icon as a person sees it at any size.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)
@@ -11,6 +12,29 @@ name: Windows
 on:
   push:
   pull_request:
+  # Fires when a person publishes the release, which on this loop is what
+  # happens: nothing else creates it. A release created by a workflow using the
+  # default GITHUB_TOKEN fires no event at all, so the dispatch is the fallback.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to package for (e.g. v0.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  # Keyed by the tag when this is releasing and by the ref when it is checking,
+  # so the two never share a group. `github.ref` is refs/heads/main for a
+  # workflow_dispatch as much as for a push, which is how a push to main
+  # cancelled the dispatched run building flyleaf 0.2.2's Linux packages.
+  group: windows-${{ github.event.release.tag_name || inputs.tag || github.ref }}
+  # A superseded check is worth cancelling; a half-built release is not.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
 jobs:
   windows:
@@ -18,6 +42,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
 
       - name: What is installed
         run: |
@@ -60,3 +86,15 @@ jobs:
           cargo run --release
           cd ../../..
           git diff --exit-code -- packaging/windows/flyleaf.ico packaging/windows/assets packaging/windows/listing
+
+      # The Store takes the package unsigned, and the runner assembles the one that
+      # is uploaded. The steps are excelano/.github's, because they were the same in
+      # every repository that has this target; the publisher is the organisation
+      # secret, being the one value in the identity that is an account's rather than
+      # this product's.
+      - name: The Store package
+        uses: excelano/.github/.github/actions/store-package@main
+        with:
+          publisher: ${{ secrets.STORE_PUBLISHER }}
+          tag: ${{ github.event.release.tag_name || inputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
