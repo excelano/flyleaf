@@ -1,0 +1,55 @@
+# Der Auftragszettel einer Buchbinderei, das deutsche Gegenstück zu sample.toml.
+# Er hat an jeder Stelle, an der TOML einen Kommentar erlaubt, einen, dazu jede
+# Art von Wert und genug Struktur zum Einklappen, damit sich sehen lässt, dass
+# ein Speichern nur den bearbeiteten Wert ändert. Nichts darin ist echt.
+
+titel = "Auftragszettel"      # steht oben auf dem Zettel
+nummer = 4_812                # im vierten Tausend
+angelegt = 2026-09-07T09:15:00+02:00
+termin = 2026-09-21           # ein Datum ohne Uhrzeit
+eilig = false
+
+[kunde]
+name = "Katharina Blum"
+email = "k.blum@example.org"
+# Das Zeichen der Kundin, so belassen, wie sie es geschrieben hat.
+referenz = 'BE/2026/0093'
+
+[buch]
+titel = "Anatomie der Schwermut"
+seiten = 1_392
+format = { breite = 156, hoehe = 234, einheit = "mm" }
+lagen = [16, 16, 16, 16, 16, 8]   # Blatt je Lage
+notizen = """
+Neu binden in Halbleinen auf Deckel.
+Die alten Vorsätze bleiben; das Vorsatzblatt trägt eine Widmung.
+"""
+
+[buch.einband]
+gewebe = "Buckram"
+farbe = 0x3f1621   # Ochsenblut
+vergoldung = true
+
+# Jeder Schritt wird festgehalten, sobald er getan ist, in dieser Reihenfolge.
+[[schritt]]
+name = "zusammentragen"
+erledigt = 2026-09-08T14:02:00+02:00
+von = "T. Flyleaf"
+
+[[schritt]]
+name = "heften"
+erledigt = 2026-09-09T11:40:00+02:00
+von = "T. Flyleaf"
+
+[[schritt]]
+name = "einhängen"
+# Noch nicht erledigt, also ohne Zeitstempel.
+von = "T. Flyleaf"
+
+[preise]
+arbeit = 240.00
+material = 63.50
+rabatt = 0.1   # Stammkundin
+waehrung = "EUR"
+
+# Schlusskommentar: Der Zettel wird geschlossen, indem er ins Archiv wandert.
