@@ -1,3 +1,30 @@
+flyleaf (0.2.5) unstable; urgency=medium
+
+  * What 0.2.5 tells the stores, written from what they carry
+  * Take the binary the runner built, and count certificates not lines
+  * What a release tells the stores, in both languages
+  * The reference frame is taken in the state the set is measured in
+  * An executable that starts and stops says its exit code and what it printed
+  * ship sync: a missing window says which of three things happened
+  * The runner takes the store screenshots, and the step is the org's
+  * The packaging scripts parse, and the step is the org's
+  * ship sync: the zoom pair, by name
+  * The screenshot driver is ship's, and the frame is a recipe
+  * The check asked for a MIME entry this installer never writes
+  * The install check is excelano/.github's
+  * The release binary is built here and signed on the Mac
+  * The Store packaging comes from excelano/.github
+  * The publisher is a secret, so the log does not carry it
+  * The identity splits on what is actually an account's
+  * Say what is true rather than pointing at a deleted document
+  * Trim the prose to what is true now
+  * The profile is targets and names
+  * Dependabot: monthly, grouped, merged when every run on the commit is green
+  * Delete the changelog and the preflight script: ship does both
+  * Delete the release document: ship is the procedure
+
+ -- David M. Anderson <david.anderson@excelano.com>  Wed, 16 Sep 2026 12:53:51 -0500
+
 flyleaf (0.2.4) unstable; urgency=medium
 
   * flyleaf-core compiles on macOS on its own. Two objc2-foundation features
