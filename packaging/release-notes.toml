@@ -10,15 +10,31 @@
 # Nothing else reads this. The GitHub release, the Debian changelog and the
 # AppStream entry take commit subjects.
 
-version = "0.2.3"
+
+version = "0.2.5"
 
 [locales."de-de"]
 whats-new = """
-Tommy Flyleaf spricht Deutsch: auf einem deutsch eingestellten Rechner erscheint das Fenster auf Deutsch. Es ist auf einem skalierten Bildschirm scharf und hat ein eigenes Symbol.
+Tommy Flyleaf erscheint auf Deutsch, wenn der Rechner auf Deutsch eingestellt \
+ist; es gibt nichts auszuwählen, denn die Anwendung liest die Sprache, die der \
+Schreibtisch ohnehin kennt. Eine Übersetzung, deren englisches Original sich \
+seitdem geändert hat, wird nicht angezeigt, sodass eine Meldung entweder \
+aktuell oder deutlich englisch ist. Auf dem Mac gibt die Anwendung jetzt an, \
+dass sie auf Deutsch angeboten wird, sodass die Sprachauswahl für einzelne \
+Programme sie anbietet.
+
+Auf dem Mac öffnet ein Doppelklick auf eine TOML-Datei sie in Tommy Flyleaf, \
+und ein Speichern schreibt in die geöffnete Datei zurück.
 """
 
 [locales."en-us"]
 whats-new = """
-Tommy Flyleaf draws in German where the desktop asks for German. The window is crisp on a scaled display, and it has its own icon.
-"""
+Tommy Flyleaf draws in German where the desktop asks for German, with nothing \
+to choose: it reads the language the desktop already knows. A translation \
+whose English has since changed is not shown, so a message is either current \
+or plainly in English. On a Mac the application now declares that it is \
+offered in German, so the per-app language picker offers it.
 
+On a Mac, double-clicking a TOML file opens it in Tommy Flyleaf, and saving \
+writes back to the file you opened.
+"""
