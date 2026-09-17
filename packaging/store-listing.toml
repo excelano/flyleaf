@@ -1,0 +1,147 @@
+# The copy both store listings are filled in from.
+#
+# Every line of this is a claim about the code, and a claim like that goes
+# stale silently in a web form nobody diffs. So it lives here, is reviewed and
+# committed like anything else, and `ship` pushes it to both stores on every
+# release. Edit here; do not edit a listing in a browser.
+#
+# The fields both stores take sit at the top of a language. The rest sit under
+# the store that takes them, because the two do not take the same fields and do
+# not count them the same way. The name is under each store because the two can
+# disagree about it.
+#
+# Limits, which ship checks before the tag and counts in characters rather than
+# bytes: apple.name and apple.subtitle 30, apple.promotional-text 170,
+# apple.keywords 100 including the commas, description 4,000 - the Microsoft
+# Store allows 10,000 and this is written to Apple's - microsoft.short-description
+# 500, microsoft.features 20 of 200, microsoft.keywords 7 of 30.
+#
+# What is *not* here is what changed in this release. That is
+# release-notes.toml, which is rewritten every time; this changes when the
+# product does.
+#
+# No URLs reach the Microsoft Store from here. Its submission document has no
+# field for them: Partner Center keeps the website, the privacy policy and the
+# support contact against the product. Measured 2026-09-16.
+#
+# THE GERMAN HALF
+#
+# Terminology is the application's own, out of the catalogue at
+# `flyleaf/po/de.po`. A listing that calls a thing something the window does
+# not teaches a reader a word the product has no use for, so where the
+# catalogue has a term it wins.
+#
+# German runs longer than English, which is what the limits above are for:
+# `ship` counts every field before the tag, in characters rather than bytes,
+# and a release stops rather than a submission failing.
+
+[locales."de-de"]
+website = "https://excelano.com/flyleaf/"
+support = "https://excelano.com/flyleaf/"
+privacy = "https://excelano.com/legal/#flyleaf"
+description = """
+Tommy Flyleaf ist ein TOML-Editor, der die Struktur der Datei kennt. Er öffnet eine Datei, zeigt sie als Baum neben dem, was ein Speichern schreiben würde, und bearbeitet jeden Wert nach seiner Art.
+
+Ein Speichern behält jeden Kommentar, die Schlüsselreihenfolge, den Leerraum und die Anführungszeichen von allem, was Sie nicht bearbeitet haben. Eine Cargo.toml oder eine pyproject.toml kommt so zurück, wie Sie sie verlassen haben, mit einem geänderten Wert.
+
+Was es tut:
+
+• Zeigt das Dokument als Baum, für jeden TOML-Typ eine eigene Darstellung, mit dem Quelltext daneben und hervorgehobener Zeile, in der Sie gerade arbeiten.
+• Bearbeitet Werte nach ihrer Art — alle elf, die vier Datums- und Zeitformen auseinandergehalten — und wandelt einen Wert in eine andere Art um, wo er sich als diese lesen lässt.
+• Fügt Schlüssel, Tabellen, Inline-Tabellen und Listen hinzu, benennt sie um, wandelt sie um und entfernt sie.
+• Bearbeitet Kommentare überall, wo TOML einen zulässt: über einem Schlüssel, neben einem Wert oder am Ende der Datei.
+• Rückgängig und Wiederholen, ein Schritt je bearbeiteter Zeile.
+• Speichert atomar. Die neue Datei ersetzt die alte in einem Schritt, sodass eine Unterbrechung die alte oder die neue Datei hinterlässt, nie halb beides. Eine schreibgeschützte Datei wird abgelehnt statt ersetzt.
+
+TOML 1.1.0. Jeder gültige Fall des Konformitätskorpus toml-test kommt Byte für Byte unverändert zurück.
+
+Tommy Flyleaf baut keinerlei Netzwerkverbindung auf: kein Konto, keine Update-Prüfung, keine Analyse, keine Telemetrie, keine Absturzberichte. Es schreibt kein Konfigurationsverzeichnis, keinen Verlauf und keine Liste zuletzt geöffneter Dateien.
+
+Benannt nach einem Buchbinderlehrling. Das Vorsatzblatt ist die leere Seite hinter dem Buchdeckel, die einzige Stelle in einem gebundenen Buch, auf der später jemand schreiben soll. Das Buch gehört jemand anderem; schreiben Sie auf die vorgesehene Seite und lassen Sie den Rest so, wie er gebunden wurde.
+
+Open Source, MIT-lizenziert: github.com/excelano/flyleaf
+"""
+
+[locales."de-de".apple]
+name = "Tommy Flyleaf"
+subtitle = "TOML-Editor, nur Ihre Änderung"
+promotional-text = "TOML-Datei als Baum öffnen, einen Wert ändern, speichern. Jeder Kommentar und jede Zeile, die Sie nicht anfassen, kommt unverändert zurück. Nichts verlässt Ihren Mac."
+keywords = "TOML,Editor,Konfiguration,Config,Cargo.toml,pyproject.toml,Entwickler,Einstellungen,verlustfrei"
+
+[locales."de-de".microsoft]
+name = "Tommy Flyleaf"
+short-description = """
+Eine TOML-Datei als Baum bearbeiten, jeden Wert nach seiner Art, und sie so speichern, dass Kommentare, Schlüsselreihenfolge und Formatierung von allem, was Sie nicht bearbeitet haben, erhalten bleiben.
+"""
+features = [
+  "Zeigt das Dokument als Baum, für jeden TOML-Typ eine eigene Darstellung, mit dem Quelltext daneben und hervorgehobener Zeile, in der Sie gerade arbeiten.",
+  "Bearbeitet Werte nach ihrer Art — alle elf, die vier Datums- und Zeitformen auseinandergehalten — und wandelt einen Wert in eine andere Art um, wo er sich als diese lesen lässt.",
+  "Fügt Schlüssel, Tabellen, Inline-Tabellen und Listen hinzu, benennt, wandelt und entfernt sie und bearbeitet Kommentare, wo TOML einen zulässt. Rückgängig und Wiederholen, ein Schritt je Zeile.",
+  "Was Sie nicht bearbeitet haben, überlebt das Speichern: Kommentare, Schlüsselreihenfolge, Leerraum, Anführungszeichen. TOML 1.1.0; jeder gültige toml-test-Fall bleibt Byte für Byte gleich.",
+  "Speichert atomar: die neue Datei ersetzt die alte in einem Schritt. Eine Unterbrechung hinterlässt die alte oder die neue Datei, nie halb beides. Schreibgeschützte Dateien werden abgelehnt.",
+  "Keinerlei Netzwerkverbindung: kein Konto, keine Update-Prüfung, keine Analyse, Telemetrie oder Absturzberichte. Kein Konfigurationsverzeichnis, kein Verlauf, keine zuletzt geöffneten Dateien.",
+]
+keywords = [
+  "TOML",
+  "TOML-Editor",
+  "Konfigurationsdatei",
+  "Config-Editor",
+  "Cargo.toml",
+  "pyproject.toml",
+  "Entwicklerwerkzeuge",
+]
+
+[locales."en-us"]
+website = "https://excelano.com/flyleaf/"
+support = "https://excelano.com/flyleaf/"
+privacy = "https://excelano.com/legal/#flyleaf"
+description = """
+Tommy Flyleaf is a structure-aware TOML editor. It opens a file, shows it as a tree beside what a save would write, and edits every value by its kind.
+
+A save keeps every comment, the key order, the whitespace and the quoting of everything you did not edit. A Cargo.toml or a pyproject.toml comes back the way you left it, one value different.
+
+What it does:
+
+• Shows the document as a tree, one renderer per TOML type, with the source beside it and the row you are working in lit up.
+• Edits values by kind — all eleven of them, the four datetime shapes told apart — and converts a value to another kind where it reads as the target.
+• Adds, renames, converts and removes keys, tables, inline tables and arrays.
+• Edits comments wherever TOML allows one: above a key, beside a value, or at the end of the file.
+• Undo and redo, one step per row worked in.
+• Saves atomically. The new file replaces the old in one step, so an interruption leaves the old file or the new one, never half of each. A read-only file is refused rather than replaced.
+
+TOML 1.1.0. Every valid case of the toml-test conformance corpus round-trips byte for byte.
+
+Tommy Flyleaf makes no network connection of any kind: no account, no update check, no analytics, no telemetry, no crash reporting. It writes no configuration directory, no history and no list of recent files.
+
+Named for a bookbinder's apprentice. The flyleaf is the blank page inside a book's cover, the one place in a bound book meant for someone to write on later. The book is somebody else's; write on the page provided, and leave the rest as it was bound.
+
+Open source, MIT licensed: github.com/excelano/flyleaf
+"""
+
+[locales."en-us".apple]
+name = "Tommy Flyleaf"
+subtitle = "TOML editor, one edit deep"
+promotional-text = "Open a TOML file as a tree, change one value, and save. Every comment, key and line you did not touch comes back exactly as it was. Nothing leaves your Mac."
+keywords = "TOML,editor,config,configuration,Cargo.toml,pyproject.toml,developer,settings,round-trip"
+
+[locales."en-us".microsoft]
+name = "Tommy Flyleaf"
+short-description = """
+Edit a TOML file as a tree, every value by its kind, and save it with the comments, key order and formatting of everything you did not edit kept.
+"""
+features = [
+  "Shows the document as a tree, one renderer per TOML type, with the source beside it and the row you are working in lit up.",
+  "Edits values by kind — all eleven of them, the four datetime shapes told apart — and converts a value to another kind where it reads as the target.",
+  "Adds, renames, converts and removes keys, tables, inline tables and arrays.",
+  "Edits comments wherever TOML allows one: above a key, beside a value, or at the end of the file.",
+  "Undo and redo, one step per row worked in.",
+  "Saves atomically. The file is written beside the original and renamed over it in one step, so an interruption leaves the old file or the new one, never half of each. A read-only file is refused rather",
+]
+keywords = [
+  "TOML",
+  "TOML editor",
+  "configuration editor",
+  "Cargo.toml",
+  "pyproject.toml",
+  "developer tools",
+]

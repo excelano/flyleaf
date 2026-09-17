@@ -1,7 +1,7 @@
 # Samples
 
 The TOML files published at <https://excelano.com/flyleaf/samples/>, kept here
-for the reason `sample.toml`, `privacy-entry.html` and `store-listing.md` are:
+for the reason `sample.toml`, `privacy-entry.html` and `store-listing.toml` are:
 each is a claim about what the application can open, and the application is
 what moves. Edit here first, then `./publish.sh` into the site working copy.
 
