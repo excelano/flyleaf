@@ -138,9 +138,10 @@ jobs:
         if: inputs.screenshots && inputs.screenshots != 'no'
         run: powershell -ExecutionPolicy Bypass -File packaging/windows/install.ps1 -Default
 
-      - name: The Store screenshot
+      - name: The Store screenshots
         if: inputs.screenshots && inputs.screenshots != 'no'
         uses: excelano/.github/.github/actions/store-screenshots@main
         with:
           mode: ${{ inputs.screenshots }}
+          languages: en de
           out: dist/store

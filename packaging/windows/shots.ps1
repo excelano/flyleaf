@@ -24,7 +24,14 @@ param(
     # One plain capture, and nothing else. This is how a coordinate gets
     # measured when a recipe below grows one.
     [switch] $Reference,
-    [string] $OutDir
+    [string] $OutDir,
+    # Which language's set to take. The listing is in two, and a German listing
+    # showing an English window is a German listing of somebody else's
+    # application. It is also the subdirectory the set lands in: `Take-Shots`
+    # turns it into `en-US` or `de-DE`, and the Store files a frame by the
+    # locale in its path.
+    [ValidateSet('en', 'de')]
+    [string] $Lang = 'en'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,7 +48,24 @@ $WIDTH = 1366
 $HEIGHT = 768
 
 # The file the marketing page and the demo show, so the listing shows it too.
-$FILE = Join-Path $root 'packaging\sample.toml'
+# One per language: the document is most of what this frame shows, so a German
+# listing opening the English sample would be mostly English pixels whatever
+# language the window chrome is in. `packaging/macos/shots.sh` chooses between
+# the same two.
+$FILE = if ($Lang -eq 'de') {
+    Join-Path $root 'packaging\sample.de.toml'
+} else {
+    Join-Path $root 'packaging\sample.toml'
+}
+
+# Opened under the name a person would have given it rather than under the
+# repository's. The frame shows the file name, and `sample.toml` in a store
+# listing says the picture is of a test fixture. The macOS set stages for this
+# reason through `take-shots.sh`'s `staged_name`; the Windows driver has no
+# equivalent, so the copy happens here.
+$STAGED_NAME = if ($Lang -eq 'de') { 'auftragszettel.toml' } else { 'job-ticket.toml' }
+$STAGED = Join-Path ([System.IO.Path]::GetTempPath()) $STAGED_NAME
+Copy-Item -Force $FILE $STAGED
 
 # The process the window belongs to, which the driver stops first so the frame
 # holds this run's window and not a previous one's.
@@ -60,5 +84,5 @@ function Get-Shots {
     Shot '01-window' @()
 }
 
-Take-Shots -Launch @('shell', $FILE) -Process $PROCESS `
-    -Width $WIDTH -Height $HEIGHT -OutDir $OutDir -Reference:$Reference
+Take-Shots -Launch @('shell', $STAGED) -Process $PROCESS `
+    -Width $WIDTH -Height $HEIGHT -OutDir $OutDir -Lang $Lang -Reference:$Reference
