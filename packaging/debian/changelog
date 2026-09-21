@@ -1,3 +1,20 @@
+flyleaf (0.2.6) unstable; urgency=medium
+
+  * What 0.2.6 tells the stores
+  * A policy can seal a document, so a tree with no save offers nothing to add
+  * The screenshot harness takes an appearance, and says which template wrote it
+  * Package versions stop coming from Dependabot
+  * deps: bump the cargo group across 1 directory with 3 updates (#2)
+  * Dependabot merges move to the organisation's sweep
+  * Take the generated screenshot files ship rewrote
+  * The driver sizes the window it photographs, and knows Cmd-Shift-G
+  * Take the generated screenshot files ship rewrote
+  * Take the Store screenshots on the runner, in both languages
+  * The listing copy is a file both lanes push
+  * The Mac screenshots are recipes, in both languages
+
+ -- David M. Anderson <david.anderson@excelano.com>  Mon, 21 Sep 2026 06:45:32 -0500
+
 flyleaf (0.2.5) unstable; urgency=medium
 
   * What 0.2.5 tells the stores, written from what they carry
