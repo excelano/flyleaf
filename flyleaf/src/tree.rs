@@ -68,6 +68,26 @@ pub trait Policy {
         false
     }
 
+    /// Whether a new entry may *not* be added at this path.
+    ///
+    /// `protected` is about a key that is already in the document: it is shown
+    /// and not edited, renamed or removed. This is about one that is not there
+    /// yet — the "add a key" row under a table, the *Add* button under an
+    /// array, and the comment that can be appended after the last item. A
+    /// policy that protects every key still offers all three unless it seals
+    /// them too, and an application with no save beneath the tree then shows a
+    /// row of editing controls that would change a document nothing writes.
+    ///
+    /// Filebase is the case that found this: it draws the tree read-only, and
+    /// its first store screenshots came back showing *Add* buttons under a
+    /// listing that says the application never writes a container.
+    ///
+    /// The path is the table or array being added to; the document itself is
+    /// the empty path, which is what the trailing comment asks about.
+    fn sealed(&self, _path: &[String]) -> bool {
+        false
+    }
+
     /// How a protected string reads.
     ///
     /// Only a protected string comes through here. An editable one is shown as
@@ -224,7 +244,7 @@ pub fn render(ui: &mut Ui, doc: &mut DocumentMut, policy: &dyn Policy) -> Option
     comments_field(ui, &path, "trailing", &trailing, |lines| {
         set_trailing_comments(doc, lines);
     });
-    if ui.small_button(tr("add a comment at the end")).clicked() {
+    if !tree.policy.sealed(&[]) && ui.small_button(tr("add a comment at the end")).clicked() {
         let mut lines = trailing;
         lines.push(String::new());
         set_trailing_comments(doc, &lines);
@@ -282,7 +302,9 @@ fn table(ui: &mut Ui, t: &mut Table, path: &mut Vec<String>, tree: &Tree<'_>) {
         path.pop();
     }
 
-    add_row(ui, path, &siblings, &Kind::ALL, &mut change);
+    if !tree.policy.sealed(path) {
+        add_row(ui, path, &siblings, &Kind::ALL, &mut change);
+    }
 
     if let Some(change) = change {
         apply(t, change);
@@ -437,28 +459,30 @@ fn array(ui: &mut Ui, a: &mut Array, path: &mut Vec<String>, tree: &Tree<'_>) {
         path.pop();
     }
 
-    let id = ui.make_persistent_id((path.join("."), "add"));
-    let mut kind: Kind = ui
-        .data_mut(|d| d.get_temp(id.with("kind")))
-        .unwrap_or(Kind::Text);
-    ui.horizontal(|ui| {
-        ui.add_space(KEY_WIDTH);
-        egui::ComboBox::from_id_salt(id.with("kind picker"))
-            .selected_text(kind_label(kind))
-            .show_ui(ui, |ui| {
-                for one in Kind::VALUES {
-                    if ui
-                        .selectable_value(&mut kind, one, kind_label(one))
-                        .clicked()
-                    {
-                        ui.data_mut(|d| d.insert_temp(id.with("kind"), one));
+    if !tree.policy.sealed(path) {
+        let id = ui.make_persistent_id((path.join("."), "add"));
+        let mut kind: Kind = ui
+            .data_mut(|d| d.get_temp(id.with("kind")))
+            .unwrap_or(Kind::Text);
+        ui.horizontal(|ui| {
+            ui.add_space(KEY_WIDTH);
+            egui::ComboBox::from_id_salt(id.with("kind picker"))
+                .selected_text(kind_label(kind))
+                .show_ui(ui, |ui| {
+                    for one in Kind::VALUES {
+                        if ui
+                            .selectable_value(&mut kind, one, kind_label(one))
+                            .clicked()
+                        {
+                            ui.data_mut(|d| d.insert_temp(id.with("kind"), one));
+                        }
                     }
-                }
-            });
-        if ui.button(tr("Add")).clicked() {
-            change = Some(ArrayChange::Push(kind));
-        }
-    });
+                });
+            if ui.button(tr("Add")).clicked() {
+                change = Some(ArrayChange::Push(kind));
+            }
+        });
+    }
 
     if let Some(change) = change {
         apply_array(a, change);
@@ -611,7 +635,9 @@ fn inline_table(ui: &mut Ui, t: &mut InlineTable, path: &mut Vec<String>, tree: 
     }
 
     // Values only: an inline table holds no tables.
-    add_row(ui, path, &siblings, &Kind::VALUES, &mut change);
+    if !tree.policy.sealed(path) {
+        add_row(ui, path, &siblings, &Kind::VALUES, &mut change);
+    }
 
     if let Some(change) = change {
         apply_inline(t, change);
@@ -1397,7 +1423,7 @@ fn add_comment_beside(ui: &Ui, path: &[String], v: &mut Value) {
 mod tests {
     use std::borrow::Cow;
 
-    use super::{displayed, render, Policy};
+    use super::{displayed, render, tr, Policy};
     use flyleaf_core::toml_edit::DocumentMut;
     use flyleaf_core::Kind;
     use flyleaf_core::{comment_beside, comments_before, trailing_comments};
@@ -1437,6 +1463,89 @@ mod tests {
             displayed("report\u{202E}fdp.exe", true, &Rewriting),
             "report\u{202E}fdp.exe"
         );
+    }
+
+    /// A policy that seals the document and protects every key: the shape an
+    /// application with no save beneath the tree wants.
+    struct ReadOnly;
+
+    impl Policy for ReadOnly {
+        fn protected(&self, _path: &[String]) -> bool {
+            true
+        }
+
+        fn sealed(&self, _path: &[String]) -> bool {
+            true
+        }
+    }
+
+    /// Every word the tree actually put on the screen.
+    ///
+    /// `__run_test_ui` throws the output away, so this does what it does and
+    /// keeps it. The fonts are empty for the same reason it empties them —
+    /// nothing has to rasterize — and a galley carries its text either way,
+    /// which is what makes this readable.
+    fn rendered_text(doc: &mut DocumentMut, policy: &dyn Policy) -> Vec<String> {
+        fn collect(shape: &egui::Shape, out: &mut Vec<String>) {
+            match shape {
+                egui::Shape::Text(t) => out.push(t.galley.text().to_owned()),
+                egui::Shape::Vec(v) => {
+                    for s in v {
+                        collect(s, out);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let ctx = egui::Context::default();
+        ctx.set_fonts(egui::FontDefinitions::empty());
+        let output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            render(ui, doc, policy);
+        });
+        let mut out = Vec::new();
+        for clipped in &output.shapes {
+            collect(&clipped.shape, &mut out);
+        }
+        output.drop_without_applying_deltas();
+        out
+    }
+
+    /// Would catch the defect Filebase's first store screenshots showed: a
+    /// tree drawn under a policy that protects every key still offering to add
+    /// one.
+    ///
+    /// `protected` is about the keys that are there, and it left every adder
+    /// standing — the "add a key" row under each table, the *Add* button under
+    /// each array, and the comment appended after the last item. An
+    /// application with no save beneath the tree therefore showed a row of
+    /// controls that would change a document nothing writes, and its listing
+    /// said it never writes one.
+    #[test]
+    fn a_sealed_document_offers_nothing_to_add() {
+        let mut doc = parsed();
+        let words = rendered_text(&mut doc, &ReadOnly);
+
+        for offer in [tr("Add"), tr("add a key"), tr("add a comment at the end")] {
+            assert!(
+                !words.iter().any(|w| w == offer),
+                "a sealed tree offered {offer:?}"
+            );
+        }
+    }
+
+    /// The other half, so that the test above cannot pass by rendering
+    /// nothing: the default policy still offers all three.
+    #[test]
+    fn a_document_that_is_not_sealed_still_offers_them() {
+        let mut doc = parsed();
+        let words = rendered_text(&mut doc, &());
+
+        for offer in [tr("Add"), tr("add a key"), tr("add a comment at the end")] {
+            assert!(
+                words.iter().any(|w| w == offer),
+                "an open tree did not offer {offer:?}"
+            );
+        }
     }
 
     /// Every type the tree renders, and every place a comment can sit.
