@@ -1,3 +1,10 @@
+flyleaf (0.2.7) unstable; urgency=medium
+
+  * What 0.2.7 tells the listings
+  * A protected line offers no bin either
+
+ -- David M. Anderson <david.anderson@excelano.com>  Mon, 21 Sep 2026 07:15:54 -0500
+
 flyleaf (0.2.6) unstable; urgency=medium
 
   * What 0.2.6 tells the stores
