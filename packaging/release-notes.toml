@@ -11,22 +11,23 @@
 # AppStream entry take commit subjects.
 
 
-version = "0.2.6"
+version = "0.2.7"
 
 [locales."de-de"]
 whats-new = """
-Am Editor ändert sich nichts. Darunter kann der Baum jetzt als Dokument \
-gezeigt werden, das keine neuen Schlüssel aufnimmt: kein „neuer Schlüssel“, \
-kein „Hinzufügen“, kein Kommentar am Ende. Das ist für Anwendungen gedacht, \
-die den Baum einbetten, um Beschreibungen zu zeigen statt sie zu bearbeiten — \
-ohne Bedienelemente anzubieten, die nichts speichern würde.
+Am Editor ändert sich nichts. Ein Baum, der als schreibgeschütztes Dokument \
+gezeigt wird, blendet jetzt auch den Papierkorb neben jedem Element einer \
+Liste aus — das letzte Bedienelement dieser Zeilen, das das Dokument \
+verändert hätte. Anwendungen, die den Baum einbetten, um Beschreibungen zu \
+zeigen statt sie zu bearbeiten, bekommen damit eine Ansicht, in der nichts \
+mehr schreibt.
 """
 
 [locales."en-us"]
 whats-new = """
-Nothing in the editor changes. Underneath it, the tree can now be shown as a \
-document that takes no new keys: no add-a-key row, no Add button, no comment \
-after the last item. That is for applications which embed the tree to show a \
-description rather than edit one, so they no longer offer controls that \
-nothing would save.
+Nothing in the editor changes. A tree shown as a read-only document now also \
+drops the bin beside each item of a list, which was the last control on those \
+rows that would have changed the document. Applications which embed the tree \
+to show a description rather than edit one get a pane with nothing on it that \
+writes.
 """
