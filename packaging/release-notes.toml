@@ -11,30 +11,22 @@
 # AppStream entry take commit subjects.
 
 
-version = "0.2.5"
+version = "0.2.6"
 
 [locales."de-de"]
 whats-new = """
-Tommy Flyleaf erscheint auf Deutsch, wenn der Rechner auf Deutsch eingestellt \
-ist; es gibt nichts auszuwählen, denn die Anwendung liest die Sprache, die der \
-Schreibtisch ohnehin kennt. Eine Übersetzung, deren englisches Original sich \
-seitdem geändert hat, wird nicht angezeigt, sodass eine Meldung entweder \
-aktuell oder deutlich englisch ist. Auf dem Mac gibt die Anwendung jetzt an, \
-dass sie auf Deutsch angeboten wird, sodass die Sprachauswahl für einzelne \
-Programme sie anbietet.
-
-Auf dem Mac öffnet ein Doppelklick auf eine TOML-Datei sie in Tommy Flyleaf, \
-und ein Speichern schreibt in die geöffnete Datei zurück.
+Am Editor ändert sich nichts. Darunter kann der Baum jetzt als Dokument \
+gezeigt werden, das keine neuen Schlüssel aufnimmt: kein „neuer Schlüssel“, \
+kein „Hinzufügen“, kein Kommentar am Ende. Das ist für Anwendungen gedacht, \
+die den Baum einbetten, um Beschreibungen zu zeigen statt sie zu bearbeiten — \
+ohne Bedienelemente anzubieten, die nichts speichern würde.
 """
 
 [locales."en-us"]
 whats-new = """
-Tommy Flyleaf draws in German where the desktop asks for German, with nothing \
-to choose: it reads the language the desktop already knows. A translation \
-whose English has since changed is not shown, so a message is either current \
-or plainly in English. On a Mac the application now declares that it is \
-offered in German, so the per-app language picker offers it.
-
-On a Mac, double-clicking a TOML file opens it in Tommy Flyleaf, and saving \
-writes back to the file you opened.
+Nothing in the editor changes. Underneath it, the tree can now be shown as a \
+document that takes no new keys: no add-a-key row, no Add button, no comment \
+after the last item. That is for applications which embed the tree to show a \
+description rather than edit one, so they no longer offer controls that \
+nothing would save.
 """
