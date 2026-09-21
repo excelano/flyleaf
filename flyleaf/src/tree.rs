@@ -512,12 +512,15 @@ fn element(
         ui.label(egui::RichText::new(label).weak());
         false
     };
+    // Through `delete_button` for the reason a key's bin goes through it: a
+    // protected line offers no way to remove what it is showing. An array
+    // element drawn with its own bin is a hole in exactly the tree that has
+    // nothing else to click — the read-only one, where every key is a label
+    // and the bin is the only live control left on the row.
+    let protected = tree.policy.protected(path);
     let mut removed = false;
     let remove = |ui: &mut Ui| {
-        removed = ui
-            .small_button(REMOVE)
-            .on_hover_text(tr("Remove this element"))
-            .clicked();
+        removed = delete_button(ui, protected, tr("Remove this element"));
     };
 
     let asked = match v {
@@ -1041,7 +1044,7 @@ fn row(
         !protected,
         |ui| key_name(ui, name, path, siblings, tree),
         |ui| scalar(ui, v, path, tree, kinds, !protected),
-        |ui| deleted = delete_button(ui, protected),
+        |ui| deleted = delete_button(ui, protected, tr("Remove this key")),
     );
     if deleted {
         *siblings.change = Some(Change::Delete(name.to_owned()));
@@ -1149,7 +1152,7 @@ fn controls(
         true,
         |ui| key_name(ui, name, path, siblings, tree),
         |ui| Reported::asked(row_menu(ui, menu, kinds, slots)),
-        |ui| deleted = delete_button(ui, false),
+        |ui| deleted = delete_button(ui, false, tr("Remove this key")),
     );
     if deleted {
         *siblings.change = Some(Change::Delete(name.to_owned()));
@@ -1246,17 +1249,17 @@ fn committed_on_leaving(
     take_typed(ui, id).filter(|typed| typed != current)
 }
 
-/// The way to remove a key, where removing it is allowed; says whether it
-/// was pressed.
-fn delete_button(ui: &mut Ui, protected: bool) -> bool {
+/// The way to remove a line, where removing it is allowed; says whether it
+/// was pressed. `hover` names what the line is, because a key and an array
+/// element read differently to the person hovering and each has its own
+/// catalogue entry.
+fn delete_button(ui: &mut Ui, protected: bool, hover: &str) -> bool {
     if protected {
         return false;
     }
     // One press, and nothing reaches the file until Save. Writing is
     // explicit, and this keeps the removing that way too.
-    ui.small_button(REMOVE)
-        .on_hover_text(tr("Remove this key"))
-        .clicked()
+    ui.small_button(REMOVE).on_hover_text(hover).clicked()
 }
 
 /// The row that adds a key: a name, what it starts as, and Add.
@@ -1510,22 +1513,30 @@ mod tests {
         out
     }
 
-    /// Would catch the defect Filebase's first store screenshots showed: a
-    /// tree drawn under a policy that protects every key still offering to add
-    /// one.
+    /// Every control on the tree that writes to the document: the "add a key"
+    /// row under each table, the *Add* button under each array, the comment
+    /// appended after the last item, and the bin on a line.
     ///
-    /// `protected` is about the keys that are there, and it left every adder
-    /// standing — the "add a key" row under each table, the *Add* button under
-    /// each array, and the comment appended after the last item. An
-    /// application with no save beneath the tree therefore showed a row of
-    /// controls that would change a document nothing writes, and its listing
-    /// said it never writes one.
+    /// A tree that draws any of these under a read-only policy offers an edit
+    /// to an application that has no save beneath it. The press lands in the
+    /// in-memory document, shows as though it took, and is gone at the next
+    /// selection — and in a store listing that says the application never
+    /// writes, the control is on screen saying otherwise.
+    fn writing_controls() -> [&'static str; 4] {
+        [
+            tr("Add"),
+            tr("add a key"),
+            tr("add a comment at the end"),
+            super::REMOVE,
+        ]
+    }
+
     #[test]
-    fn a_sealed_document_offers_nothing_to_add() {
+    fn a_sealed_document_offers_nothing_that_writes() {
         let mut doc = parsed();
         let words = rendered_text(&mut doc, &ReadOnly);
 
-        for offer in [tr("Add"), tr("add a key"), tr("add a comment at the end")] {
+        for offer in writing_controls() {
             assert!(
                 !words.iter().any(|w| w == offer),
                 "a sealed tree offered {offer:?}"
@@ -1534,13 +1545,13 @@ mod tests {
     }
 
     /// The other half, so that the test above cannot pass by rendering
-    /// nothing: the default policy still offers all three.
+    /// nothing: the default policy still offers every one of them.
     #[test]
     fn a_document_that_is_not_sealed_still_offers_them() {
         let mut doc = parsed();
         let words = rendered_text(&mut doc, &());
 
-        for offer in [tr("Add"), tr("add a key"), tr("add a comment at the end")] {
+        for offer in writing_controls() {
             assert!(
                 words.iter().any(|w| w == offer),
                 "an open tree did not offer {offer:?}"
