@@ -31,6 +31,10 @@
 #[allow(unsafe_code)]
 mod opened_document;
 
+// Follows the desktop's light/dark setting on Linux, where the toolkit reports
+// no system theme and egui would otherwise always draw dark. Empty elsewhere.
+mod system_theme;
+
 use std::ops::Range;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
@@ -891,6 +895,9 @@ fn main() -> eframe::Result {
         Box::new(|cc| {
             #[cfg(target_os = "macos")]
             opened_document::wake_with(&cc.egui_ctx);
+            // winit reports no system theme on Linux; read the portal and
+            // follow it. A no-op where the toolkit already answers.
+            system_theme::follow(&cc.egui_ctx);
             Ok(Box::new(App::new(shown, cc.egui_ctx.clone())))
         }),
     )

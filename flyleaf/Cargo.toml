@@ -27,6 +27,7 @@ app = [
     "dep:objc2",
     "dep:objc2-app-kit",
     "dep:objc2-foundation",
+    "dep:zbus",
 ]
 
 [[bin]]
@@ -105,3 +106,11 @@ block2 = { version = "0.6", optional = true }
 objc2 = { version = "0.6", default-features = false, features = ["std"], optional = true }
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSResponder"], optional = true }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSAppleEventManager", "NSAppleEventDescriptor", "NSNotification", "NSOperation", "block2", "objc2-core-services"], optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Reading the desktop's light/dark preference off the XDG portal on D-Bus,
+# because winit reports no system theme on Linux and egui then falls back to
+# dark. `src/system_theme.rs` says why it asks the portal rather than trusting
+# the toolkit. Pure Rust, no build script, no C; the async-io transport and
+# the blocking API, not the tokio one. For the binary alone.
+zbus = { version = "5", default-features = false, features = ["async-io", "blocking-api"], optional = true }
