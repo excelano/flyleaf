@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   windows:
-    uses: excelano/.github/.github/workflows/windows-desktop-ci.yml@main
+    uses: excelano/.github/.github/workflows/windows-desktop-ci.yml@windows-desktop-ci
     with:
       tag: ${{ inputs.tag }}
       binary-names: flyleaf
