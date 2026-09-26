@@ -1,8 +1,8 @@
-# Run the suite on Windows, check the things only a Windows machine can say —
-# what the binary imports, that the install scripts go on and come off cleanly,
-# that the committed icons match their generator — and assemble the Store
-# package, attaching it to a published release. Out of reach here: the window,
-# the certification kit, and the icon as a person sees it at any size.
+# Run the suite on Windows, check the things only a Windows machine can say,
+# and assemble the Store package, attaching it to a published release. The
+# checks themselves live in excelano/.github so every desktop-app repo in the
+# fleet runs the same ones and a correction reaches all of them at once; what
+# stays here is this product's own names, paths and screenshot recipe.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)
@@ -41,109 +41,24 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  # Keyed by the tag when this is releasing and by the ref when it is checking,
-  # so the two never share a group. `github.ref` is refs/heads/main for a
-  # workflow_dispatch as much as for a push, which is how a push to main
-  # cancelled the dispatched run building flyleaf 0.2.2's Linux packages.
-  group: windows-${{ github.event.release.tag_name || inputs.tag || format('{0}-{1}', github.event_name, github.ref) }}
-  # A superseded check is worth cancelling; a half-built release is not.
-  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
-
 jobs:
   windows:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
-
-      # The packaging scripts are the only code here that nothing else compiles
-      # or runs, and there is no PowerShell on the Linux lane. The step is
-      # excelano/.github's because it is the same one in every repository that
-      # has them.
-      - name: The packaging scripts parse
-        uses: excelano/.github/.github/actions/powershell-parses@main
-
-      - name: What is installed
-        run: |
-          rustc -V
-          cargo -V
-
-      - name: Build
-        run: cargo build --all-targets
-
-      - name: Test
-        run: cargo test
-
-      - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
-
-      # slipcase-desktop 0.1.1 was packaged, certified, submitted and failed
-      # Store policy 10.2.4.1 for importing VCRUNTIME140.dll from the Visual
-      # C++ Redistributable, which every build machine has and a tester's
-      # clean one does not. `.cargo/config.toml` is the fix and this is the
-      # guard on it, against the release binary because that is what ships.
-      - name: Every DLL the shipped binary imports comes with Windows
-        run: |
-          cargo build --release
-          powershell -ExecutionPolicy Bypass -File packaging/windows/check-imports.ps1
-
-      # The install scripts against the registry, read back. The steps are
-      # excelano/.github's: it was the same script in three repositories and
-      # absent from three more, and the absent ones included the repository
-      # whose uninstall reported success while leaving the association dead.
-      - name: The integration goes on and comes off cleanly
-        uses: excelano/.github/.github/actions/windows-install-check@main
-        with:
-          # No contentType: this installer writes `Content Type` on the
-          # extension and no MIME database entry, and asserting one it never
-          # claimed is the check being wrong rather than the installer.
-          associations: '[{"extension": ".toml", "progId": "Excelano.Flyleaf"}]'
-          owns-extension: 'true'
-          install-args: '-Default -NoBinary'
-
-      # The `.ico` and the Store assets are committed artifacts, because
-      # nothing on Windows rasterizes an SVG and `rc.exe` is a tool the build
-      # keeps out. A committed artifact can fall out of step with the drawing
-      # it was generated from and nothing would say so, so the generator is
-      # run and its output compared against the tree.
-      - name: The committed icon and Store assets still match their generator
-        run: |
-          cd packaging/windows/make-ico
-          cargo run --release
-          cd ../../..
-          git diff --exit-code -- packaging/windows/flyleaf.ico packaging/windows/assets packaging/windows/listing
-
-      # The Store takes the package unsigned, and the runner assembles the one that
-      # is uploaded. The steps are excelano/.github's, because they were the same in
-      # every repository that has this target; the publisher is the organisation
-      # secret, being the one value in the identity that is an account's rather than
-      # this product's.
-      - name: The Store package
-        uses: excelano/.github/.github/actions/store-package@main
-        with:
-          publisher: ${{ secrets.STORE_PUBLISHER }}
-          tag: ${{ github.event.release.tag_name || inputs.tag }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Off unless asked for. A bug fix should not pay for a set of Store
-      # screenshots, and a set nobody asked for is a set nobody looks at.
-      # `shots.ps1` carries the recipe and is the same command that retakes it
-      # by hand on the Windows machine.
-      #
+    uses: excelano/.github/.github/workflows/windows-desktop-ci.yml@main
+    with:
+      tag: ${{ inputs.tag }}
+      binary-names: flyleaf
+      icon-check: true
+      icon-check-paths: 'packaging/windows/flyleaf.ico packaging/windows/assets packaging/windows/listing'
+      # No contentType: this installer writes `Content Type` on the extension
+      # and no MIME database entry, and asserting one it never claimed is the
+      # check being wrong rather than the installer.
+      install-check-associations: '[{"extension": ".toml", "progId": "Excelano.Flyleaf"}]'
+      install-check-owns-extension: 'true'
+      install-check-args: '-Default -NoBinary'
+      screenshots: ${{ inputs.screenshots }}
+      shot-out: dist/store
       # The file is opened through the shell, so the association has to exist
       # and has to be this application's: `-Default` writes the extension's
-      # default value, which the install check above deliberately does not.
-      - name: Claim .toml so the shell opens it here
-        if: inputs.screenshots && inputs.screenshots != 'no'
-        run: powershell -ExecutionPolicy Bypass -File packaging/windows/install.ps1 -Default
-
-      - name: The Store screenshots
-        if: inputs.screenshots && inputs.screenshots != 'no'
-        uses: excelano/.github/.github/actions/store-screenshots@main
-        with:
-          mode: ${{ inputs.screenshots }}
-          languages: en de
-          out: dist/store
+      # default value, which the install check deliberately does not.
+      pre-screenshot-script: powershell -ExecutionPolicy Bypass -File packaging/windows/install.ps1 -Default
+    secrets: inherit
