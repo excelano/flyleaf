@@ -84,27 +84,9 @@ jobs:
           deb=$(ls dist/*.deb)
           test "$(dpkg-deb -f "$deb" Architecture)" = "${{ matrix.arch }}"
 
-      - name: The package holds up
-        run: |
-          deb=$(ls dist/*.deb)
-          echo "checking ${deb}"
-          strange=$(dpkg-deb --contents "$deb" | awk '$2 != "root/root"')
-          [ -z "$strange" ] || { echo "not root/root:"; echo "$strange"; exit 1; }
-          strange=$(dpkg-deb --contents "$deb" |
-              awk '$1 !~ /^drwxr-xr-x/ && $1 !~ /^-rw-r--r--/ && $1 !~ /^-rwxr-xr-x/')
-          [ -z "$strange" ] || { echo "unexpected modes:"; echo "$strange"; exit 1; }
-          dpkg-deb --ctrl-tarfile "$deb" | tar t | grep -qx './md5sums' ||
-              { echo "the package ships no md5sums" >&2; exit 1; }
-          tree="${RUNNER_TEMP}/tree"
-          dpkg-deb -x "$deb" "$tree"
-          dpkg-deb -e "$deb" "${tree}/DEBIAN"
-          ( cd "$tree" && md5sum -c DEBIAN/md5sums --quiet )
+      - uses: excelano/.github/.github/actions/linux-package-integrity-check@main
 
-      - name: What lintian says
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq lintian
-          lintian --info --tag-display-limit 0 --fail-on error,warning dist/*.deb
+      - uses: excelano/.github/.github/actions/linux-lintian-check@main
 
       # The library check needs a display and runs by hand; `CLAUDE.md` says
       # when. What can run here is the half that needs none: the entry the
@@ -134,28 +116,9 @@ jobs:
       # what does that, on a machine with a display, and it is what catches a
       # library opened by name at run time — which `ldd` cannot see and this
       # cannot either.
-      - name: It installs, and the executable loads
-        run: |
-          set -eu
-          deb=$(ls dist/*.deb)
-          sudo apt-get install -y "./${deb#./}"
-
-          command -v flyleaf
-          file -L "$(command -v flyleaf)"
-
-          missing=$(ldd "$(command -v flyleaf)" | grep 'not found' || true)
-          [ -z "$missing" ] || { echo "the package installed but does not resolve:"; echo "$missing"; exit 1; }
-
-          # No display here, so it will not start. The question is which way
-          # it fails.
-          out=$(timeout 20 flyleaf 2>&1 || true)
-          printf '%s\n' "$out" | sed 's/^/  /'
-          case "$out" in
-              *'error while loading shared libraries'*)
-                  echo "the loader refused the executable" >&2; exit 1 ;;
-              *'cannot execute binary file'*|*'Exec format error'*)
-                  echo "the executable is not this machine's architecture" >&2; exit 1 ;;
-          esac
+      - uses: excelano/.github/.github/actions/linux-install-check@main
+        with:
+          binaries: flyleaf
 
       - uses: actions/upload-artifact@v7
         with:
@@ -171,18 +134,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: excelano/.github/.github/actions/linux-attach-release-packages@main
         with:
-          path: packages
-          merge-multiple: true
-
-      - name: Attach the packages to the release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -eu
-          ls -l packages
-          gh release upload \
-            "${{ github.event.release.tag_name || inputs.tag }}" \
-            packages/*.deb --clobber
+          tag: ${{ github.event.release.tag_name || inputs.tag }}
