@@ -64,7 +64,7 @@ pub fn scheme_of(color_scheme: u32) -> Scheme {
 
 #[cfg(target_os = "linux")]
 mod linux {
-    use super::{Scheme, scheme_of};
+    use super::{scheme_of, Scheme};
 
     const PORTAL: &str = "org.freedesktop.portal.Desktop";
     const PATH: &str = "/org/freedesktop/portal/desktop";
@@ -109,8 +109,7 @@ mod linux {
     pub fn ask() -> Option<Scheme> {
         let connection = zbus::blocking::Connection::session().ok()?;
         let proxy = proxy(&connection).ok()?;
-        let value: zbus::zvariant::OwnedValue =
-            proxy.call("Read", &(NAMESPACE, KEY)).ok()?;
+        let value: zbus::zvariant::OwnedValue = proxy.call("Read", &(NAMESPACE, KEY)).ok()?;
         number_inside(&value).map(scheme_of)
     }
 
@@ -135,7 +134,9 @@ mod linux {
                 let Ok(connection) = zbus::blocking::Connection::session() else {
                     return;
                 };
-                let Ok(proxy) = proxy(&connection) else { return };
+                let Ok(proxy) = proxy(&connection) else {
+                    return;
+                };
                 let Ok(changes) = proxy.receive_signal("SettingChanged") else {
                     return;
                 };
@@ -206,11 +207,12 @@ pub fn follow(ctx: &eframe::egui::Context) {
 }
 
 #[cfg(not(target_os = "linux"))]
+#[cfg_attr(target_arch = "wasm32", allow(dead_code))]
 pub fn follow(_ctx: &eframe::egui::Context) {}
 
 #[cfg(all(test, target_os = "linux"))]
 mod tests {
-    use super::{Scheme, scheme_of};
+    use super::{scheme_of, Scheme};
 
     /// Would catch the defect this module was written for: reading the
     /// portal's *no preference* as a reason to leave the window dark.
