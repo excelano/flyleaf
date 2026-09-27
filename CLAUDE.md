@@ -40,5 +40,4 @@ core lacks goes into core. Round-trip fidelity is the product — comments, key 
 whitespace, quoting and table layout survive an edit elsewhere in the document, and the
 goldens make losing any of it a decision. Never run `cargo fmt` in slipcase-desktop; it is
 not fmt-clean and is edited by hand. Every test's doc comment says what defect it would
-catch, and a new test is broken deliberately once to watch it fail. The commit trailer is
-one line, a `Co-Authored-By` naming the model: this repository is public, so no session URL.
+catch, and a new test is broken deliberately once to watch it fail.
