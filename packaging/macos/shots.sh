@@ -23,6 +23,14 @@
 # So: an edit is under way in every shot below, and each shows something the
 # others do not.
 #
+# LIGHT AND DARK
+#
+# All three earn a second slot: three frames plus their dark repeats is six,
+# well under Apple's ten and the Microsoft Store's own ten, and there is no
+# reason here to show less than the whole set in both appearances. Light
+# leads, numbered 01-03; the dark repeats are 04-06, so the file names alone
+# keep light first without depending on where `shots()` calls `appearance`.
+#
 # THE ACTIONS STAY INSIDE THE DOCUMENT
 #
 # Coordinates are read off a frame at the size declared here, and the document
@@ -94,6 +102,8 @@ german_comment="wird oben auf dem Zettel gedruckt"
 #   --type TEXT    type
 #   --key NAME     one key, optionally with modifiers: cmd+a, return
 shots() {
+    appearance light
+
     # The title being rewritten: the field focused and holding new text, the
     # source pane beside it showing the same change, and Save and Undo come on.
     # This is the frame the old set most lacked - the application in use.
@@ -114,6 +124,17 @@ shots() {
     # The kind picker open. Every value is edited by its kind, with the four
     # datetime shapes told apart, and nothing in the listing showed it.
     shot 03-the-kind-picker \
+        --click 280,398
+
+    appearance dark
+
+    shot 04-editing-a-value-dark \
+        --click 350,158 --key cmd+a --type "$typed"
+
+    shot 05-editing-a-comment-dark \
+        --click 620,158 --key cmd+a --type "$comment" --key return
+
+    shot 06-the-kind-picker-dark \
         --click 280,398
 }
 
