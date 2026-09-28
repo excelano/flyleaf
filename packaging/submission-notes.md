@@ -17,6 +17,21 @@ for the reason that file's committed example gives. The filled-in sheet for a
 submission, identity and all, goes in `windows/SUBMITTING.local.md`, which
 `.gitignore` reserves.
 
+## Capability justification
+
+The package declares `runFullTrust`, and Partner Center's justification field
+for it is asked once when the capability is first declared on the product
+rather than on every resubmission - it is not part of the submission document
+`ship` reads and writes, and this repo's own resubmissions have gone to
+certification since without one being sent. 500-character limit, which counts
+newlines.
+
+> Tommy Flyleaf is a full-trust Win32 desktop application packaged as MSIX. It
+> needs this capability to run at all. It opens the TOML file it was launched
+> with, or one chosen through Open, and a save writes back only that file. It
+> makes no network connection of any kind, needs no broad filesystem access,
+> and uses no device.
+
 ## The answers a form asks
 
 **Category**
