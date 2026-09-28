@@ -1,16 +1,15 @@
 # Submission notes
 
-What a store submission needs from a person and no file supplies: the answers a
-form asks that no build can give, the notes a certification reader is handed,
-and the reasoning behind the screenshots.
+What a store submission needs from a person and no file supplies: the answers
+a form asks that no build can give, and the reasoning behind the screenshots.
 
 The listing text itself is not here. It is `store-listing.toml` beside this,
 which `ship` checks before the tag and pushes to both stores on every release,
 and what a release tells them changed is `release-notes.toml`. A field edited
-in this file would reach nobody. Apple's Notes for Review are there too, as
-`apple-review-notes`, which `ship` pushes to `appStoreReviewDetail` on every
-Mac App Store submission - Microsoft's Notes for certification below have no
-such field and are still typed in by hand.
+in this file would reach nobody. Apple's Notes for Review and Microsoft's
+Notes for certification are there too, as `apple-review-notes` and
+`microsoft-review-notes`, which `ship` pushes to `appStoreReviewDetail` and
+`NotesForCertification` on every submission.
 
 **No identity values.** The package name, publisher, family name and store id
 Partner Center assigns are in `windows/identity.psd1`, which is not committed,
@@ -42,18 +41,20 @@ No user-generated content, no network access, no data collection, no advertising
 
 ## Notes for certification
 
-The field a reviewer actually reads, and the one that decides whether a
-submission comes back. It answers, in order, the four things that would
-otherwise be guessed at: how to test an application that opens with nothing in
-it, why it does not take the `.toml` default, what the certification kit's one
-finding is, and why the no-network claim is checkable rather than asserted.
+Now `microsoft-review-notes` in `store-listing.toml`, which `ship` pushes to
+`NotesForCertification` on every submission. It answers, in order, the four
+things a certification reader would otherwise have to guess at: how to test an
+application that opens with nothing in it, why it does not take the `.toml`
+default, what the certification kit's one finding is, and why the no-network
+claim is checkable rather than asserted. Microsoft Store limit 2000
+characters; the current text is 1964.
 
-**The notes name GitHub and not `excelano.com/flyleaf/samples/`**, although
-the page exists and says more, because the repository was serving the files the
-hour the answer was needed and a site deploy is a step in someone's day. Naming
-an address that 404s in the field a reviewer clicks is how one rejection
-becomes two. The page is the better address once it is live, and the notes can
-take it at the next submission.
+**It names GitHub and not `excelano.com/flyleaf/samples/`**, although the page
+exists and says more, because the repository was serving the files the hour
+the answer was needed and a site deploy is a step in someone's day. Naming an
+address that 404s in the field a reviewer clicks is how one rejection becomes
+two. The page is the better address once it is live, and the notes can take it
+at the next submission.
 
 The empty-window paragraph is not decoration. Launched with no file this
 application shows a window with an Open button and a line of text, and a
@@ -61,27 +62,7 @@ reviewer who does not know a `.toml` is needed can read that as an application
 that does not work. Nor is the sample-files line. Apple's reviewer had these
 notes in their Mac wording, empty-window paragraph and all, and came back on
 2026-09-10 asking for files anyway: telling a reviewer that any `.toml` will do
-asks them to make one, and an address hands them four. The live Microsoft
-listing was certified without that line and carries the old text until its next
-submission.
-
-Microsoft Store limit 2000 characters; this is 1964.
-
-```
-Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
-
-Sample .toml files to test with, in this application's public source: github.com/excelano/flyleaf/tree/main/packaging/samples
-
-To exercise it: launch it and click Open, or right-click any .toml file and choose Tommy Flyleaf under Open With. Any .toml file will do — a Cargo.toml from a Rust project, a pyproject.toml from a Python one, or a file typed into Notepad with a line such as: title = "hello". On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
-
-The application claims .toml only as an Open With entry and never as the default handler. This is deliberate: .toml is a shared extension usually already owned by an editor or an IDE, and taking it would be taking somebody else's association.
-
-The Windows App Certification Kit reports one finding against this package: Blocked executables, naming kernel32.dll!CreateProcessW and the string "cmd.exe". This comes from opening a web link. The About box has two links, to the product page and to the source repository, and the UI framework (egui/eframe) hands a clicked link to the system's default browser through the shell, which is what draws in that API and that string. The application itself spawns no process; the only use of the process API anywhere in the source is reading its own process id, in test code. The report's "rEG" and "dNx" lines are the scanner matching those letters inside a 15 MB binary and refer to no such program.
-
-The application makes no network request. Its import table names nineteen libraries, all of them parts of Windows, and none of them is a networking library: no ws2_32.dll, no winhttp.dll, no wininet.dll. The full privacy statement is at https://excelano.com/legal/#flyleaf and the complete source is at https://github.com/excelano/flyleaf.
-
----
-```
+asks them to make one, and an address hands them four.
 
 ## Images
 
