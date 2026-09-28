@@ -58,6 +58,9 @@ The App Sandbox is on with exactly two entitlements: the sandbox itself and read
 
 The full privacy statement is at https://excelano.com/legal/#flyleaf and the complete source is at https://github.com/excelano/flyleaf.
 """
+# The library count and the one certification-kit finding it names are
+# specific to this build: reread both off the Windows App Certification Kit
+# report before a submission and update them here.
 microsoft-review-notes = """
 Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
 
