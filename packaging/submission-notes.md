@@ -1,13 +1,16 @@
 # Submission notes
 
 What a store submission needs from a person and no file supplies: the answers a
-form asks that no build can give, the notes an App Review or certification
-reader is handed, and the reasoning behind the screenshots.
+form asks that no build can give, the notes a certification reader is handed,
+and the reasoning behind the screenshots.
 
 The listing text itself is not here. It is `store-listing.toml` beside this,
 which `ship` checks before the tag and pushes to both stores on every release,
 and what a release tells them changed is `release-notes.toml`. A field edited
-in this file would reach nobody.
+in this file would reach nobody. Apple's Notes for Review are there too, as
+`apple-review-notes`, which `ship` pushes to `appStoreReviewDetail` on every
+Mac App Store submission - Microsoft's Notes for certification below have no
+such field and are still typed in by hand.
 
 **No identity values.** The package name, publisher, family name and store id
 Partner Center assigns are in `windows/identity.psd1`, which is not committed,
@@ -36,29 +39,6 @@ Free, all markets, public.
 **Age rating**
 
 No user-generated content, no network access, no data collection, no advertising, no in-app purchases, no violence or mature content.
-
-## App Review notes
-
-Tommy Flyleaf is a TOML file editor. No account, no sign-in, no test credentials, and no network connection of any kind are needed to test it.
-
-Sample files to test with are in the application's own public source repository, which is where they will stay: https://github.com/excelano/flyleaf/tree/main/packaging/samples
-
-Direct downloads:
-
-https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/samples/every-kind.toml
-https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/samples/cargo-manifest.toml
-https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/samples/pyproject.toml
-https://raw.githubusercontent.com/excelano/flyleaf/main/packaging/sample.toml
-
-Open every-kind.toml first: it carries every kind of value TOML has, so every part of the editor is on screen at once. The other three are a Rust project manifest, a Python project file, and a short document with a comment in every position TOML allows one.
-
-To exercise it: launch it and click Open, then choose one of those files; or drop the file on the Dock icon; or choose Tommy Flyleaf from Open With on it. Any other .toml file works as well — a Cargo.toml from a Rust project, or a file saved from TextEdit with a line such as: title = "hello". Change a value and save, and the file comes back with that value changed and every comment, key and line you did not touch exactly as it was, which is what this application is for. On launch with no file the window says so and offers the Open button; that empty state is expected and is not a failure to start.
-
-The application declares the TOML document type and claims it at rank Alternate, not Owner: it is one editor for a format many applications open, and any application that claims .toml at a higher rank keeps double-clicks. On a Mac where nothing else claims the type, macOS will pick it, since there is no other candidate.
-
-The App Sandbox is on with exactly two entitlements: the sandbox itself and read-write access to user-selected files. A save replaces the file the person chose, staged in the replacement directory macOS provides on the file's own volume and swapped in with one call, so it stays inside that grant. There is no network entitlement, and the application makes no network request; the About box has two links, to the product page and to the source repository, which open in the default browser.
-
-The full privacy statement is at https://excelano.com/legal/#flyleaf and the complete source is at https://github.com/excelano/flyleaf.
 
 ## Notes for certification
 
