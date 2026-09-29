@@ -24,7 +24,7 @@ the application binary behind the default `app` feature. `DESIGN.md` is the auth
     cargo clippy --workspace --all-targets --target aarch64-apple-darwin -- -D warnings
 
 Windows and macOS each have their lane in their `packaging/` README, and are changed only
-on their own machine. Releases: run `ship flyleaf`. There is no release document.
+on their own machine. Releases: the apps in excelano/shipping, run from this directory. There is no release document.
 
 ## Rules
 
