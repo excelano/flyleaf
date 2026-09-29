@@ -19,3 +19,6 @@
 # record.
 /packaging/macos/SUBMITTING.local.md
 /packaging/windows/SUBMITTING.local.md
+ship.toml
+packaging/windows/screenshots/
+packaging/macos/screenshots/
