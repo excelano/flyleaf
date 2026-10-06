@@ -78,7 +78,7 @@ pub trait Policy {
     /// them too, and an application with no save beneath the tree then shows a
     /// row of editing controls that would change a document nothing writes.
     ///
-    /// Filebase is the case that found this: it draws the tree read-only, and
+    /// Slipcase Query is the case that found this: it draws the tree read-only, and
     /// its first store screenshots came back showing *Add* buttons under a
     /// listing that says the application never writes a container.
     ///
