@@ -46,6 +46,11 @@ required-features = ["app"]
 # application's `src/`. Pure Rust, no build script, and its two dependencies
 # are platform-gated and already in this tree on their platforms.
 potext = "0.1"
+# What the desktop says about light and dark, which winit does not report on
+# Linux: the crate reads the XDG portal and follows it there, and is an empty
+# function on the other two platforms, so it is taken on every target. For
+# the binary alone.
+portal-theme = { version = "0.1", optional = true }
 # The widget wants egui and not eframe: it draws into a `Ui` somebody else
 # owns a window for. slipcase-desktop reaches egui through eframe 0.36, which
 # re-exports this same crate at this same version, so the types unify.
@@ -107,7 +112,3 @@ objc2 = { version = "0.6", default-features = false, features = ["std"], optiona
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSResponder"], optional = true }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSAppleEventManager", "NSAppleEventDescriptor", "NSNotification", "NSOperation", "block2", "objc2-core-services"], optional = true }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-# What the desktop says about light and dark, which winit does not report on
-# Linux: the crate reads the XDG portal and follows it. For the binary alone.
-portal-theme = { version = "0.1", optional = true }
