@@ -103,6 +103,59 @@ pub trait Policy {
 /// reads as it is.
 impl Policy for () {}
 
+/// Every key shown and none of them editable, nothing to be added anywhere:
+/// the shape an application with no save beneath the tree wants.
+///
+/// The tree edits; a `TextEdit` writes what it shows back into the document
+/// the moment the field is touched. This policy is how a window that only
+/// reads asks the widget for the reading half of itself, and it answers for
+/// every path without looking at it, since a tree where one key was editable
+/// and the rest were not is harder to reason about than either.
+#[derive(Default, Clone, Copy)]
+pub struct ReadOnly {
+    display: Option<for<'a> fn(&'a str) -> Cow<'a, str>>,
+}
+
+impl ReadOnly {
+    /// Read-only, with every string shown as it is.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self { display: None }
+    }
+
+    /// Read-only, with every string shown through `display` first.
+    ///
+    /// For an application whose values can carry what a reader should not
+    /// take at face value: a name with a bidirectional override in it reads
+    /// backwards on the row it is drawn on and costs nothing in width to do
+    /// it, and an escaping function here is what shows the override instead.
+    /// Every string is protected under this policy, so every string passes
+    /// through it.
+    #[must_use]
+    pub const fn displaying(display: for<'a> fn(&'a str) -> Cow<'a, str>) -> Self {
+        Self {
+            display: Some(display),
+        }
+    }
+}
+
+impl Policy for ReadOnly {
+    fn protected(&self, _path: &[String]) -> bool {
+        true
+    }
+
+    fn sealed(&self, _path: &[String]) -> bool {
+        true
+    }
+
+    fn display_protected<'a>(&self, value: &'a str) -> Cow<'a, str> {
+        match self.display {
+            Some(display) => display(value),
+            None => Cow::Borrowed(value),
+        }
+    }
+}
+
 /// How many entries a document may have and still open every section at
 /// first sight.
 ///
@@ -1426,10 +1479,39 @@ fn add_comment_beside(ui: &Ui, path: &[String], v: &mut Value) {
 mod tests {
     use std::borrow::Cow;
 
-    use super::{displayed, render, tr, Policy};
+    use super::{displayed, render, tr, Policy, ReadOnly};
     use flyleaf_core::toml_edit::DocumentMut;
     use flyleaf_core::Kind;
     use flyleaf_core::{comment_beside, comments_before, trailing_comments};
+
+    /// Would catch a path the read-only policy forgot to protect, which is
+    /// the one way a window with no save in it could offer somebody an edit,
+    /// and the other half: a table that still accepted a new key.
+    #[test]
+    fn read_only_protects_and_seals_every_path() {
+        for path in [
+            vec![],
+            vec!["title".to_owned()],
+            vec!["governance".to_owned(), "owner".to_owned()],
+        ] {
+            assert!(ReadOnly::new().protected(&path), "{path:?}");
+            assert!(ReadOnly::new().sealed(&path), "{path:?}");
+        }
+    }
+
+    /// Plain read-only shows a string as it is; one given a display function
+    /// shows every string through it.
+    #[test]
+    fn read_only_shows_through_the_display_function_it_was_given() {
+        fn shout(s: &str) -> Cow<'_, str> {
+            Cow::Owned(s.to_uppercase())
+        }
+        assert_eq!(ReadOnly::new().display_protected("as is"), "as is");
+        assert_eq!(
+            ReadOnly::displaying(shout).display_protected("as is"),
+            "AS IS"
+        );
+    }
 
     /// A policy that would rewrite every string it was shown, so that a
     /// string reaching it is the finding.
@@ -1466,20 +1548,6 @@ mod tests {
             displayed("report\u{202E}fdp.exe", true, &Rewriting),
             "report\u{202E}fdp.exe"
         );
-    }
-
-    /// A policy that seals the document and protects every key: the shape an
-    /// application with no save beneath the tree wants.
-    struct ReadOnly;
-
-    impl Policy for ReadOnly {
-        fn protected(&self, _path: &[String]) -> bool {
-            true
-        }
-
-        fn sealed(&self, _path: &[String]) -> bool {
-            true
-        }
     }
 
     /// Every word the tree actually put on the screen.
@@ -1534,7 +1602,7 @@ mod tests {
     #[test]
     fn a_sealed_document_offers_nothing_that_writes() {
         let mut doc = parsed();
-        let words = rendered_text(&mut doc, &ReadOnly);
+        let words = rendered_text(&mut doc, &ReadOnly::new());
 
         for offer in writing_controls() {
             assert!(

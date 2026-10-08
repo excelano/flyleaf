@@ -13,7 +13,7 @@ mod source;
 mod tree;
 
 pub use source::source;
-pub use tree::{forget_typing, open_all, render, Policy};
+pub use tree::{forget_typing, open_all, render, Policy, ReadOnly};
 
 /// The messages this crate draws, in whatever language it has been told.
 ///
