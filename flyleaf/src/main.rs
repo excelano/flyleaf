@@ -1025,7 +1025,7 @@ mod tests {
     #[test]
     fn a_file_that_will_not_open_says_why() {
         let missing = shown(Some(PathBuf::from("/nowhere/at/all.toml")));
-        assert!(!why(&missing).is_empty());
+        assert_ne!(why(&missing), "");
 
         let dir = std::env::temp_dir().join(format!("flyleaf-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();

@@ -1886,7 +1886,7 @@ id = 2
         let types = doc.as_table()["types"].as_table().expect("a table");
 
         let outer = types.key("dotted").expect("the segment the dot implies");
-        assert!(comments_before(outer.leaf_decor()).is_empty());
+        assert_eq!(comments_before(outer.leaf_decor()), Vec::<String>::new());
 
         let implied = types["dotted"].as_table().expect("the implied table");
         let leaf = implied.key("key").expect("the leaf segment");
