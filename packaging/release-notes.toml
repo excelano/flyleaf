@@ -11,23 +11,23 @@
 # AppStream entry take commit subjects.
 
 
-version = "0.2.7"
+version = "0.2.8"
 
 [locales."de-de"]
 whats-new = """
-Am Editor ändert sich nichts. Ein Baum, der als schreibgeschütztes Dokument \
-gezeigt wird, blendet jetzt auch den Papierkorb neben jedem Element einer \
-Liste aus — das letzte Bedienelement dieser Zeilen, das das Dokument \
-verändert hätte. Anwendungen, die den Baum einbetten, um Beschreibungen zu \
-zeigen statt sie zu bearbeiten, bekommen damit eine Ansicht, in der nichts \
-mehr schreibt.
+Am Editor ändert sich nichts. Anwendungen, die den Baum einbetten, um ein \
+Dokument nur zu zeigen, bekommen die schreibgeschützte Regel jetzt vom \
+Baum selbst, statt sie jede für sich zu schreiben. Unter Linux folgt das \
+Fenster der Hell-Dunkel-Einstellung des Desktops wie bisher; der Teil, der \
+das tut, ist nun ein eigenes Paket, das auch die anderen Anwendungen von \
+Excelano verwenden.
 """
 
 [locales."en-us"]
 whats-new = """
-Nothing in the editor changes. A tree shown as a read-only document now also \
-drops the bin beside each item of a list, which was the last control on those \
-rows that would have changed the document. Applications which embed the tree \
-to show a description rather than edit one get a pane with nothing on it that \
-writes.
+Nothing in the editor changes. Applications which embed the tree to show a \
+document rather than edit one now get the read-only rule from the tree \
+itself instead of each writing its own. On Linux the window follows the \
+desktop's light and dark setting as before; the part that does so is now a \
+crate of its own, shared with Excelano's other applications.
 """

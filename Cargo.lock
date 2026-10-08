@@ -1079,11 +1079,11 @@ dependencies = [
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
+ "portal-theme",
  "potext",
  "rfd",
  "wasm-bindgen-futures",
  "web-sys",
- "zbus",
 ]
 
 [[package]]
@@ -2506,6 +2506,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10ab3eb7f3becc3a1cbc4f2c6f20267996cfc1a6467a873763411b136a122715"
 dependencies = [
  "portable-atomic",
+]
+
+[[package]]
+name = "portal-theme"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeac9d787d286910ede9ea97a4cc5d454b3709bf2be30f69eb1bf557b7f752fb"
+dependencies = [
+ "egui",
+ "zbus",
 ]
 
 [[package]]
