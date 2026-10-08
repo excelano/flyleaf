@@ -1,3 +1,33 @@
+flyleaf (0.2.8) unstable; urgency=medium
+
+  * tests: show the value on failure where clippy now asks
+  * The binary follows the desktop's theme through portal-theme
+  * tree: a provided ReadOnly policy
+  * tree: the read-only consumer is Slipcase Query
+  * Run CI by hand: workflow_dispatch instead of push and pull request
+  * Remove ship.conf; the release apps read ship.toml
+  * packaging/README: the release apps, not ship, push the listings; the workflows are gone
+  * Releases are the apps in excelano/shipping
+  * Retire the release workflows
+  * Write down the runFullTrust capability justification
+  * Flag microsoft-review-notes' build-specific facts to reread
+  * Move Microsoft's Notes for certification into the field ship pushes
+  * Move Apple's Notes for Review into the field ship pushes
+  * Drop commit trailer and file header rules; the global CLAUDE.md states them
+  * Fix CI: format system_theme.rs and quiet its wasm dead-code warning
+  * The Mac App Store set doubles into light and dark, light leading
+  * The Linux lane uses the fleet's composite actions for the checks it shares
+  * The arch check and screenshot use the fleet's composite actions
+  * The Windows lane calls the fleet's reusable workflow
+  * A pull request runs the matrix once, not twice
+  * apt_repo, not apt_package
+  * ship sync: appearance() polls the readback instead of checking once
+  * Follow the desktop light/dark theme on Linux
+  * privacy-entry: macOS is live on the Mac App Store
+  * The Windows set is taken per language, and lands under its locale
+
+ -- David M. Anderson <david.anderson@excelano.com>  Thu, 08 Oct 2026 15:10:02 -0500
+
 flyleaf (0.2.7) unstable; urgency=medium
 
   * What 0.2.7 tells the listings
