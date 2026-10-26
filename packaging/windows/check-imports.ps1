@@ -31,6 +31,10 @@
 
 .PARAMETER Binary
     The executable to read. Defaults to the release build.
+
+.NOTES
+    Author: David M. Anderson
+    Built with AI assistance (Claude, Anthropic)
 #>
 [CmdletBinding()]
 param(

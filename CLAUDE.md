@@ -11,7 +11,7 @@ the application binary behind the default `app` feature. `DESIGN.md` is the auth
     cargo test
     cargo clippy --all-targets -- -D warnings             # must be silent
     cargo fmt --check
-    cargo +1.95 build --all-targets                       # the floor, read from Cargo.toml
+    cargo +<rust-version in Cargo.toml> build --all-targets   # the floor
     cargo check -p flyleaf --no-default-features          # the widget alone
     cargo run -- path/to/file.toml
     ./flyleaf/po/update-po.sh          # after changing any sentence a person reads

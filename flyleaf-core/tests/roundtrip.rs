@@ -9,6 +9,9 @@
 //! with the reason, and the test asserts that it still differs: a case that
 //! starts round-tripping after a `toml_edit` bump is a fix to notice and take
 //! off the list, not a pass to be quietly absorbed.
+//!
+//! Author: David M. Anderson
+//! Built with AI assistance (Claude, Anthropic)
 
 use std::fs;
 use std::path::{Path, PathBuf};

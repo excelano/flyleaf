@@ -4,6 +4,9 @@
 //! an editor that promises type-aware editing has to name all of them: a
 //! local date is not an offset date-time with the time left off, and a
 //! person who typed one meant it.
+//!
+//! Author: David M. Anderson
+//! Built with AI assistance (Claude, Anthropic)
 
 use toml_edit::{Array, Datetime, InlineTable, Item, Table, Value};
 

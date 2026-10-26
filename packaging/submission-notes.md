@@ -4,11 +4,12 @@ What a store submission needs from a person and no file supplies: the answers
 a form asks that no build can give, and the reasoning behind the screenshots.
 
 The listing text itself is not here. It is `store-listing.toml` beside this,
-which `ship` checks before the tag and pushes to both stores on every release,
+which `ship-winstore` and `ship-macstore` in `excelano/shipping` push to their
+stores on every release,
 and what a release tells them changed is `release-notes.toml`. A field edited
 in this file would reach nobody. Apple's Notes for Review and Microsoft's
 Notes for certification are there too, as `apple-review-notes` and
-`microsoft-review-notes`, which `ship` pushes to `appStoreReviewDetail` and
+`microsoft-review-notes`, which those apps push to `appStoreReviewDetail` and
 `NotesForCertification` on every submission.
 
 **No identity values.** The package name, publisher, family name and store id
@@ -22,7 +23,7 @@ submission, identity and all, goes in `windows/SUBMITTING.local.md`, which
 The package declares `runFullTrust`, and Partner Center's justification field
 for it is asked once when the capability is first declared on the product
 rather than on every resubmission - it is not part of the submission document
-`ship` reads and writes, and this repo's own resubmissions have gone to
+`ship-winstore` reads and writes, and this repo's own resubmissions have gone to
 certification since without one being sent. 500-character limit, which counts
 newlines.
 
@@ -56,13 +57,13 @@ No user-generated content, no network access, no data collection, no advertising
 
 ## Notes for certification
 
-Now `microsoft-review-notes` in `store-listing.toml`, which `ship` pushes to
+Now `microsoft-review-notes` in `store-listing.toml`, which `ship-winstore` pushes to
 `NotesForCertification` on every submission. It answers, in order, the four
 things a certification reader would otherwise have to guess at: how to test an
 application that opens with nothing in it, why it does not take the `.toml`
 default, what the certification kit's one finding is, and why the no-network
 claim is checkable rather than asserted. Microsoft Store limit 2000
-characters; the current text is 1964.
+characters, and the text sits close under it, so recount after any edit.
 
 **It names GitHub and not `excelano.com/flyleaf/samples/`**, although the page
 exists and says more, because the repository was serving the files the hour
@@ -84,7 +85,7 @@ asks them to make one, and an address hands them four.
 | What | Where | Built by |
 | --- | --- | --- |
 | Screenshot, 1366x768 | `dist/store/01-window.png` | `windows/shots.ps1` |
-| Mac screenshot, light, 1440x900 | `dist/store/mac-01-window-light.png` | `macos/screenshot.sh --app "dist-universal/Tommy Flyleaf.app" --file packaging/sample.toml --out dist/store/mac-01-window-light.png`, with the Mac in Light |
+| Mac screenshot, light, 1440x900 | `dist/store/mac-01-window-light.png` | `macos/screenshot.sh --app "dist-universal/Tommy Flyleaf.app" --document packaging/sample.toml --out dist/store/mac-01-window-light.png`, with the Mac in Light |
 | Mac screenshot, dark, 1440x900 | `dist/store/mac-01-window.png` | the same, with the Mac in Dark |
 | Store logo, 1080x1080 | `windows/listing/store-logo-1080.png` | `windows/make-ico` |
 | Store logo, 2160x2160 | `windows/listing/store-logo-2160.png` | `windows/make-ico` |

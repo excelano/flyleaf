@@ -13,6 +13,9 @@
 //! block. The block is rewritten as one run, so `# a`, a blank, `# b` above
 //! a key comes back without the blank once either line is edited. Nothing
 //! else about the file moves.
+//!
+//! Author: David M. Anderson
+//! Built with AI assistance (Claude, Anthropic)
 
 use toml_edit::{Decor, DocumentMut, RawString};
 

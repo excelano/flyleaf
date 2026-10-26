@@ -18,12 +18,10 @@ so `Info.plist.in` imports a declaration for it under `io.toml.toml`, chosen in
 the format's own domain because macOS declares none, and claims it with rank
 `Alternate` rather than `Owner`: one editor among the many that open a `.toml`,
 and never the default over an application that claims the type at a higher
-rank. Measured 2026-09-08 on this Mac: nothing else declared a TOML type at
-all, `.toml` had no default handler before this bundle was registered, and
-after it this application was the default, because rank decides among
-claimants and there was no other. The identifier was measured the same day
-against everything installed, `Info.plist.in` records how, and `io.toml.toml`
-stands.
+rank. On a Mac where nothing else declares a TOML type, this application
+becomes the default anyway, because rank decides among claimants and there is
+no other. `Info.plist.in` records how the identifier `io.toml.toml` was
+settled against everything installed.
 
 **The bundle has a space in its name**, `Tommy Flyleaf.app`, because that is
 the product name and it is what a person sees in Applications and the Dock.
@@ -52,22 +50,19 @@ application crate for it; `flyleaf-core` stays `forbid`.
 | `Flyleaf.entitlements` | The sandbox and user-selected files, for a development signature; the Store signature adds the identifiers from the profile |
 | `build-app.sh` | Assembles, signs, checks for private symbols, and builds the Store package with `--store` |
 | `check-install.sh` | Asks an installed bundle what it is, on the machine it is on |
-| `screenshot.sh`, `window-probe.swift` | The store screenshot, and the window check `apple-silicon.yml` runs |
+| `screenshot.sh`, `window-probe.swift` | The store screenshot, and the window check for a runner with no one watching |
 
 ## The order, on the Mac
 
 1. `cargo build --release`, `build-app.sh --sign` with the Apple Development
    identity, `lsregister -f`, and look: the Dock icon, a `.toml` under Open
    With, a double-click delivering the document, a save on a file chosen in the
-   open panel, and one on a file on a second volume. **Done 2026-09-08** on an
-   Intel Mac running macOS 15.7.9; `DESIGN.md` §9 has what each one measured.
-2. `lsregister -dump | grep -i toml`, and settle the identifier. **Done the
-   same day**, above.
-3. The two `MACOSX_DEPLOYMENT_TARGET=12.0` builds and `build-app.sh --store`
-   with the profile, once the name is reserved in App Store Connect and the
-   profile downloaded. The two builds are done and `build-app.sh --universal
-   --sign` passed the floor check on both slices; `--store` waits on the
-   profile.
+   open panel, and one on a file on a second volume; `DESIGN.md` §9 has what
+   each one measures.
+2. `lsregister -dump | grep -i toml`, and confirm the identifier.
+3. The two `MACOSX_DEPLOYMENT_TARGET=12.0` builds, `build-app.sh --universal
+   --sign` for the floor check on both slices, and `build-app.sh --store` with
+   the profile from App Store Connect.
 4. `check-install.sh` against the installed copy, then TestFlight.
 
 **What the sandbox writes, measured.** After a launch, an open through the

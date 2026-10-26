@@ -14,6 +14,9 @@
 //! nothing, the text being the whole of the document. A copy of the file per
 //! step is the cost, about 100 KB for a `Cargo.lock`, which is cheap beside
 //! what the window holds for the same document.
+//!
+//! Author: David M. Anderson
+//! Built with AI assistance (Claude, Anthropic)
 
 use std::fmt;
 

@@ -33,6 +33,9 @@
 # they are also where a genuine miss would hide, so the way a dropped string is
 # found is not by reading them — it is `pseudo.sh` beside this,
 # where anything still in English stands out on sight.
+#
+# Author: David M. Anderson
+# Built with AI assistance (Claude, Anthropic)
 set -eu
 
 # Two directories up: this script sits in the crate that owns the catalogues,

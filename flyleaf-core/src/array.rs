@@ -1,5 +1,8 @@
 //! The operations on an array: an element added at the end in the array's
 //! own style, one removed, one changed.
+//!
+//! Author: David M. Anderson
+//! Built with AI assistance (Claude, Anthropic)
 
 use toml_edit::{Array, Value};
 

@@ -11,6 +11,9 @@
 //! visible rows, which every line being the same monospace height allows.
 //! A `TextEdit` would give selection and copy, and lays out the whole text
 //! every frame; for a `Cargo.lock` of five thousand lines the rows win.
+//!
+//! Author: David M. Anderson
+//! Built with AI assistance (Claude, Anthropic)
 
 use std::ops::Range;
 

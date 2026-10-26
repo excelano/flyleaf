@@ -12,7 +12,7 @@ nothing on Windows rasterizes an SVG, and `macos/build-app.sh` renders it into
 the `.icns` at build time. The application also paints it from the same
 geometry in its About box. Any change to the drawing is checked at 16, 24,
 32, 48 and 128 pixels on a light ground and a dark one, and `make-ico` is run
-again so `windows.yml` finds the committed rasters current.
+again, since the rasters are committed.
 
 **One version.** `version.sh` is the only thing that reads it out of
 `Cargo.toml`, in whichever spelling a platform wants.
