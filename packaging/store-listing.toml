@@ -77,7 +77,7 @@ The application makes no network request. Its import table names nineteen librar
 
 [locales."de-de"]
 website = "https://excelano.com/flyleaf/"
-support = "https://excelano.com/flyleaf/"
+support = "https://excelano.com/support/?app=Flyleaf&channel=Mac%20App%20Store"
 privacy = "https://excelano.com/legal/#flyleaf"
 description = """
 Tommy Flyleaf ist ein TOML-Editor, der die Struktur der Datei kennt. Er öffnet eine Datei, zeigt sie als Baum neben dem, was ein Speichern schreiben würde, und bearbeitet jeden Wert nach seiner Art.
@@ -133,7 +133,7 @@ keywords = [
 
 [locales."en-us"]
 website = "https://excelano.com/flyleaf/"
-support = "https://excelano.com/flyleaf/"
+support = "https://excelano.com/support/?app=Flyleaf&channel=Mac%20App%20Store"
 privacy = "https://excelano.com/legal/#flyleaf"
 description = """
 Tommy Flyleaf is a structure-aware TOML editor. It opens a file, shows it as a tree beside what a save would write, and edits every value by its kind.
