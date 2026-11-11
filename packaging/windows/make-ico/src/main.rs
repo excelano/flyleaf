@@ -8,8 +8,8 @@
 //! rasterized artifacts are committed to a repository that otherwise holds only
 //! sources.
 //!
-//! The name is narrower than the job and is kept anyway: `windows.yml` runs
-//! this package by name and `packaging/windows/README.md` refers to it, and
+//! The name is narrower than the job and is kept anyway: `packaging/windows/README.md`
+//! refers to this package by name, and
 //! renaming a tool to widen its remit costs more than the sentence it saves.
 //!
 //! Author: David M. Anderson
@@ -152,9 +152,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Written fresh every time. A renamed or dropped asset would otherwise be
-    // left behind by a rebuild, and `windows.yml` compares this directory
-    // against a rebuild — so a stale file would sit in the package and in the
-    // tree with nothing objecting to it.
+    // left behind by a rebuild, and would sit in the package and in the tree with
+    // nothing objecting to it.
     if assets.exists() {
         std::fs::remove_dir_all(&assets)?;
     }

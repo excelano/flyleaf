@@ -94,9 +94,7 @@
         <!-- The same extension, content type and friendly name `install.ps1`
              writes for a side-loaded install. The content type is the one
              IANA registered for TOML in 2024. The icon index is 0 because
-             `flyleaf.ico` holds one image set; `make-ico` builds it and
-             `windows.yml` checks the committed copy still matches its
-             generator. -->
+             `flyleaf.ico` holds one image set; `make-ico` builds it. -->
         <uap:Extension Category="windows.fileTypeAssociation">
           <uap:FileTypeAssociation Name="toml">
             <uap:SupportedFileTypes>

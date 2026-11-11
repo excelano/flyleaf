@@ -10,26 +10,17 @@
 #     ./packaging/macos/shots.sh --app "dist/Tommy Flyleaf.app"
 #     ./packaging/macos/shots.sh --app 'dist-dev/Tommy Flyleaf.app' --lang de
 #
-# WHAT THE SET HAS TO SHOW, AND WHY
+# WHAT THE SET HAS TO SHOW
 #
-# The set this replaces was one window at rest, photographed twice in two
-# appearances. Nothing was selected, no edit was under way, and Save, Undo and
-# Redo were all greyed out. Apple rejected Segler's first set under guideline
-# 2.3.3 - *the screenshots do not show the actual app in use* - for exactly
-# that, and the same frames were sitting in this listing. A frame of an editor
-# with nothing selected is a frame of a viewer, and this application stopped
-# being a viewer at 0.2.0.
-#
-# So: an edit is under way in every shot below, and each shows something the
-# others do not.
+# An edit is under way in every shot below, and each shows something the
+# others do not. A frame of an editor with nothing selected is a frame of a
+# viewer, and Save, Undo and Redo greyed out say the window is at rest.
 #
 # LIGHT AND DARK
 #
-# All three earn a second slot: three frames plus their dark repeats is six,
-# well under Apple's ten and the Microsoft Store's own ten, and there is no
-# reason here to show less than the whole set in both appearances. Light
-# leads, numbered 01-03; the dark repeats are 04-06, so the file names alone
-# keep light first without depending on where `shots()` calls `appearance`.
+# Every frame is taken in both appearances, light first: the light frames are
+# numbered before the dark repeats, so the file names alone keep light first
+# without depending on where `shots()` calls `appearance`.
 #
 # THE ACTIONS STAY INSIDE THE DOCUMENT
 #
@@ -43,11 +34,10 @@
 # THE DOCUMENT IS STAGED
 #
 # The path is in the frame, in the toolbar, so whatever is photographed is what
-# the listing advertises. Photographing the checkout put
-# `/private/tmp/ship.DynEoj/repo/packaging/sample.toml` in the picture, and a
-# runner would put its own workspace there. So the sample is copied somewhere
-# that reads like a person's machine, under the name such a document would
-# have, and that copy is what is opened.
+# the listing advertises, and a checkout's path would put a build directory in
+# the picture. So the sample is copied somewhere that reads like a person's
+# machine, under the name such a document would have, and that copy is what is
+# opened.
 #
 # Author: David M. Anderson
 # Built with AI assistance (Claude, Anthropic)
@@ -68,14 +58,13 @@ OUTDIR="${root}/dist/screenshots"
 
 # The two documents are the same document in two languages, and they are the
 # same length: 55 lines each, with every comment occupying the same number of
-# lines as its counterpart. That is a constraint rather than a nicety. The
-# coordinates below are a row number in disguise, so a German header comment
-# that wrapped onto a fifth line where the English takes four moved every row
-# under it down by one, and shot 01 typed its new title into the comment.
+# lines as its counterpart. The coordinates below are a row number in
+# disguise, so a comment that wraps onto one more line in one language moves
+# every row under it, and a recipe types into the wrong field.
 #
 # Which document, under which name, per language. The German set opens a German
-# document: the interface is translated and the file's own words are not, which
-# is this application's whole promise, so a German listing showing an English
+# document: the interface is translated and the file's own words are not, so a
+# German listing showing an English
 # document would be mostly English pixels.
 english_document="${root}/packaging/sample.toml"
 english_name="job-ticket.toml"
@@ -106,23 +95,19 @@ shots() {
 
     # The title being rewritten: the field focused and holding new text, the
     # source pane beside it showing the same change, and Save and Undo come on.
-    # This is the frame the old set most lacked - the application in use.
     shot 01-editing-a-value \
         --click 350,158 --key cmd+a --type "$typed"
 
     # A comment being edited in place, with the new words in the source pane
     # beside it. Keeping every comment is what this application promises, and a
-    # window at rest cannot show it. Two attempts got this wrong. Clicking
-    # alone put the caret in the comment and changed nothing, so Save stayed
-    # grey and the frame read as the same window at rest. Typing was not enough
-    # either: a value reaches the source pane as it is typed and a comment does
-    # not, so the panes disagreed and the frame read as a defect. Return is
-    # what commits it.
+    # window at rest cannot show it. A value reaches the source pane as it is
+    # typed and a comment does not, so Return commits it and the two panes
+    # agree.
     shot 02-editing-a-comment \
         --click 620,158 --key cmd+a --type "$comment" --key return
 
     # The kind picker open. Every value is edited by its kind, with the four
-    # datetime shapes told apart, and nothing in the listing showed it.
+    # datetime shapes told apart.
     shot 03-the-kind-picker \
         --click 280,398
 
@@ -141,7 +126,7 @@ shots() {
 # --- the driving ------------------------------------------------------------
 
 # Which document this language opens, under what name, and what its recipes
-# type. `take-shots.sh` beside this does the rest and is generated by ship.
+# type. `take-shots.sh` beside this does the rest.
 for_language() {
     case "$1" in
         en|en-US|en-us)

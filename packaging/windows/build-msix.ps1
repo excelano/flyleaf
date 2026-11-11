@@ -190,9 +190,9 @@ if ($ReadReport) {
 # publisher display name, and the calculated forms. `Publisher` is the X.500
 # string Partner Center assigns per account, the same for every Excelano
 # product, and it comes from the environment so that a public repository does
-# not carry an account identifier: `windows.yml` passes the organisation
-# secret STORE_PUBLISHER, and a Windows machine sets STORE_PUBLISHER in its
-# own environment before running this.
+# not carry an account identifier: `build-release` and `shots-winstore` set
+# STORE_PUBLISHER from `ship.toml`, and a person running this by hand sets it
+# first.
 $identityFile = Join-Path $here 'identity.psd1'
 if (-not (Test-Path $identityFile)) {
     Refuse "no identity at $identityFile - it is committed beside this script and should not be missing"
@@ -203,7 +203,7 @@ foreach ($field in 'Name', 'PublisherDisplayName') {
 }
 $publisher = $env:STORE_PUBLISHER
 if (-not $publisher) {
-    Refuse 'no STORE_PUBLISHER in the environment - it is the X.500 string Partner Center shows under Product management, Product identity, as Package/Identity/Publisher, and it is the excelano organisation secret of that name'
+    Refuse 'no STORE_PUBLISHER in the environment - it is the X.500 string Partner Center shows under Product management, Product identity, as Package/Identity/Publisher; `ship.toml` names it under [winstore] as publisher'
 }
 # The one value with a shape worth checking. `Publisher` is an X.500 string and
 # the display name is what gets put there by mistake; a package whose Publisher
