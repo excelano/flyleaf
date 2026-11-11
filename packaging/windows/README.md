@@ -21,15 +21,13 @@ the same way without being asked, since an MSIX association is only ever an
 Open With entry.
 
 **The `UserChoice` key is deleted by name, not with the tree above it.**
-slipcase-desktop's `uninstall.ps1` removes `FileExts\<ext>` whole, and that call
-does not work: Explorer writes a *Deny SetValue* rule on `UserChoice` so no
+Removing `FileExts\<ext>` whole does not work: Explorer writes a *Deny SetValue* rule on `UserChoice` so no
 application can quietly take an extension over, and every delete that opens the
 key for writing — `.NET`'s `DeleteSubKeyTree`, `reg delete` — fails on it.
-Measured here 2026-09-08, unelevated, on the real key: `reg delete` says *Access
-is denied*, `DeleteSubKeyTree` reads the same failure as the key being missing
-and returns quietly, and deleting the name from the parent works, because that
-needs only DELETE and the rule beside the deny allows it. This repository does
-the last; **slipcase-desktop has the first and leaves the key behind.**
+Unelevated, `reg delete` says *Access is denied* and `DeleteSubKeyTree` reads
+the same failure as the key being missing and returns quietly. Deleting the
+name from the parent works, because that needs only DELETE and the rule beside
+the deny allows it, and that is what `uninstall.ps1` does.
 
 **The certification baseline** in `build-msix.ps1` carries `Blocked
 executables`, traced to the standard library's batch-file spawn and
@@ -49,11 +47,10 @@ every double-click.
 | `flyleaf.ico`, `assets/`, `listing/` | Built by `make-ico` from `packaging/linux/icons/flyleaf.svg`, the one drawing; committed because Windows has no step that rasterizes an SVG |
 | `make-ico/` | The generator, its own package so nothing in it reaches the shipped binary |
 | `flyleaf.manifest` | The DPI declaration `build.rs` hands the linker |
-| `AppxManifest.xml.in`, `identity.psd1` | The Store package's manifest and the identity Partner Center assigned, less the publisher, which is the `STORE_PUBLISHER` organisation secret |
+| `AppxManifest.xml.in`, `identity.psd1` | The Store package's manifest and the identity Partner Center assigned, less the publisher, which `build-msix.ps1` reads from `STORE_PUBLISHER` |
 | `build-msix.ps1`, `check-imports.ps1` | Build and the in-box import check |
 | `shots.ps1` | The listing's screenshot as a recipe: which file, which frame, and what happens before the shutter |
 | `screenshot.ps1`, `take-shots.ps1` | The driver under it and the set-taking over it |
-| the install check | `excelano/.github`'s `windows-install-check` action puts the two scripts above through the registry and reads back: what goes on comes off, a `UserChoice` naming this application goes with it, and another application's does not. It registers the real ProgID, so it is a runner's job |
 
 ## The order, on the Windows machine
 

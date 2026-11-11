@@ -24,9 +24,9 @@ excelano.com/legal; and `store-listing.toml` is the copy a store listing is
 filled in from, which the release apps push to both stores on every release, with
 `submission-notes.md` beside it for what a submission needs from a person. All three are here rather
 than in the place they are pasted into, because each is a set of claims about
-the code and the code is what moves. Edit here first. The identity a store
-assigns is the one thing that stays out: `windows/identity.psd1` holds it and
-is not committed.
+the code and the code is what moves. Edit here first. The identity Partner Center
+assigns is in `windows/identity.psd1`, less the publisher, which stays out of
+the repository.
 
 **And the samples the stores are pointed at.** `samples/` holds the rest of
 the files published at excelano.com/flyleaf/samples/, with `sample.toml` going

@@ -42,7 +42,7 @@ graph make that two types and it stops compiling. Both manifests say so, and
 they move together.
 
 **One editor, not two that drift.** The widget lives here and slipcase-desktop
-depends on it. Where the editor needs behaviour it lacks, the behaviour goes
+depends on it. Where the editor needs behavior it lacks, the behavior goes
 here and both applications get it.
 
 ## 3. What it commits to
@@ -75,7 +75,7 @@ keyboard focus, returned from `render` as its path.
 
 **Collapsed by default above two hundred entries**, because a thousand open rows
 cannot be read; memory is tolerable either way, at about 10 KB a row.
-`flyleaf::open_all` opens or closes everything on request. Virtualisation stays
+`flyleaf::open_all` opens or closes everything on request. Virtualization stays
 deferred until a measurement says collapsing is not enough.
 
 **The widget knows nothing about Slipcase.** Which keys are protected, and how a
@@ -95,18 +95,20 @@ disabled rather than refused after the press. A table becomes an inline table
 and back in its place with its comment carried across, which is the one
 conversion about layout rather than type.
 
-**Undo is a copy of the rendered text per step**, held in `flyleaf_core::Document`,
-with steps naming the same row coalesced so a word typed into a field undoes as
-a word. Undo parses the previous text back, which loses nothing. The shell takes
-Ctrl+Z and Ctrl+Shift+Z before the tree draws, so a focused field cannot answer
-with its own undo, and calls `flyleaf::forget_typing` first, because a key field
-commits its buffer on blur and would otherwise rename the row back.
+**Undo is a copy of the rendered text per step**, held in
+`flyleaf_core::Document`, with steps naming the same row coalesced so a word
+typed into a field undoes as a word. Undo parses the previous text back, which
+loses nothing. The shell takes Ctrl+Z and Ctrl+Shift+Z before the tree draws, so
+a focused field cannot answer with its own undo, and calls
+`flyleaf::forget_typing` first, because a key field commits its buffer on blur
+and would otherwise rename the row back.
 
-**A float is drawn as text through `buffered_text`**, the way a datetime is,
-parsed when it is committed and left alone otherwise, so the writer's spelling
-of it survives until it is edited. `egui::DragValue` cannot draw one: it clamps
-what it is handed, which turns a `nan` into an `inf` and reports the clamp as an
-edit, and it rounds what it shows, which an editor claiming fidelity cannot do.
+**An integer and a float are drawn with `egui::DragValue`.** For a float that
+costs fidelity: `DragValue` clamps what it is handed, which turns a `nan` into
+an `inf` and reports the clamp as an edit, and it rounds what it shows. Issue
+#10 tracks drawing a float as text through `buffered_text`, the way a datetime
+is, parsed when it is committed and left alone otherwise, so the writer's
+spelling survives until it is edited.
 
 **A field commits what was typed, not what it shows**, because egui takes focus
 away on Escape at the start of a frame and a field left that way would reseed
@@ -154,17 +156,17 @@ fails with `EXDEV` for any file off the boot volume. That arm is in core's
 `save_to`.
 
 **A round-trip corpus holds all of this.** The TOML 1.1.0 cases of `toml-test`
-are vendored under `flyleaf-core/tests/toml-test/` — 220 valid, 494 invalid —
-and every valid one must render byte-identically through `Document` while every
-invalid one must be refused. Three things `toml_edit` drops and `Document`
-records and reapplies: a leading byte order mark, CRLF line endings, and a
-missing final newline. Seven cases remain that cannot be repaired from outside
-the parser, each named in the test with its reason, and the test asserts they
-*still* differ so that an upstream fix is noticed rather than absorbed. Two
-shapes, both upstream candidates against `toml-rs/toml`: a non-leaf dotted-key
-or table-header segment rendered from the key's first definition rather than
-each occurrence, losing its quoting and the whitespace before its dot; and
-dotted keys interleaving two implicit tables being regrouped by table.
+are vendored under `flyleaf-core/tests/toml-test/`, and every valid one must
+render byte-identically through `Document` while every invalid one must be
+refused. Three things `toml_edit` drops and `Document` records and reapplies: a
+leading byte order mark, CRLF line endings, and a missing final newline. The
+cases that cannot be repaired from outside the parser are each named in the test
+with its reason, and the test asserts they still differ so that an upstream fix
+is noticed rather than absorbed. They take two shapes, both upstream against
+`toml-rs/toml` and described in `UPSTREAM.md`: a non-leaf dotted-key or
+table-header segment rendered from the key's first definition rather than each
+occurrence, losing its quoting and the whitespace before its dot; and dotted
+keys interleaving two implicit tables being regrouped by table.
 
 ## 8. The web arm
 
@@ -182,13 +184,11 @@ for a download to land, so Save on the web starts the download and goes on.
 **The bundle is built for size**: a `web` profile with `opt-level = "z"`, fat
 LTO, one codegen unit and `panic = "abort"`, and eframe with `glow` rather than
 its default `wgpu` renderer on the wasm target alone, which keeps wgpu-core and
-naga out of the page. That is 4.8 MB, 1.9 MB gzipped. What remains is egui, its
-default fonts and the editor, which is the product.
+naga out of the page. What remains is egui, its default fonts and the editor.
 
 The host serves `.wasm` as `application/wasm` unasked but compresses only text
 types, so a `.gz` and a `.br` are written beside the wasm and a committed
-`.htaccess` serves them by rewrite: 1.5 MB over the wire with brotli, the bytes
-checked against the original by hash.
+`.htaccess` serves them by rewrite.
 
 ## 9. Packaging and the two stores
 
@@ -200,13 +200,11 @@ sandboxed bundle for the Mac App Store, crates.io, and a hosted WASM demo.
 which needs only DELETE and works unelevated, reads every delete back, and
 refuses if a key survives: Explorer writes a *Deny SetValue* rule on that key,
 so a delete that opens it for writing fails, and .NET's `DeleteSubKeyTree` reads
-that failure as the key being missing and returns quietly. `check-install.ps1`
-installs, plants a `UserChoice` the way Explorer writes one, deny rule and all,
-uninstalls, and reads back that everything is gone. `AppxManifest.xml.in` is
-XML, comments included, and `makepri` refuses the substituted manifest if it is
-not. `screenshot.ps1` waits for a window rather than for a number of
-seconds, because a cold start here reads a 15 MB binary the disk has never read
-and is slower than the association is.
+that failure as the key being missing and returns quietly. `AppxManifest.xml.in`
+is XML, comments included, and `makepri` refuses the substituted manifest if it
+is not. `screenshot.ps1` waits for a window rather than for a number of seconds,
+because a cold start here reads a 15 MB binary the disk has never read and is
+slower than the association is.
 
 **macOS.** The private-symbol check reads the public headers rather than a list
 of names, so that the public symbols winit links through ApplicationServices and
@@ -215,36 +213,35 @@ sandbox container is not empty and the privacy statement says so: after one open
 through the panel, `~/Library/Containers/com.excelano.flyleaf` holds a
 preferences plist.
 
-**One blemish, seen in a store screenshot and not fixed:** a multi-line string
-shows a missing-glyph box at each line break, because the tree edits every
-string in a single-line field.
+**A multi-line string shows a missing-glyph box at each line break**, because
+the tree edits every string in a single-line field.
 
-**An editor of files hands a reviewer the files.** `excelano.com/flyleaf/samples/`
-serves four `.toml` files behind download links, three of them in
-`packaging/samples/` and the fourth `sample.toml` under the name the page gives
-it. `samples/publish.sh` copies the set into the site working copy in one
-command, so the copies cannot drift; on the site side they are committed rather
-than deployed, unlike the web bundle, because the address has to survive a
-deploy that forgets them; and `flyleaf-core/tests/samples.rs` holds every file in
-the set to a byte-identical render, because a published sample the editor
-rewrites demonstrates the opposite of the product. The page is written for
-anyone who wants something to open rather than for App Review alone.
+**An editor of files hands a reviewer the files.**
+`excelano.com/flyleaf/samples/` serves four `.toml` files behind download links,
+three of them in `packaging/samples/` and the fourth `sample.toml` under the
+name the page gives it. `samples/publish.sh` copies the set into the site
+working copy in one command, so the copies cannot drift; on the site side they
+are committed rather than deployed, unlike the web bundle, because the address
+has to survive a deploy that forgets them; and `flyleaf-core/tests/samples.rs`
+holds every file in the set to a byte-identical render, because a published
+sample the editor rewrites demonstrates the opposite of the product. The page is
+written for anyone who wants something to open rather than for App Review alone.
 
 **The stores and crates.io are separate channels and their numbers need not
-agree.** A `cargo publish` rebuilds no submission and a submission in review
+agree.** A `cargo publish` rebuilds no store package and a store submission
 holds no crate. What version the next release carries is decided when there is a
 release to cut.
 
-**A catalogue is packaged only if it sits under the crate that reads it.**
+**A catalog is packaged only if it sits under the crate that reads it.**
 `include_str!` reaching above a crate's own directory compiles locally and fails
 in `cargo package`, which copies only what is under the crate root: the tarball
-carries no catalogue and the publish dies verifying a build that cannot compile.
+carries no catalog and the publish dies verifying a build that cannot compile.
 The check is `cargo package -p <crate> --list`.
 
 ## 10. The language a person reads
 
 German where the desktop asks for German, English everywhere else, through
-`potext` and the catalogues in `flyleaf/po/`.
+`potext` and the catalogs in `flyleaf/po/`.
 
 **A message is looked up by its English text, never by a key**, so a call site
 reads as the sentence a person sees and an untranslated message is the original
@@ -260,7 +257,7 @@ platform itself; the web build asks `navigator.language`, which is the browser's
 answer to the question `potext` puts to the operating system elsewhere, asked in
 the shell so that crate carries no `web-sys` for one line.
 
-**Only a tag crosses a crate boundary, never a catalogue.** A catalogue would be
+**Only a tag crosses a crate boundary, never a catalog.** A catalog would be
 a type, and two versions of this crate in one graph would make it two.
 
 `flyleaf-core::Kind::label` stays the canonical English: it is the model's name
@@ -271,7 +268,7 @@ editor says *text* where TOML says *string*, which is the tell that they are the
 window's words and not the format's.
 
 `tree.rs` imports the lookup as `tr`, where every other file uses `t`; both
-spellings are keywords in `flyleaf/po/update-po.sh`, and a catalogue built
+spellings are keywords in `flyleaf/po/update-po.sh`, and a catalog built
 without the alias listed looks healthy with every message in the tree missing.
 
 ## 11. Non-goals, and what would reopen each
@@ -291,7 +288,7 @@ a second parser or a second policy.
 
 **An editable text mode.** §6 says why the source pane is read-only.
 
-**Slipcase-specific behaviour**, which stays in slipcase-desktop and reaches the
+**Slipcase-specific behavior**, which stays in slipcase-desktop and reaches the
 widget through the policy hook §4 describes.
 
 ---

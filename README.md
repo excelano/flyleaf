@@ -2,7 +2,25 @@
 
 A structure-aware TOML editor: a desktop application that shows a document as a tree, edits values by type, and keeps comments, key order and formatting when it saves. Rust, egui.
 
-The editor widget is shared with [Slipcase Desktop](https://github.com/excelano/slipcase-desktop), which it was extracted from. `DESIGN.md` is the living plan.
+The editor widget is shared with [Slipcase Desktop](https://github.com/excelano/slipcase-desktop), which draws it inside its own window. `DESIGN.md` says what the application commits to.
+
+## Install
+
+On Debian and Ubuntu, from the Excelano apt repository:
+
+```
+curl -fsSL https://excelano.com/apt/setup.sh | sudo sh && sudo apt install flyleaf
+```
+
+With cargo:
+
+```
+cargo install flyleaf
+```
+
+https://excelano.com/flyleaf/ is the product page for every platform, and https://excelano.com/flyleaf/try/ runs the editor in a browser.
+
+## Build and run
 
     cargo run -- path/to/file.toml
 
@@ -13,3 +31,7 @@ The same application runs in a browser: `trunk build --release` writes `dist/` f
 A Debian package is built by `packaging/debian/build-deb.sh` after `cargo build --release`.
 
 On Linux, `packaging/linux/install.sh` installs the desktop entry and icon under `~/.local` so a file manager offers Tommy Flyleaf for `.toml` files; `--default` makes it the default.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

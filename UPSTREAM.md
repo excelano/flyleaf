@@ -1,12 +1,12 @@
-# Upstream: what toml_edit does to a document, and what was done about it
+# Upstream: what toml_edit does to a document
 
 `flyleaf-core/tests/roundtrip.rs` holds every valid TOML 1.1.0 case in
 toml-test to a byte-identical round trip. Where `toml_edit` itself changes a
 document, the fix belongs upstream rather than here: that is the commitment in
-`DESIGN.md`, and this file is the record of each finding, its reproduction,
-and where it stands. Measured against `toml_edit` 0.25.13 on 2026-09-07.
+`DESIGN.md`, and this file holds each finding, its reproduction, and where it
+is tracked.
 
-Each reproduction below is the smallest that shows the behaviour, verified by
+Each reproduction below is the smallest that shows the behavior, verified by
 running it; the corpus cases that exercise it are named so a fix can be
 checked against them and taken off `KNOWN_TO_DIFFER` in the same commit.
 
@@ -14,9 +14,8 @@ checked against them and taken off `KNOWN_TO_DIFFER` in the same commit.
 
 ## 1. A dotted-key or header prefix segment is rendered from its first definition
 
-**Status: filed 2026-09-07 as [toml-rs/toml#1214](https://github.com/toml-rs/toml/issues/1214).** Not found in the
-tracker before filing; #163 is the nearest and is about order rather than
-representation.
+**Tracked upstream as [toml-rs/toml#1214](https://github.com/toml-rs/toml/issues/1214).**
+#163 is the nearest other issue and is about order rather than representation.
 
 Every segment of a dotted key or table header except the last is rendered
 from the key stored in the parent table, which is the one the first definition
@@ -55,9 +54,9 @@ Corpus cases: `valid/key/dotted-01.toml`, `valid/key/dotted-02.toml`,
 
 ## 2. Dotted keys that interleave two implicit tables are regrouped by table
 
-**Status: known upstream, [toml-rs/toml#163](https://github.com/toml-rs/toml/issues/163),
-open since 2021-09-03 and named in `toml_edit`'s own Limitations list.**
-Nothing to file. The maintainer's position in the thread is that the logical
+**Tracked upstream as [toml-rs/toml#163](https://github.com/toml-rs/toml/issues/163),
+and named in `toml_edit`'s own Limitations list.** The maintainer's position in
+the thread is that the logical
 structure is what the library edits and a concrete syntax tree is a different
 project, which `toml_parser` now makes possible for somebody else.
 
@@ -78,8 +77,8 @@ cost in complexity. Corpus case: `valid/spec-1.1.0/common-9.toml`.
 
 ## 3. A CRLF document prints back with LF outside its multi-line strings
 
-**Status: known upstream, [toml-rs/toml#1213](https://github.com/toml-rs/toml/issues/1213),
-filed 2026-09-04 by DRMacIver.** `flyleaf_core::Document` records the file's line
+**Tracked upstream as [toml-rs/toml#1213](https://github.com/toml-rs/toml/issues/1213).**
+`flyleaf_core::Document` records the file's line
 ending at parse and, at render, turns every bare `\n` into `\r\n` while
 leaving the ones already paired alone, which is what makes a CRLF document
 with a multi-line string come back byte for byte. Corpus case:
@@ -89,10 +88,8 @@ with a multi-line string come back byte for byte. Corpus case:
 
 ## 4. A leading byte order mark is dropped, and a file without a final newline gains one
 
-**Status: handled in `Document`; not filed.** Both are facts about the file
+**Handled in `Document`.** Both are facts about the file
 rather than the document, and both are put back at render. The byte order
 mark is recorded rather than stripped, because `toml_edit` accepts one of its
-own and refuses a second, and stripping one here let a file with two through:
-`invalid/encoding/bom-not-at-start-02.toml` caught that. Whether the
-maintainers would consider either worth preserving inside `toml_edit` is a
-question to ask when filing item 1, not an issue of its own.
+own and refuses a second, and stripping one here would let a file with two
+through, which `invalid/encoding/bom-not-at-start-02.toml` checks.

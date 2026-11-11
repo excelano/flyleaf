@@ -5,12 +5,8 @@ for the reason `sample.toml`, `privacy-entry.html` and `store-listing.toml` are:
 each is a claim about what the application can open, and the application is
 what moves. Edit here first, then `./publish.sh` into the site working copy.
 
-**Why there is a page at all.** The Mac App Store submission of 0.2.1 came
-back on 2026-09-10 under Guideline 2.1(a): the reviewer could not exercise an
-editor without a file to edit, and asked for sample TOML "hosted at a location
-that will remain available for future reviews". The page is that location. It
-is written for anyone who wants something to open, not for App Review alone, a
-reviewer being no better served by a page that reads as a formality.
+The page gives anyone who wants to try an editor a file to edit, a store
+reviewer included; both stores' review notes point here.
 
 **What each file is for.**
 
@@ -24,12 +20,11 @@ inline table written across lines. Someone verifying that the editor does what
 its listing says should open this one: every renderer it claims is on the
 screen at once.
 
-What `every-kind.toml` does not carry is `nan`, or a float the editor draws as
-a different number from the one in the file. Not because either is exotic:
-because the editor gets both wrong today, and a specimen sheet that opens
-already marked edited demonstrates the opposite of what it is for. `nan` becomes `inf` on open, and the two rounding
-cases are beside it in `DESIGN.md` section 5, amended 2026-09-10 with what was
-measured. They go back into the file when the float renderer is fixed.
+`every-kind.toml` carries no `nan`, and no float the editor draws as a
+different number from the one in the file, because the float field changes
+both on open and a specimen sheet that opens already marked edited
+demonstrates the opposite of what it is for. Issue #10 tracks the float field;
+they go back into the file when it is fixed.
 
 `cargo-manifest.toml` and `pyproject.toml` are the two files a developer
 actually opens, and they are here so that the set is not all specimen. They
