@@ -27,7 +27,8 @@ answer against the product. 500 characters, newlines counted.
     App Privacy (Apple)       Data Not Collected
     Export compliance         answered in the bundle: Info.plist.in declares
                               ITSAppUsesNonExemptEncryption false
-    Price                     free
+    Price                     USD 0.99 on the Mac App Store; free on the
+                              Microsoft Store
 
 ## Screenshots
 
